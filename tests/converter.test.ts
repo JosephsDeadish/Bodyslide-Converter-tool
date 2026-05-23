@@ -1302,8 +1302,12 @@ describe("convertMod", () => {
       join(outputDir, sliderSetEntry?.outputPath ?? ""),
       "utf8",
     );
-    expect(sliderSetContent).toContain('<SliderSet name="3BA Seta 3BA Cuirass">');
-    expect(sliderSetContent).toContain('<SliderSet name="3BA Setb 3BA Cuirass">');
+    expect(sliderSetContent).toContain(
+      '<SliderSet name="3BA Seta 3BA Cuirass">',
+    );
+    expect(sliderSetContent).toContain(
+      '<SliderSet name="3BA Setb 3BA Cuirass">',
+    );
   });
 
   it("does not synthesize a duplicate SliderGroup when one already exists in the source", async () => {

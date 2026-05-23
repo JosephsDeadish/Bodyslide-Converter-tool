@@ -650,7 +650,10 @@ async function synthesizeMissingSliderSetProject(
   const baseDisplayNameCounts = new Map<string, number>();
   for (const name of baseDisplayNames) {
     const lower = name.toLowerCase();
-    baseDisplayNameCounts.set(lower, (baseDisplayNameCounts.get(lower) ?? 0) + 1);
+    baseDisplayNameCounts.set(
+      lower,
+      (baseDisplayNameCounts.get(lower) ?? 0) + 1,
+    );
   }
   const sliderSetEntries = meshGroups
     .map((group, index) => {
