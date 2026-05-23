@@ -270,10 +270,7 @@ function escapeRegExp(value: string): string {
 }
 
 function buildAliasPattern(alias: string): RegExp {
-  return new RegExp(
-    `(?<![a-z0-9])${escapeRegExp(alias)}(?![a-z0-9])`,
-    "gi",
-  );
+  return new RegExp(`(?<![a-z0-9])${escapeRegExp(alias)}(?![a-z0-9])`, "gi");
 }
 
 function replaceAliases(
