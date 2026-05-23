@@ -369,6 +369,44 @@ describe("convertMod", () => {
     ).toBe(true);
   });
 
+  it("rewrites compact alias naming variants in files and text metadata", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbebody_outfit_0.nif"),
+      "calientebody",
+    );
+    await writeFile(
+      join(inputDir, "cbbebody_profile.txt"),
+      "cbbebody calientebody",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(result.sourceBodyType).toBe("cbbe");
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.endsWith("3BA_outfit_0.nif"),
+      ),
+    ).toBe(true);
+
+    const rewritten = await readFile(join(outputDir, "3BA_profile.txt"), "utf8");
+    expect(rewritten).toContain("3BA");
+    expect(rewritten).not.toContain("cbbebody");
+    expect(rewritten).not.toContain("calientebody");
+  });
+
   it("supports BodyTalk as a male-family target", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -890,6 +928,62 @@ describe("convertMod", () => {
     expect(rewritten).toContain("NPC Belly");
     expect(rewritten).not.toContain("NPC L Breast01");
     expect(rewritten).not.toContain("NPC L Butt");
+  });
+
+  it("collapses cross-family physics references when no safe direct map exists", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_3ba_to_sos.ini"),
+      [
+        "NPC L Breast01=0.7",
+        "NPC R Breast01=0.7",
+        "NPC L Butt=0.4",
+        "NPC R Butt=0.4",
+        "NPC Belly=0.3",
+      ].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_0.nif"),
+      "3bbb amazing body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "sos",
+    );
+
+    expect(result.sourceBodyType).toBe("3ba");
+    expect(result.targetBodyType).toBe("sos");
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("No direct physics-bone map exists"),
+      ),
+    ).toBe(true);
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    expect(rewritten).toContain("NPC Spine2");
+    expect(rewritten).toContain("NPC Pelvis");
+    expect(rewritten).toContain("NPC Belly");
+    expect(rewritten).not.toContain("NPC GenitalsBase01");
+    expect(rewritten).not.toContain("NPC L Breast01");
   });
 
   it("produces a structured conversion audit for 3BA-ready outputs", async () => {

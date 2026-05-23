@@ -167,14 +167,26 @@ const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
 };
 
 const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
-  cbbe: ["cbbe", "caliente", "cbbe body"],
+  cbbe: [
+    "cbbe body",
+    "cbbe-body",
+    "cbbe_body",
+    "cbbebody",
+    "cbbe",
+    "caliente body",
+    "calientebody",
+    "caliente",
+  ],
   "3ba": [
     "cbbe 3bbb",
     "cbbe 3ba",
     "cbbe_3ba",
     "cbbe-3ba",
+    "3bbbbody",
+    "3bbb_body",
     "3bbb amazing body",
     "3bbb amazing",
+    "3ba body",
     "3bbb",
     "3ba",
   ],
@@ -182,17 +194,28 @@ const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
     "highly improved male body",
     "high poly male body",
     "highpolymalebody",
+    "himbo body",
+    "himbo-body",
     "himbo",
   ],
   bodytalk: [
     "bodytalk v3",
     "bodytalk v2",
-    "bodytalk_body",
+    "bodytalkv3",
+    "bodytalkv2",
     "bodytalk body",
+    "bodytalk_body",
+    "bodytalk3",
     "bodytalk",
     "bt3",
   ],
-  tbd: ["touched by dibella", "tbd body", "tbd"],
+  tbd: [
+    "touched by dibella",
+    "touchedbydibella",
+    "tbd body",
+    "tbd_body",
+    "tbd",
+  ],
   sos: [
     "schlongs of skyrim",
     "schlongsofskyrim",
@@ -201,12 +224,19 @@ const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
     "sos body",
     "sos",
   ],
-  unp: ["dimonized", "unpb body", "unpb", "unp"],
-  bhunp: ["bonehunger unp", "unp next generation", "bhunp 3bbb", "bhunp"],
-  uunp: ["unified unp", "uunp special", "uunp"],
-  "7base": ["7base", "sevenbase", "seven base"],
-  sam: ["shape atlas for men", "sam light", "samlight", "sam"],
-  vanilla: ["base game body", "default body", "vanilla"],
+  unp: ["dimonized", "unpb body", "unpb", "unp body", "unp_body", "unp"],
+  bhunp: [
+    "bonehunger unp",
+    "unp next generation",
+    "bhunp 3bbb",
+    "bhunp body",
+    "bhunp_body",
+    "bhunp",
+  ],
+  uunp: ["unified unp", "uunp special", "uunp body", "uunp_body", "uunp"],
+  "7base": ["7base body", "7base_body", "7base", "sevenbase", "seven base"],
+  sam: ["shape atlas for men", "sam light", "samlight", "sam body", "sam"],
+  vanilla: ["base game body", "default body", "vanilla body", "vanilla"],
 };
 
 const FEMALE_TO_MALE_MARKERS = [
@@ -376,7 +406,7 @@ function replacePhysicsReferences(
 
   // Use explicit semantic mapping when available — avoids index-alignment errors.
   const explicitMap = EXPLICIT_PHYSICS_BONE_MAPS[source]?.[target];
-  if (explicitMap) {
+  if (explicitMap !== undefined) {
     for (const [sourceBone, targetBone] of Object.entries(explicitMap)) {
       next = next.replaceAll(
         new RegExp(escapeRegExp(sourceBone), "gi"),
@@ -402,8 +432,14 @@ function replacePhysicsReferences(
     return next;
   }
 
-  // Index-based fallback for body type pairs without explicit maps.
-  if (targetInfo.physicsBones.length > 0) {
+  const canUseIndexedPhysicsMapping =
+    targetInfo.physicsBones.length > 0 &&
+    sourceInfo.gender === targetInfo.gender &&
+    sourceInfo.family === targetInfo.family &&
+    sourceInfo.topology === targetInfo.topology;
+
+  // Index-based fallback for same-family/topology pairs without explicit maps.
+  if (canUseIndexedPhysicsMapping) {
     const pairCount = Math.min(
       sourceInfo.physicsBones.length,
       targetInfo.physicsBones.length,
@@ -418,7 +454,7 @@ function replacePhysicsReferences(
       );
     }
   } else {
-    // Target has no physics — collapse all source physics bones to static fallbacks.
+    // No reliable target mapping exists — collapse source physics bones to static fallbacks.
     for (const sourceBone of sourceInfo.physicsBones) {
       const fallback = getStaticFallbackBone(sourceBone);
       next = next.replaceAll(
@@ -664,6 +700,22 @@ function createWarnings(
       sourceInfo.physicsSupport
         ? `Source body '${source}' includes physics-aware data that '${target}' does not. Physics bones in text configs were collapsed to static fallback bones where detected.`
         : `Target body '${target}' expects physics-aware data that '${source}' does not include. Native output was prepared for the target naming scheme, but custom physics presets may still be needed.`,
+    );
+  }
+
+  const explicitPhysicsMap = EXPLICIT_PHYSICS_BONE_MAPS[source]?.[target];
+  const canUseIndexedPhysicsMapping =
+    sourceInfo.gender === targetInfo.gender &&
+    sourceInfo.family === targetInfo.family &&
+    sourceInfo.topology === targetInfo.topology;
+  if (
+    sourceInfo.physicsSupport &&
+    targetInfo.physicsSupport &&
+    explicitPhysicsMap === undefined &&
+    !canUseIndexedPhysicsMapping
+  ) {
+    warnings.push(
+      `No direct physics-bone map exists for '${source}' → '${target}'. Native conversion collapsed unmatched source physics references to static fallback bones instead of forcing potentially incorrect target-chain remaps.`,
     );
   }
 
