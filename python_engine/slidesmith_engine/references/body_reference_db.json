@@ -1,78 +1,463 @@
 {
-  "schemaVersion": 1,
-  "description": "Body reference metadata for canonical mapping and per-body adapters.",
+  "schemaVersion": 2,
+  "description": "Body reference metadata for canonical topology maps and per-body adapter transfer data.",
   "bodies": {
     "cbbe": {
       "topology": "cbbe",
+      "topologyReference": "CBBE SE Curvy",
+      "canonicalVertexMap": "cbbe-female-canonical",
       "skeletonProfile": "xpmsse-compatible-female",
       "partitionProfile": "female-default",
-      "physicsBones": []
+      "physicsBones": [],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "CBBE Curvy",
+        "thin": "CBBE Slim",
+        "muscle": "Muscular",
+        "pregnancy": "Pregnant Belly",
+        "zapCleavage": "Zap Cleavage",
+        "zapBelly": "Zap Belly"
+      }
     },
     "3ba": {
       "topology": "cbbe",
+      "topologyReference": "3BA Body Amazing",
+      "canonicalVertexMap": "cbbe-female-canonical",
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
-      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "rightBreast": "NPC R Breast01",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "3BA Curvy",
+        "thin": "3BA Slim",
+        "muscle": "3BA Athletic",
+        "pregnancy": "3BA Pregnant",
+        "zapCleavage": "3BA Zap Cleavage",
+        "zapBelly": "3BA Zap Belly"
+      }
     },
     "himbo": {
       "topology": "male",
+      "topologyReference": "HIMBO RefBody",
+      "canonicalVertexMap": "male-himbo-canonical",
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
-      "physicsBones": ["NPC L Breast", "NPC R Breast"]
+      "physicsBones": ["NPC L Breast", "NPC R Breast"],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "HIMBO Bulk",
+        "thin": "HIMBO Lean",
+        "muscle": "HIMBO Muscular",
+        "pregnancy": "HIMBO Belly",
+        "zapCleavage": "HIMBO Chest Zap",
+        "zapBelly": "HIMBO Belly Zap"
+      }
     },
     "bodytalk": {
       "topology": "male",
+      "topologyReference": "BodyTalk V3",
+      "canonicalVertexMap": "male-bodytalk-canonical",
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
-      "physicsBones": ["NPC L Breast", "NPC R Breast"]
+      "physicsBones": ["NPC L Breast", "NPC R Breast"],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thigh",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "BodyTalk Bulk",
+        "thin": "BodyTalk Lean",
+        "muscle": "BodyTalk Muscular",
+        "pregnancy": "BodyTalk Belly",
+        "zapCleavage": "BodyTalk Chest Zap",
+        "zapBelly": "BodyTalk Belly Zap"
+      }
     },
     "tbd": {
       "topology": "cbbe",
+      "topologyReference": "TBD 3BBB",
+      "canonicalVertexMap": "cbbe-female-canonical",
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
-      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "rightBreast": "NPC R Breast01",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "TBD Curvy",
+        "thin": "TBD Slim",
+        "muscle": "TBD Athletic",
+        "pregnancy": "TBD Pregnant",
+        "zapCleavage": "TBD Zap Cleavage",
+        "zapBelly": "TBD Zap Belly"
+      }
     },
     "sos": {
       "topology": "male",
+      "topologyReference": "SOS Full",
+      "canonicalVertexMap": "male-sos-canonical",
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-physics",
-      "physicsBones": ["NPC GenitalsBase"]
+      "physicsBones": ["NPC GenitalsBase"],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "genitalsBase": "NPC GenitalsBase"
+      },
+      "morphEquivalents": {
+        "heavy": "SOS Bulk",
+        "thin": "SOS Lean",
+        "muscle": "SOS Muscular",
+        "pregnancy": "SOS Belly",
+        "zapCleavage": "SOS Chest Zap",
+        "zapBelly": "SOS Belly Zap"
+      }
     },
     "unp": {
       "topology": "unp",
+      "topologyReference": "UNP Blessed",
+      "canonicalVertexMap": "unp-female-canonical",
       "skeletonProfile": "xpmsse-compatible-female",
       "partitionProfile": "female-default",
-      "physicsBones": []
+      "physicsBones": [],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breast",
+        "thigh": "Thigh",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "UNP Curvy",
+        "thin": "UNP Slim",
+        "muscle": "UNP Athletic",
+        "pregnancy": "UNP Pregnant",
+        "zapCleavage": "UNP Zap Cleavage",
+        "zapBelly": "UNP Zap Belly"
+      }
     },
     "bhunp": {
       "topology": "unp",
+      "topologyReference": "BHUNP 3BBB",
+      "canonicalVertexMap": "unp-female-canonical",
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
-      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "rightBreast": "NPC R Breast01",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "BHUNP Curvy",
+        "thin": "BHUNP Slim",
+        "muscle": "BHUNP Athletic",
+        "pregnancy": "BHUNP Pregnant",
+        "zapCleavage": "BHUNP Zap Cleavage",
+        "zapBelly": "BHUNP Zap Belly"
+      }
     },
     "uunp": {
       "topology": "unp",
+      "topologyReference": "UUNP Special",
+      "canonicalVertexMap": "unp-female-canonical",
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
-      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "rightBreast": "NPC R Breast01",
+        "belly": "NPC Belly",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt"
+      },
+      "morphEquivalents": {
+        "heavy": "UUNP Curvy",
+        "thin": "UUNP Slim",
+        "muscle": "UUNP Athletic",
+        "pregnancy": "UUNP Pregnant",
+        "zapCleavage": "UUNP Zap Cleavage",
+        "zapBelly": "UUNP Zap Belly"
+      }
     },
     "7base": {
       "topology": "unp",
+      "topologyReference": "7Base Bombshell",
+      "canonicalVertexMap": "unp-female-canonical",
       "skeletonProfile": "xpmsse-compatible-female",
       "partitionProfile": "female-default",
-      "physicsBones": []
+      "physicsBones": [],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "7Base Curvy",
+        "thin": "7Base Slim",
+        "muscle": "7Base Athletic",
+        "pregnancy": "7Base Pregnant",
+        "zapCleavage": "7Base Zap Cleavage",
+        "zapBelly": "7Base Zap Belly"
+      }
     },
     "sam": {
       "topology": "male",
+      "topologyReference": "SAM Light",
+      "canonicalVertexMap": "male-sam-canonical",
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
-      "physicsBones": []
+      "physicsBones": [],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "SAM Bulk",
+        "thin": "SAM Lean",
+        "muscle": "SAM Athletic",
+        "pregnancy": "SAM Belly",
+        "zapCleavage": "SAM Chest Zap",
+        "zapBelly": "SAM Belly Zap"
+      }
     },
     "vanilla": {
       "topology": "vanilla",
+      "topologyReference": "Vanilla Skyrim",
+      "canonicalVertexMap": "vanilla-canonical",
       "skeletonProfile": "vanilla",
       "partitionProfile": "vanilla",
-      "physicsBones": []
+      "physicsBones": [],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Chest",
+        "thigh": "Thigh",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly"
+      },
+      "morphEquivalents": {
+        "heavy": "Vanilla Heavy",
+        "thin": "Vanilla Light",
+        "muscle": "Vanilla Athletic",
+        "pregnancy": "Vanilla Belly",
+        "zapCleavage": "Vanilla Chest Zap",
+        "zapBelly": "Vanilla Belly Zap"
+      }
     }
   },
   "adapters": [
@@ -90,6 +475,16 @@
       "source": "cbbe",
       "target": "3ba",
       "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "unp",
+      "target": "bhunp",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "bodytalk",
+      "target": "sos",
+      "profile": "male-physics-upgrade"
     }
   ]
 }

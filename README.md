@@ -64,6 +64,18 @@ The Electron app orchestrates conversion jobs, while geometry/math stages are de
 - Electron main: IPC/job lifecycle + report writing + process orchestration
 - Python core: staged mesh pipeline and quality gates
 
+### Reference database
+
+`python_engine/slidesmith_engine/references/body_reference_db.json` is now the canonical source for per-body transfer metadata used by the Python core stage checks.  
+Each body entry must define:
+
+- `topology`, `topologyReference`, and `canonicalVertexMap`
+- `sliderMappings` (canonical slider key -> body slider name)
+- `boneMap` (canonical bone chain -> body bone name)
+- `morphEquivalents` (canonical morph key -> body-specific morph/zap name)
+
+The Python engine actively consumes these mappings for reference-body validation, weight-transfer readiness, morph/zap transfer readiness, TRI gating, and physics-bone coverage checks.
+
 ### Install Python dependencies (recommended)
 
 ```bash
