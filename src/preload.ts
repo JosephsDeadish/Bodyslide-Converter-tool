@@ -1,13 +1,13 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { BodyTypeInfo } from "./bodyTypeInfo.js";
-import type { BodyType, ConversionPlan, DetectionResult } from "./types.js";
+import type { BodyType, ConversionResult, DetectionResult } from "./types.js";
 
 export type BodyTypeOption = { value: BodyType; label: string };
 export type ScanResult = {
   detection: DetectionResult;
-  plan: ConversionPlan;
+  result: ConversionResult;
   reportPath: string;
-  planPath: string;
+  summaryPath: string;
 };
 
 contextBridge.exposeInMainWorld("bodyslideAPI", {

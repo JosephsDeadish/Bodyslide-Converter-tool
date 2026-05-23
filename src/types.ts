@@ -49,3 +49,27 @@ export type ConversionPlan = {
   filesAnalyzed: number;
   generatedAt: string;
 };
+
+export type ConvertedFile = {
+  sourcePath: string;
+  outputPath: string;
+  kind: "mesh" | "text";
+  action: "copied" | "rewritten";
+};
+
+export type SkippedFile = {
+  sourcePath: string;
+  outputPath: string;
+  reason: string;
+};
+
+export type ConversionResult = {
+  sourceBodyType: BodyType;
+  targetBodyType: BodyType;
+  detectionConfidence: number;
+  convertedFiles: ConvertedFile[];
+  skippedFiles: SkippedFile[];
+  warnings: string[];
+  filesAnalyzed: number;
+  generatedAt: string;
+};

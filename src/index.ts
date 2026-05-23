@@ -3,8 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { Command } from "commander";
 import { z } from "zod";
+import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
-import { createConversionPlan } from "./planner.js";
 import { scanModFiles } from "./scanner.js";
 import { BODY_TYPES } from "./types.js";
 
@@ -15,7 +15,7 @@ const program = new Command();
 program
   .name("bodyslide-converter")
   .description(
-    "Detect source body type from mod files and generate a Bodyslide conversion plan.",
+    "Detect source body type and run a native BodySlide asset conversion.",
   )
   .requiredOption("-i, --input <path>", "Path to clothing/armor mod folder")
   .requiredOption("-t, --target <bodyType>", "Desired target body type")
@@ -31,20 +31,26 @@ program
 
       const files = await scanModFiles(input);
       const detection = detectBodyType(files);
-      const plan = createConversionPlan(detection, targetBodyType, files);
+      const result = await convertMod(
+        input,
+        output,
+        files,
+        detection,
+        targetBodyType,
+      );
 
       await mkdir(output, { recursive: true });
 
       const reportPath = join(output, "conversion-report.json");
-      const planPath = join(output, "conversion-plan.txt");
+      const summaryPath = join(output, "conversion-summary.txt");
 
       await writeFile(
         reportPath,
-        `${JSON.stringify({ detection, plan }, null, 2)}\n`,
+        `${JSON.stringify({ detection, result }, null, 2)}\n`,
         "utf8",
       );
       await writeFile(
-        planPath,
+        summaryPath,
         [
           `Source detected: ${detection.bodyType} (confidence ${detection.confidence})`,
           `Top candidates: ${
@@ -59,21 +65,25 @@ program
           }`,
           `Target body type: ${targetBodyType}`,
           `Files analyzed: ${files.length}`,
+          `Converted assets: ${result.convertedFiles.length}`,
+          `Copied without body-specific changes: ${result.skippedFiles.length}`,
           "",
-          "Planned operations:",
-          ...plan.operations.map(
-            (operation, index) =>
-              `${index + 1}. ${operation.name} - ${operation.description}`,
+          "Converted files:",
+          ...result.convertedFiles.map(
+            (file, index) =>
+              `${index + 1}. [${file.kind}/${file.action}] ${file.sourcePath} -> ${file.outputPath}`,
           ),
           "",
           "Warnings:",
-          ...plan.warnings.map((warning, index) => `${index + 1}. ${warning}`),
+          ...result.warnings.map(
+            (warning, index) => `${index + 1}. ${warning}`,
+          ),
         ].join("\n"),
         "utf8",
       );
 
       process.stdout.write(`Generated ${reportPath}\n`);
-      process.stdout.write(`Generated ${planPath}\n`);
+      process.stdout.write(`Generated ${summaryPath}\n`);
     },
   );
 

@@ -54,14 +54,14 @@
         <div class="welcome-card">
           <div class="welcome-icon">⚙</div>
           <h1>Bodyslide Converter</h1>
-          <p>Auto-detect your mod's body type and generate a complete BodySlide conversion plan for any target body.</p>
+          <p>Auto-detect your mod's body type and run a native BodySlide asset conversion for supported body paths.</p>
           <ul class="feature-list">
             <li>✓ Detects CBBE, 3BA, HIMBO, TBD, SOS, UNP, BHUNP, UUNP, 7base, SAM, Vanilla</li>
-            <li>✓ Physics-aware conversion steps (CBPC / HDT-SMP)</li>
-            <li>✓ Cross-gender conversion warnings</li>
-            <li>✓ Writes <code>conversion-plan.txt</code> and <code>conversion-report.json</code></li>
+            <li>✓ Writes converted assets into the selected output folder</li>
+            <li>✓ Rewrites BodySlide text assets for supported native conversions</li>
+            <li>✓ Writes <code>conversion-summary.txt</code> and <code>conversion-report.json</code></li>
           </ul>
-          <p class="hint">Select a mod folder and target body type to get started.</p>
+          <p class="hint">Select a mod folder and target body type to start converting.</p>
         </div>
       </div>
 
@@ -69,7 +69,7 @@
       <div id="screenLoading" class="screen">
         <div class="loading-wrap">
           <div class="spinner"></div>
-          <p>Scanning mod files…</p>
+          <p>Converting mod assets…</p>
         </div>
       </div>
 
@@ -86,7 +86,7 @@
             <div id="detectionBody"></div>
           </div>
           <div class="card" id="cardPlan">
-            <h3>Conversion Plan</h3>
+            <h3>Converted Files</h3>
             <div id="planBody"></div>
           </div>
         </div>
@@ -106,7 +106,7 @@
       <div id="screenError" class="screen">
         <div class="error-card">
           <div class="error-icon">✕</div>
-          <h2>Scan Failed</h2>
+          <h2>Conversion Failed</h2>
           <p id="errorMsg"></p>
           <button type="button" id="errorBackBtn" class="btn btn-secondary">← Back</button>
         </div>

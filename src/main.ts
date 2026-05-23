@@ -2,8 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
+import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
-import { createConversionPlan } from "./planner.js";
 import { scanModFiles } from "./scanner.js";
 import type { BodyType } from "./types.js";
 import { BODY_TYPES } from "./types.js";
@@ -83,25 +83,25 @@ ipcMain.handle(
 
     const files = await scanModFiles(input);
     const detection = detectBodyType(files);
-    const plan = createConversionPlan(detection, target, files);
+    const result = await convertMod(input, output, files, detection, target);
 
     await mkdir(output, { recursive: true });
 
     const reportPath = join(output, "conversion-report.json");
-    const planPath = join(output, "conversion-plan.txt");
+    const summaryPath = join(output, "conversion-summary.txt");
 
     await writeFile(
       reportPath,
-      `${JSON.stringify({ detection, plan }, null, 2)}\n`,
+      `${JSON.stringify({ detection, result }, null, 2)}\n`,
       "utf8",
     );
 
     await writeFile(
-      planPath,
+      summaryPath,
       [
-        `Bodyslide Converter — Conversion Plan`,
-        `Generated: ${plan.generatedAt}`,
-        `Files analyzed: ${plan.filesAnalyzed}`,
+        `Bodyslide Converter — Conversion Summary`,
+        `Generated: ${result.generatedAt}`,
+        `Files analyzed: ${result.filesAnalyzed}`,
         ``,
         `SOURCE: ${detection.bodyType} (confidence ${Math.round(detection.confidence * 100)}%)`,
         `TARGET: ${target}`,
@@ -110,19 +110,20 @@ ipcMain.handle(
           ? `Top candidates: ${detection.rankedCandidates.map((c) => `${c.bodyType} ${Math.round(c.share * 100)}%`).join(" | ")}`
           : `No strong candidates detected.`,
         ``,
-        `PLANNED OPERATIONS`,
-        `==================`,
-        ...plan.operations.map(
-          (op, i) => `${i + 1}. ${op.name}\n   ${op.description}`,
+        `CONVERTED FILES`,
+        `===============`,
+        ...result.convertedFiles.map(
+          (file, i) =>
+            `${i + 1}. [${file.kind}/${file.action}] ${file.sourcePath}\n   -> ${file.outputPath}`,
         ),
         ``,
         `WARNINGS`,
         `========`,
-        ...plan.warnings.map((w, i) => `${i + 1}. ${w}`),
+        ...result.warnings.map((w, i) => `${i + 1}. ${w}`),
       ].join("\n"),
       "utf8",
     );
 
-    return { detection, plan, reportPath, planPath };
+    return { detection, result, reportPath, summaryPath };
   },
 );

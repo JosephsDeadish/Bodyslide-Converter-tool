@@ -1,7 +1,7 @@
 {
   "name": "bodyslide-converter-tool",
   "version": "1.0.0",
-  "description": "Desktop app to detect Skyrim mod body type and generate BodySlide conversion plans.",
+  "description": "Desktop app to detect Skyrim mod body type and run native BodySlide asset conversions.",
   "type": "module",
   "main": "dist-main/main.js",
   "scripts": {

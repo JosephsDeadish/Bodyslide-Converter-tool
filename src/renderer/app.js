@@ -123,10 +123,10 @@ errorBackBtn.addEventListener("click", () => {
 
 // ── Render helpers ──────────────────────────────────────────────
 function renderResults(result) {
-  const { detection, plan, reportPath } = result;
+  const { detection, result: conversion, reportPath } = result;
 
   // Result badge
-  resultBadge.textContent = `${detection.bodyType.toUpperCase()} → ${plan.targetBodyType.toUpperCase()}`;
+  resultBadge.textContent = `${detection.bodyType.toUpperCase()} → ${conversion.targetBodyType.toUpperCase()}`;
   resultBadge.className = "badge badge-success";
 
   // Detection card
@@ -149,24 +149,33 @@ function renderResults(result) {
     <div class="conf-label">Confidence: ${confPct}%</div>
     <div class="conf-bar"><div class="conf-fill" style="width:${confPct}%"></div></div>
     ${candidatesHtml}
-    <div style="margin-top:10px;font-size:12px;color:#8888b8">Files scanned: ${plan.filesAnalyzed}</div>
+    <div style="margin-top:10px;font-size:12px;color:#8888b8">Files scanned: ${conversion.filesAnalyzed}</div>
   `;
 
-  // Plan card
+  // Conversion card
   let opsHtml = '<ul class="op-list">';
-  for (const op of plan.operations) {
+  for (const file of conversion.convertedFiles) {
     opsHtml += `
       <li class="op-item">
-        <div class="op-name">${op.name}</div>
-        <div class="op-desc">${op.description}</div>
+        <div class="op-name">${file.outputPath}</div>
+        <div class="op-desc">${file.kind} • ${file.action} • source: ${file.sourcePath}</div>
+      </li>`;
+  }
+  if (conversion.convertedFiles.length === 0) {
+    opsHtml += `
+      <li class="op-item">
+        <div class="op-name">No files converted</div>
+        <div class="op-desc">The selected mod did not contain files supported by the current native converter.</div>
       </li>`;
   }
   opsHtml += "</ul>";
   planBody.innerHTML = opsHtml;
 
   // Warnings
-  if (plan.warnings && plan.warnings.length > 0) {
-    warningsList.innerHTML = plan.warnings.map((w) => `<li>${w}</li>`).join("");
+  if (conversion.warnings && conversion.warnings.length > 0) {
+    warningsList.innerHTML = conversion.warnings
+      .map((w) => `<li>${w}</li>`)
+      .join("");
     warningsBlock.classList.remove("hidden");
   } else {
     warningsBlock.classList.add("hidden");

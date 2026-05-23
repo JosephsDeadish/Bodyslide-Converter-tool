@@ -1,6 +1,6 @@
 # Bodyslide-Converter-tool
 
-Modern TypeScript CLI for scanning armor/clothing mod folders, auto-detecting likely source body type, and generating a conversion plan for a target body type.
+Modern TypeScript CLI for scanning armor/clothing mod folders, auto-detecting likely source body type, and running a native conversion pass for supported target body types.
 
 ## Supported target body types
 
@@ -46,10 +46,12 @@ npm run build:exe:linux
 The command generates:
 
 - `conversion-report.json` with detection scores and conversion metadata
-- `conversion-plan.txt` with ordered conversion steps, ranked body-type candidates, and warnings
+- `conversion-summary.txt` with converted files, ranked body-type candidates, and warnings
+- converted mod assets written into the selected output folder
 
 ## Notes
 
 - Detection is heuristic-based and inspects filenames plus file previews.
-- Generated plans are intended to speed up conversion workflows and should still be reviewed in Outfit Studio/NifSkope.
+- Native conversion currently supports same-body output plus asset-safe paths for CBBE ↔ 3BA and UNP ↔ UUNP.
+- Generated outputs should still be reviewed in Outfit Studio/NifSkope.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.
