@@ -217,7 +217,12 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "NPC R Butt",
       "NPC Belly",
     ],
-    adaptationFocus: ["slider compatibility", "waist", "hip curve", "TBBP weighting"],
+    adaptationFocus: [
+      "slider compatibility",
+      "waist",
+      "hip curve",
+      "TBBP weighting",
+    ],
     conversionNotes:
       "Shares topology with UNP but optimised for BodySlide workflows. Project onto the UUNP BodySlide reference body and rebuild OSP slider sets. UUNP Special ships with TBBP physics support — if the source mod includes physics configs, verify they match the UUNP bone naming.",
   },

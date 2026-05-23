@@ -1498,7 +1498,10 @@ describe("convertMod", () => {
     const outputDir = await makeTempDir();
 
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
-    await writeFile(join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"), "caliente");
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "caliente",
+    );
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
@@ -1531,7 +1534,10 @@ describe("convertMod", () => {
     const outputDir = await makeTempDir();
 
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
-    await writeFile(join(inputDir, "meshes", "armor", "himbo_outfit_0.nif"), "himbo");
+    await writeFile(
+      join(inputDir, "meshes", "armor", "himbo_outfit_0.nif"),
+      "himbo",
+    );
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
