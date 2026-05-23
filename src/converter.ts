@@ -105,12 +105,24 @@ function normalizeToMo2DataPath(
     ) {
       return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
     }
+    if (
+      /(^|\/)calientetools\/bodyslide\/slidersets\//.test(lower) ||
+      /(^|\/)bodyslide\/slidersets\//.test(lower) ||
+      /(^|\/)slidersets\//.test(lower)
+    ) {
+      return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
+    }
+    if (
+      /(^|\/)calientetools\/bodyslide\/slidergroups\//.test(lower) ||
+      /(^|\/)bodyslide\/slidergroups\//.test(lower) ||
+      /(^|\/)slidergroups\//.test(lower)
+    ) {
+      return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
+    }
     const xmlLooksLikeBodySlideGroup =
       BODYSLIDE_SLIDERGROUP_XML_MARKERS.some((marker) =>
         preview.includes(marker),
-      ) ||
-      /(^|\/)bodyslide\/(slidersets|slidergroups)\//.test(lower) ||
-      /(^|\/)(slidersets|slidergroups)\//.test(lower);
+      );
     if (xmlLooksLikeBodySlideGroup) {
       return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
     }
@@ -194,12 +206,20 @@ const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
   "3ba": [
     "cbbe 3bbb amazing body",
     "cbbe 3bbb amazing",
+    "cbbe physics body",
+    "cbbe physics",
     "3bbb amazing body",
     "3bbb amazing",
     "cbbe 3bbb",
     "cbbe 3ba",
+    "cbbe smp body",
+    "cbbe smp",
     "cbbe_3ba",
     "cbbe-3ba",
+    "cbbe_physics",
+    "cbbe-physics",
+    "cbbe_smp",
+    "cbbe-smp",
     "3bbbbody",
     "3bbb_body",
     "3ba body",

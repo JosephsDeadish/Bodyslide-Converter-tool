@@ -410,6 +410,47 @@ describe("convertMod", () => {
     expect(rewritten).not.toContain("calientebody");
   });
 
+  it("rewrites common CBBE SMP and CBBE Physics 3BA aliases", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_smp_corset_0.nif"),
+      "cbbe smp body",
+    );
+    await writeFile(
+      join(inputDir, "cbbe_physics_profile.txt"),
+      "CBBE Physics body\ncbbe smp",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("3ba");
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.endsWith("BHUNP_corset_0.nif"),
+      ),
+    ).toBe(true);
+
+    const rewritten = await readFile(
+      join(outputDir, "BHUNP_profile.txt"),
+      "utf8",
+    );
+    expect(rewritten).toContain("BHUNP");
+    expect(rewritten).not.toContain("CBBE Physics");
+    expect(rewritten).not.toContain("cbbe smp");
+  });
+
   it("supports BodyTalk as a male-family target", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -727,6 +768,53 @@ describe("convertMod", () => {
       result.convertedFiles.some(
         (file) =>
           file.outputPath.includes("SliderGroups") &&
+          file.action !== "synthesized",
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps XML already under SliderSets paths in SliderSets even without root markers", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
+      { recursive: true },
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "CBBE_PathOnly.xml",
+      ),
+      '<BodySlideProject note="cbbe body"/>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_PathOnly.xml",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderGroups/3BA_PathOnly.xml" &&
           file.action !== "synthesized",
       ),
     ).toBe(false);
