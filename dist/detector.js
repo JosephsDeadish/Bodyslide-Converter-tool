@@ -163,6 +163,20 @@ const SIGNALS = {
         [/meshes[/\\]actors[/\\]character[/\\]character assets[/\\]malebody/, 2.2],
     ],
 };
+const BODY_KEYWORDS = {
+    cbbe: ["cbbe", "caliente"],
+    "3ba": ["3ba", "3bbb", "amazing body"],
+    himbo: ["himbo", "highly improved male body", "highpolymalebody"],
+    bodytalk: ["bodytalk", "bt3"],
+    tbd: ["tbd", "touched by dibella"],
+    sos: ["sos", "schlongs of skyrim"],
+    unp: ["unp", "unpb", "dimonized"],
+    bhunp: ["bhunp", "bonehunger unp"],
+    uunp: ["uunp", "unified unp"],
+    "7base": ["7base", "sevenbase"],
+    sam: ["sam light", "shape atlas for men", "samlight"],
+    vanilla: ["vanilla", "default body", "base game body"],
+};
 function getSignalParts(signal) {
     if (signal instanceof RegExp) {
         return { pattern: signal, weight: 1 };
@@ -172,17 +186,41 @@ function getSignalParts(signal) {
 function scoreGenderHint(file, bodyType) {
     const info = BODY_TYPE_INFO[bodyType];
     const haystack = `${file.relativePath.toLowerCase()}\n${file.basename}\n${file.preview}`;
+    const hint = detectGenderHint(haystack);
     if (info.gender === "female") {
-        return /(femalebody|femalehands|femalefeet|1stpersonfemale)/.test(haystack)
-            ? 0.35
-            : 0;
+        if (hint === "female")
+            return 0.35;
+        if (hint === "male")
+            return -0.3;
+        return 0;
     }
     if (info.gender === "male") {
-        return /(malebody|malehands|malefeet|1stpersonmale)/.test(haystack)
-            ? 0.35
-            : 0;
+        if (hint === "male")
+            return 0.35;
+        if (hint === "female")
+            return -0.3;
+        return 0;
     }
     return 0;
+}
+function detectGenderHint(haystack) {
+    const hasFemale = /(femalebody|femalehands|femalefeet|femalebody|1stpersonfemale)/.test(haystack);
+    const hasMale = /(malebody|malehands|malefeet|malebody|1stpersonmale)/.test(haystack);
+    if (hasFemale && !hasMale)
+        return "female";
+    if (hasMale && !hasFemale)
+        return "male";
+    return "neutral";
+}
+function scoreKeywordHit(haystack, bodyType) {
+    const keywords = BODY_KEYWORDS[bodyType];
+    let matches = 0;
+    for (const keyword of keywords) {
+        if (haystack.includes(keyword)) {
+            matches += 1;
+        }
+    }
+    return Math.min(matches, 2) * 0.25;
 }
 function scoreFileForType(file, patterns, bodyType) {
     const haystack = `${file.relativePath.toLowerCase()}\n${file.basename}\n${file.preview}`;
@@ -196,6 +234,7 @@ function scoreFileForType(file, patterns, bodyType) {
     if ([".tri", ".osp", ".xml"].includes(file.extension)) {
         score += 0.2;
     }
+    score += scoreKeywordHit(haystack, bodyType);
     score += scoreGenderHint(file, bodyType);
     return score;
 }
@@ -205,12 +244,17 @@ export function detectBodyType(files) {
         return acc;
     }, {});
     const matchedSignals = new Set();
+    const evidenceCount = BODY_TYPES.reduce((acc, bodyType) => {
+        acc[bodyType] = 0;
+        return acc;
+    }, {});
     for (const file of files) {
         for (const bodyType of BODY_TYPES) {
             const score = scoreFileForType(file, SIGNALS[bodyType], bodyType);
             scores[bodyType] += score;
             if (score > 0) {
                 matchedSignals.add(`${bodyType}:${file.relativePath}`);
+                evidenceCount[bodyType] += 1;
             }
         }
     }
@@ -235,6 +279,7 @@ export function detectBodyType(files) {
         };
     }
     const bestScore = scores[bestType];
+    const secondBest = scores[sorted[1] ?? bestType] ?? 0;
     if (bestScore <= 0) {
         return {
             bodyType: "unknown",
@@ -244,9 +289,14 @@ export function detectBodyType(files) {
             matchedSignals: [],
         };
     }
+    const totalSafe = Math.max(total, 1);
+    const scoreShare = bestScore / totalSafe;
+    const margin = Math.max(bestScore - secondBest, 0) / Math.max(bestScore, 1);
+    const evidenceQuality = Math.min(evidenceCount[bestType] / 4, 1);
+    const confidence = Number(Math.max(0, Math.min(1, scoreShare * 0.4 + margin * 0.4 + evidenceQuality * 0.2)).toFixed(2));
     return {
         bodyType: bestType,
-        confidence: Number((bestScore / Math.max(total, 1)).toFixed(2)),
+        confidence,
         scores,
         rankedCandidates,
         matchedSignals: [...matchedSignals].slice(0, 30),

@@ -336,7 +336,10 @@ export function detectBodyType(files: ScannedFile[]): DetectionResult {
   const margin = Math.max(bestScore - secondBest, 0) / Math.max(bestScore, 1);
   const evidenceQuality = Math.min(evidenceCount[bestType] / 4, 1);
   const confidence = Number(
-    Math.max(0, Math.min(1, scoreShare * 0.4 + margin * 0.4 + evidenceQuality * 0.2)).toFixed(2),
+    Math.max(
+      0,
+      Math.min(1, scoreShare * 0.4 + margin * 0.4 + evidenceQuality * 0.2),
+    ).toFixed(2),
   );
 
   return {

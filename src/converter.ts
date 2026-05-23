@@ -195,7 +195,10 @@ function replacePhysicsReferences(
   const targetInfo = BODY_TYPE_INFO[target];
   let next = value;
 
-  if (sourceInfo.physicsBones.length > 0 && targetInfo.physicsBones.length > 0) {
+  if (
+    sourceInfo.physicsBones.length > 0 &&
+    targetInfo.physicsBones.length > 0
+  ) {
     const pairCount = Math.min(
       sourceInfo.physicsBones.length,
       targetInfo.physicsBones.length,
@@ -211,10 +214,16 @@ function replacePhysicsReferences(
     }
   }
 
-  if (sourceInfo.physicsBones.length > 0 && targetInfo.physicsBones.length === 0) {
+  if (
+    sourceInfo.physicsBones.length > 0 &&
+    targetInfo.physicsBones.length === 0
+  ) {
     for (const sourceBone of sourceInfo.physicsBones) {
       const fallback = getStaticFallbackBone(sourceBone);
-      next = next.replaceAll(new RegExp(escapeRegExp(sourceBone), "gi"), fallback);
+      next = next.replaceAll(
+        new RegExp(escapeRegExp(sourceBone), "gi"),
+        fallback,
+      );
     }
   }
 

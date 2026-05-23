@@ -68,7 +68,7 @@ function targetSpecificOperations(targetType) {
         ops.push({
             id: "male-proportions",
             name: "Tune male-specific proportions",
-            description: "Rebalance shoulder, chest, and arm morph channels for HIMBO shape ranges. Male body proportions differ significantly from female bodies; manual vertex touch-up in Outfit Studio is recommended.",
+            description: "Rebalance shoulder, chest, and arm morph channels for HIMBO shape ranges. Male body proportions differ significantly from female bodies, so run in-game fit checks on broad shoulder and chest extremes.",
         });
     }
     if (targetType === "bodytalk") {
@@ -161,7 +161,7 @@ export function createConversionPlan(detection, targetType, files) {
     if (crossGender) {
         const fromGender = isFemale(sourceType) ? "female" : "male";
         const toGender = isFemale(targetType) ? "female" : "male";
-        warnings.push(`Cross-gender conversion detected (${fromGender} → ${toGender}). Body proportions differ significantly; extensive manual mesh editing in Outfit Studio is expected. Clipping issues are very likely without per-vertex adjustment.`);
+        warnings.push(`Cross-gender conversion detected (${fromGender} → ${toGender}). Body proportions differ significantly; run extended in-game fit checks because clipping risk is higher than same-gender conversions.`);
     }
     // Physics collapse warning (source has physics, target does not)
     if (sourceType !== "unknown") {
@@ -171,7 +171,7 @@ export function createConversionPlan(detection, targetType, files) {
             warnings.push(`Source body '${sourceType}' uses physics chain bones that do not exist in '${targetType}'. Collapse physics-chain bone weights back to the nearest static bone (e.g. NPC Spine2 for breast, NPC Pelvis for butt) before finalizing.`);
         }
         if (!srcInfo?.physicsSupport && tgtInfo.physicsSupport) {
-            warnings.push(`Target body '${targetType}' requires physics chain bones that are absent in the source. After projection, manually assign weights to the physics bones listed in the plan operations above.`);
+            warnings.push(`Target body '${targetType}' requires physics chain bones that are absent in the source. Verify that generated configs include the required target physics bones listed in the plan operations.`);
         }
     }
     // Topology note: 3BA shares CBBE topology
@@ -179,7 +179,7 @@ export function createConversionPlan(detection, targetType, files) {
         (sourceType === "3ba" && targetType === "cbbe")) {
         warnings.push("3BA shares the same base mesh topology as CBBE. Mesh re-projection is not required; only physics bone weighting and CBPC config updates are needed.");
     }
-    warnings.push("All automated outputs should be reviewed and tested in Outfit Studio and in-game before release.");
+    warnings.push("Automated conversion outputs should always be smoke-tested in-game before release; external mesh editors are mainly needed for high-risk topology or cross-gender edge cases.");
     return {
         sourceType,
         targetBodyType: targetType,
