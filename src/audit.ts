@@ -377,7 +377,9 @@ function buildPhysicsConfigCheck(
     .map((file) => `${file.relativePath}\n${file.preview}`)
     .join("\n");
   const hits = findMatches(configHaystack, targetInfo.physicsBones);
-  const missingBones = targetInfo.physicsBones.filter((bone) => !hits.includes(bone));
+  const missingBones = targetInfo.physicsBones.filter(
+    (bone) => !hits.includes(bone),
+  );
   const status =
     configFiles.length > 0 && missingBones.length === 0 ? "pass" : "attention";
 
@@ -386,20 +388,22 @@ function buildPhysicsConfigCheck(
     "Verify CBPC / HDT-SMP physics config",
     status,
     configFiles.length > 0
-        ? missingBones.length === 0
-          ? `Detected ${configFiles.length} converted physics config file(s) with full target-bone coverage (${hits.length}/${targetInfo.physicsBones.length}).`
-          : `Detected ${configFiles.length} converted physics config file(s), but only ${hits.length}/${targetInfo.physicsBones.length} required target bone marker(s) were found.`
-        : `No converted physics config file was found for ${targetType.toUpperCase()}.`,
+      ? missingBones.length === 0
+        ? `Detected ${configFiles.length} converted physics config file(s) with full target-bone coverage (${hits.length}/${targetInfo.physicsBones.length}).`
+        : `Detected ${configFiles.length} converted physics config file(s), but only ${hits.length}/${targetInfo.physicsBones.length} required target bone marker(s) were found.`
+      : `No converted physics config file was found for ${targetType.toUpperCase()}.`,
     configFiles.length > 0
-        ? [
+      ? [
           `Target physics bones referenced in configs: ${hits.length}/${targetInfo.physicsBones.length}.`,
           ...(missingBones.length > 0
-            ? [`Missing target bone markers in config output: ${missingBones.join(", ")}.`]
+            ? [
+                `Missing target bone markers in config output: ${missingBones.join(", ")}.`,
+              ]
             : []),
         ]
-        : [
-            "If the outfit depends on local CBPC/HDT-SMP rules, generate or verify the corresponding config before release.",
-          ],
+      : [
+          "If the outfit depends on local CBPC/HDT-SMP rules, generate or verify the corresponding config before release.",
+        ],
     collectPreviewPaths(configFiles.slice(0, 6)),
   );
 }

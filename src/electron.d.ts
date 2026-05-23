@@ -35,6 +35,10 @@ declare module "electron" {
     ): Promise<OpenDialogReturnValue>;
   };
 
+  export const shell: {
+    openExternal(url: string): Promise<void>;
+  };
+
   export const ipcMain: {
     handle<TArgs extends unknown[], TResult>(
       channel: string,
