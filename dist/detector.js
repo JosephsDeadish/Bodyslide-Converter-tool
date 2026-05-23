@@ -177,6 +177,25 @@ const BODY_KEYWORDS = {
     sam: ["sam light", "shape atlas for men", "samlight"],
     vanilla: ["vanilla", "default body", "base game body"],
 };
+const FALSE_POSITIVE_PENALTIES = {
+    cbbe: [
+        [/\b3ba\b|\b3bbb\b/, 0.9],
+        [/\btbd\b|touched by dibella/, 0.8],
+        [/\bbhunp\b|\buunp\b|\b7base\b/, 0.7],
+        [/\bhimbo\b|\bbodytalk\b|\bsamlight\b|shape atlas for men/, 1.2],
+    ],
+    "3ba": [[/\bbhunp\b|\buunp\b|\b7base\b/, 0.9]],
+    himbo: [[/\bbodytalk\b|bt3\b|schlongs of skyrim/, 0.6]],
+    bodytalk: [[/\bhimbo\b|highpolymalebody/, 0.5]],
+    tbd: [[/\bcbbe\b|caliente/, 0.35]],
+    sos: [[/\bhimbo\b|bodytalk/, 0.45]],
+    unp: [[/\bbhunp\b|\buunp\b|\b7base\b/, 0.85]],
+    bhunp: [[/\buunp\b|\b7base\b/, 0.35]],
+    uunp: [[/\bbhunp\b|\b7base\b/, 0.35]],
+    "7base": [[/\bbhunp\b|\buunp\b/, 0.35]],
+    sam: [[/\bhimbo\b|\bbodytalk\b/, 0.25]],
+    vanilla: [],
+};
 function getSignalParts(signal) {
     if (signal instanceof RegExp) {
         return { pattern: signal, weight: 1 };
@@ -222,6 +241,38 @@ function scoreKeywordHit(haystack, bodyType) {
     }
     return Math.min(matches, 2) * 0.25;
 }
+function scoreStructureHint(file, bodyType) {
+    const path = file.relativePath.toLowerCase().replace(/\\/g, "/");
+    let bonus = 0;
+    if (path.includes("calientetools/bodyslide/slidersets/") ||
+        path.includes("calientetools/bodyslide/shapedata/") ||
+        path.includes("calientetools/bodyslide/slidergroups/")) {
+        bonus += 0.35;
+    }
+    const keywordInPath = BODY_KEYWORDS[bodyType].some((keyword) => path.includes(keyword));
+    if (keywordInPath && path.includes("bodyslide/")) {
+        bonus += 0.4;
+    }
+    if (BODY_TYPE_INFO[bodyType].gender === "female" &&
+        /meshes\/actors\/character\/character assets\/female/.test(path)) {
+        bonus += 0.25;
+    }
+    if (BODY_TYPE_INFO[bodyType].gender === "male" &&
+        /meshes\/actors\/character\/character assets\/male/.test(path)) {
+        bonus += 0.25;
+    }
+    return bonus;
+}
+function scoreFalsePositivePenalty(haystack, bodyType) {
+    const penalties = FALSE_POSITIVE_PENALTIES[bodyType];
+    let penalty = 0;
+    for (const [pattern, value] of penalties) {
+        if (pattern.test(haystack)) {
+            penalty += value;
+        }
+    }
+    return penalty;
+}
 function getEvidenceKind(file) {
     const path = file.relativePath.toLowerCase();
     if (file.extension === ".nif" || file.extension === ".tri") {
@@ -250,7 +301,9 @@ function scoreFileForType(file, patterns, bodyType) {
     }
     score += scoreKeywordHit(haystack, bodyType);
     score += scoreGenderHint(file, bodyType);
-    return score;
+    score += scoreStructureHint(file, bodyType);
+    score -= scoreFalsePositivePenalty(haystack, bodyType);
+    return Math.max(score, 0);
 }
 export function detectBodyType(files) {
     const scores = BODY_TYPES.reduce((acc, bodyType) => {
