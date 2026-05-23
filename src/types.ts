@@ -55,6 +55,53 @@ export type ConversionAudit = {
   checks: ConversionAuditCheck[];
 };
 
+export type EngineStageId =
+  | "reference-body"
+  | "surface-reprojection"
+  | "weight-transfer"
+  | "mesh-cleanup"
+  | "physics-preservation"
+  | "morph-transfer"
+  | "tri-generation"
+  | "quality-gates";
+
+export type EngineStageStatus = "pass" | "attention";
+
+export type EngineStageReport = {
+  id: EngineStageId;
+  title: string;
+  status: EngineStageStatus;
+  summary: string;
+  details: string[];
+};
+
+export type EngineQualityGate = {
+  id:
+    | "partition-integrity"
+    | "bone-coverage"
+    | "weight-normalization"
+    | "morph-validity"
+    | "tri-compatibility"
+    | "physics-markers";
+  status: "pass" | "attention";
+  summary: string;
+};
+
+export type PythonEngineRunSummary = {
+  runId: string;
+  backend: "python";
+  stages: EngineStageReport[];
+  qualityGates: EngineQualityGate[];
+  warnings: string[];
+  libraries: {
+    pynifly: boolean;
+    numpy: boolean;
+    scipy: boolean;
+    trimesh: boolean;
+    pyvista: boolean;
+  };
+};
+
 export type ConversionPlan = {
   sourceType: DetectionResult["bodyType"];
   targetBodyType: BodyType;
@@ -92,4 +139,43 @@ export type ConversionResult = {
   warnings: string[];
   filesAnalyzed: number;
   generatedAt: string;
+  pythonEngine?: PythonEngineRunSummary;
 };
+
+export type ConversionRunArgs = {
+  input: string;
+  target: BodyType;
+  output: string;
+  sourceOverride?: BodyType;
+};
+
+export type ConversionJobEvent =
+  | {
+      jobId: string;
+      type: "status";
+      stage:
+        | "queued"
+        | "scan"
+        | "python-engine"
+        | "conversion"
+        | "reports"
+        | "done";
+      message: string;
+      progress: number;
+    }
+  | {
+      jobId: string;
+      type: "complete";
+      result: {
+        detection: DetectionResult;
+        plan: ConversionPlan;
+        result: ConversionResult;
+        reportPath: string;
+        summaryPath: string;
+      };
+    }
+  | {
+      jobId: string;
+      type: "error";
+      error: string;
+    };

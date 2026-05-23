@@ -4,6 +4,8 @@ import type {
   BodyType,
   BodyTypeInfo,
   BodyTypeOption,
+  ConversionJobEvent,
+  ConversionRunArgs,
   DetectionResult,
   ScanResult,
 } from "./api-types";
@@ -15,12 +17,9 @@ declare global {
       getBodyTypes(): Promise<BodyTypeOption[]>;
       detectSource(input: string): Promise<DetectionResult>;
       getBodyTypeInfo(bodyType: BodyType): Promise<BodyTypeInfo | null>;
-      runScan(args: {
-        input: string;
-        target: BodyType;
-        output: string;
-        sourceOverride?: BodyType;
-      }): Promise<ScanResult>;
+      runScan(args: ConversionRunArgs): Promise<ScanResult>;
+      startScanJob(args: ConversionRunArgs): Promise<{ jobId: string }>;
+      onScanJobEvent(listener: (event: ConversionJobEvent) => void): () => void;
       openPatreonSupport(): Promise<boolean>;
     };
   }

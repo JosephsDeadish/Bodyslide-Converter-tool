@@ -3,6 +3,7 @@ import type {
   BodyType,
   BodyTypeInfo,
   BodyTypeOption,
+  ConversionJobEvent,
   DetectionResult,
   ScanResult,
 } from "./api-types";
@@ -32,10 +33,43 @@ export function App() {
   const [status, setStatus] = useState<Status>("idle");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Converting mod assets…",
+  );
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
 
   useEffect(() => {
     void api.getBodyTypes().then(setBodyTypes);
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = api.onScanJobEvent((event: ConversionJobEvent) => {
+      if (activeJobId === null || event.jobId !== activeJobId) return;
+      if (event.type === "status") {
+        setLoadingMessage(`${event.message} (${event.progress}%)`);
+        setLoadingProgress(event.progress);
+        return;
+      }
+      if (event.type === "complete") {
+        setScanResult(event.result);
+        setStatus("success");
+        setScreen("results");
+        setActiveJobId(null);
+        setLoadingProgress(100);
+        return;
+      }
+      if (event.type === "error") {
+        setErrorMsg(event.error);
+        setStatus("error");
+        setScreen("error");
+        setActiveJobId(null);
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [activeJobId]);
 
   async function handleBrowseInput() {
     const path = await api.openDirectory();
@@ -72,8 +106,10 @@ export function App() {
     if (!inputPath || !outputPath || !targetBodyType) return;
     setScreen("loading");
     setStatus("scanning");
+    setLoadingMessage("Starting conversion job…");
+    setLoadingProgress(0);
     try {
-      const result = await api.runScan({
+      const { jobId } = await api.startScanJob({
         input: inputPath,
         target: targetBodyType as BodyType,
         output: outputPath,
@@ -81,9 +117,7 @@ export function App() {
           ? (sourceOverride as BodyType)
           : undefined,
       });
-      setScanResult(result);
-      setScreen("results");
-      setStatus("success");
+      setActiveJobId(jobId);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : String(err));
       setScreen("error");
@@ -138,7 +172,9 @@ export function App() {
       />
       <main className="content">
         {screen === "welcome" && <WelcomeScreen />}
-        {screen === "loading" && <LoadingScreen />}
+        {screen === "loading" && (
+          <LoadingScreen message={loadingMessage} progress={loadingProgress} />
+        )}
         {screen === "results" && scanResult !== null && (
           <ResultsScreen result={scanResult} onNewConversion={handleBack} />
         )}

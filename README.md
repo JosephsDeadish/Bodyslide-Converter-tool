@@ -1,6 +1,8 @@
 # SlideSmith
 
-Modern TypeScript CLI and desktop app for scanning armor/clothing mod folders, auto-detecting likely source body type, and running a native conversion pass for supported target body types.
+Modern Electron + React desktop app and TypeScript CLI for scanning armor/clothing mod folders, auto-detecting likely source body type, and running conversion passes for supported target body types.
+
+The desktop path now uses a **Python core conversion engine** (invoked by Electron main process) for staged mesh/geometry pipeline orchestration.
 
 ## Supported target body types
 
@@ -32,6 +34,7 @@ To build the Electron desktop app locally:
 ```bash
 npm install
 npm run build:main
+npm run build:renderer
 ```
 
 To package a Windows portable executable:
@@ -51,6 +54,28 @@ The command generates:
 - `conversion-summary.txt` with converted files, ranked body-type candidates, warnings, and a structured conversion audit
 - converted mod assets written into the selected output folder
 
+## Python core engine (desktop conversion backend)
+
+The Electron app orchestrates conversion jobs, while geometry/math stages are delegated to `python_engine/runner.py`.
+
+### Architecture boundary
+
+- Renderer: UI only (contextBridge API; no filesystem or geometry operations)
+- Electron main: IPC/job lifecycle + report writing + process orchestration
+- Python core: staged mesh pipeline and quality gates
+
+### Install Python dependencies (recommended)
+
+```bash
+python -m pip install -r python_engine/requirements.txt
+```
+
+If Python is not on `PATH`, set:
+
+```bash
+SLIDESMITH_PYTHON=/absolute/path/to/python
+```
+
 ## Notes
 
 - Detection is heuristic-based and inspects filenames plus file previews.
@@ -67,3 +92,4 @@ The command generates:
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
 - The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact bundle (`slidesmith-release`) for workflow-run approval and testing.
+- Packaging remains standard `electron-builder` output (no obfuscation/self-extractors/UPX). For production release trust, add Windows code signing in your release pipeline.

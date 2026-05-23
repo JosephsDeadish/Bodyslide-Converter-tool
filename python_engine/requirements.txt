@@ -1,0 +1,5 @@
+numpy>=2.2.0
+scipy>=1.14.0
+trimesh>=4.7.0
+pyvista>=0.46.0
+PyNifly>=0.8.0

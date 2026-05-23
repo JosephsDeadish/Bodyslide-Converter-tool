@@ -1,6 +1,7 @@
 declare module "electron" {
   export type WebContents = {
     id: number;
+    send(channel: string, ...args: unknown[]): void;
   };
 
   export type IpcMainInvokeEvent = {
@@ -47,6 +48,7 @@ declare module "electron" {
         ...args: TArgs
       ) => TResult | Promise<TResult>,
     ): void;
+    removeHandler(channel: string): void;
   };
 
   export const contextBridge: {
@@ -55,5 +57,13 @@ declare module "electron" {
 
   export const ipcRenderer: {
     invoke<TResult>(channel: string, ...args: unknown[]): Promise<TResult>;
+    on(
+      channel: string,
+      listener: (event: unknown, ...args: unknown[]) => void,
+    ): void;
+    off(
+      channel: string,
+      listener: (event: unknown, ...args: unknown[]) => void,
+    ): void;
   };
 }

@@ -2,8 +2,10 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { BodyTypeInfo } from "./bodyTypeInfo.js";
 import type {
   BodyType,
+  ConversionJobEvent,
   ConversionPlan,
   ConversionResult,
+  ConversionRunArgs,
   DetectionResult,
 } from "./types.js";
 
@@ -15,6 +17,8 @@ export type ScanResult = {
   reportPath: string;
   summaryPath: string;
 };
+
+const JOB_EVENT_CHANNEL = "scan:jobEvent";
 
 contextBridge.exposeInMainWorld("bodyslideAPI", {
   openDirectory: (): Promise<string | null> =>
@@ -29,12 +33,23 @@ contextBridge.exposeInMainWorld("bodyslideAPI", {
   getBodyTypeInfo: (bodyType: BodyType): Promise<BodyTypeInfo | null> =>
     ipcRenderer.invoke("get:bodyTypeInfo", bodyType),
 
-  runScan: (args: {
-    input: string;
-    target: BodyType;
-    output: string;
-    sourceOverride?: BodyType;
-  }): Promise<ScanResult> => ipcRenderer.invoke("scan:run", args),
+  runScan: (args: ConversionRunArgs): Promise<ScanResult> =>
+    ipcRenderer.invoke("scan:run", args),
+
+  startScanJob: (args: ConversionRunArgs): Promise<{ jobId: string }> =>
+    ipcRenderer.invoke("scan:startJob", args),
+
+  onScanJobEvent: (
+    listener: (event: ConversionJobEvent) => void,
+  ): (() => void) => {
+    const wrapped = (_event: unknown, payload: unknown) => {
+      listener(payload as ConversionJobEvent);
+    };
+    ipcRenderer.on(JOB_EVENT_CHANNEL, wrapped);
+    return () => {
+      ipcRenderer.off(JOB_EVENT_CHANNEL, wrapped);
+    };
+  },
 
   openPatreonSupport: (): Promise<boolean> =>
     ipcRenderer.invoke("open:patreonSupport"),

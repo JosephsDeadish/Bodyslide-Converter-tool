@@ -3,3 +3,6 @@ dist/
 dist-exe/
 dist-main/
 release/
+__pycache__/
+*.pyc
+.venv/

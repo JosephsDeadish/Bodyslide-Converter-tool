@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "description": "Body reference metadata for canonical mapping and per-body adapters.",
+  "bodies": {
+    "cbbe": {
+      "topology": "cbbe",
+      "skeletonProfile": "xpmsse-compatible-female",
+      "partitionProfile": "female-default",
+      "physicsBones": []
+    },
+    "3ba": {
+      "topology": "cbbe",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+    },
+    "himbo": {
+      "topology": "male",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-default",
+      "physicsBones": ["NPC L Breast", "NPC R Breast"]
+    },
+    "bodytalk": {
+      "topology": "male",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-default",
+      "physicsBones": ["NPC L Breast", "NPC R Breast"]
+    },
+    "tbd": {
+      "topology": "cbbe",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+    },
+    "sos": {
+      "topology": "male",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-physics",
+      "physicsBones": ["NPC GenitalsBase"]
+    },
+    "unp": {
+      "topology": "unp",
+      "skeletonProfile": "xpmsse-compatible-female",
+      "partitionProfile": "female-default",
+      "physicsBones": []
+    },
+    "bhunp": {
+      "topology": "unp",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+    },
+    "uunp": {
+      "topology": "unp",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"]
+    },
+    "7base": {
+      "topology": "unp",
+      "skeletonProfile": "xpmsse-compatible-female",
+      "partitionProfile": "female-default",
+      "physicsBones": []
+    },
+    "sam": {
+      "topology": "male",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-default",
+      "physicsBones": []
+    },
+    "vanilla": {
+      "topology": "vanilla",
+      "skeletonProfile": "vanilla",
+      "partitionProfile": "vanilla",
+      "physicsBones": []
+    }
+  },
+  "adapters": [
+    {
+      "source": "3ba",
+      "target": "uunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "himbo",
+      "target": "sam",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "cbbe",
+      "target": "3ba",
+      "profile": "female-physics-upgrade"
+    }
+  ]
+}
