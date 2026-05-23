@@ -1,6 +1,6 @@
 {
-  "name": "bodyslide-converter-tool",
-  "version": "1.0.0",
+  "name": "slidesmith",
+  "version": "0.1",
   "description": "Desktop app to detect Skyrim mod body type and run native BodySlide asset conversions.",
   "type": "module",
   "main": "dist-main/main.js",
@@ -17,8 +17,9 @@
     "test:watch": "vitest"
   },
   "build": {
-    "appId": "com.bodyslide.converter",
-    "productName": "Bodyslide Converter",
+    "appId": "com.slidesmith.app",
+    "productName": "SlideSmith",
+    "artifactName": "SlideSmith-${version}.${ext}",
     "directories": {
       "output": "release"
     },

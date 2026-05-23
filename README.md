@@ -1,4 +1,4 @@
-# Bodyslide-Converter-tool
+# SlideSmith
 
 Modern TypeScript CLI and desktop app for scanning armor/clothing mod folders, auto-detecting likely source body type, and running a native conversion pass for supported target body types.
 
@@ -43,7 +43,7 @@ npm run package:win
 
 Output:
 
-- `release/bodyslide-converter.exe`
+- `release/SlideSmith.exe`
 
 The command generates:
 
@@ -62,4 +62,4 @@ The command generates:
 - Native conversion now auto-synthesizes missing `_0`/`_1` `.nif` weight-pair meshes when only one side exists, improving in-game weight-slider completeness.
 - Native conversion now auto-synthesizes a BodySlide SliderSet `.osp` file when mesh outputs exist but no project file was provided, so converted outfits still appear directly in BodySlide without manual project setup.
 - Reports now include a structured conversion audit that checks extracted mesh/slider assets, BodySlide slider-set generation, topology risk, and target physics-config coverage (including 3BA belly-chain validation).
-- CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.
+- CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact bundle (`slidesmith-release`) for workflow-run approval and testing.

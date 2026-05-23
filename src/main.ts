@@ -27,7 +27,7 @@ function createWindow(): BrowserWindow {
       nodeIntegration: false,
       sandbox: false,
     },
-    title: "Bodyslide Converter",
+    title: "SlideSmith",
     backgroundColor: "#0d0d1a",
     show: false,
   });
@@ -122,7 +122,7 @@ ipcMain.handle(
 
     // Reports go into a dedicated subfolder so MO2's virtual filesystem does
     // not surface them as Skyrim game assets inside the conversion output mod.
-    const reportsDir = join(output, "_BodyslideConverter");
+    const reportsDir = join(output, "_SlideSmith");
     await mkdir(reportsDir, { recursive: true });
 
     const reportPath = join(reportsDir, "conversion-report.json");
@@ -137,7 +137,7 @@ ipcMain.handle(
     await writeFile(
       summaryPath,
       [
-        `Bodyslide Converter — Conversion Summary`,
+        `SlideSmith — Conversion Summary`,
         `Generated: ${result.generatedAt}`,
         `Files analyzed: ${result.filesAnalyzed}`,
         ``,

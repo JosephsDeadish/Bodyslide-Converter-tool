@@ -14,7 +14,7 @@ const targetSchema = z.enum(BODY_TYPES);
 const program = new Command();
 
 program
-  .name("bodyslide-converter")
+  .name("slidesmith")
   .description(
     "Detect source body type and run a native BodySlide asset conversion.",
   )

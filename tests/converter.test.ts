@@ -9,7 +9,7 @@ import { scanModFiles } from "../src/scanner.js";
 const tempDirs: string[] = [];
 
 async function makeTempDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), "bodyslide-converter-"));
+  const dir = await mkdtemp(join(tmpdir(), "slidesmith-"));
   tempDirs.push(dir);
   return dir;
 }

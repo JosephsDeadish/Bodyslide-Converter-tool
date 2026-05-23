@@ -831,7 +831,7 @@ async function synthesizeMissingCbpcStub(
 
   const iniContent = [
     `; Auto-generated CBPC physics stub for ${targetAlias}`,
-    `; Created by Bodyslide Converter — ${new Date().toISOString()}`,
+    `; Created by SlideSmith — ${new Date().toISOString()}`,
     ";",
     "; This file registers the standard physics bones for this outfit with CBPC.",
     "; Default weight values are community-convention starting points.",

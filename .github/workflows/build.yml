@@ -63,10 +63,10 @@ jobs:
         run: |
           $exePath = Get-ChildItem -Path release -Filter "*.exe" | Select-Object -First 1 -ExpandProperty FullName
           Compress-Archive -Path $exePath, release/source-code.zip `
-            -DestinationPath release/bodyslide-converter-release.zip
+            -DestinationPath release/slidesmith-release.zip
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bodyslide-converter-release
-          path: release/bodyslide-converter-release.zip
+          name: slidesmith-release
+          path: release/slidesmith-release.zip
