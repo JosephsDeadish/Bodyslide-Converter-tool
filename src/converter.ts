@@ -1,6 +1,8 @@
 import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import { createConversionAudit } from "./audit.js";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
+import { scanModFiles } from "./scanner.js";
 import type {
   BodyType,
   ConversionResult,
@@ -768,6 +770,22 @@ export async function convertMod(
     });
   }
 
+  const outputFiles = await scanModFiles(outputDir);
+  const audit = createConversionAudit(
+    detection,
+    targetBodyType,
+    files,
+    outputFiles,
+  );
+  const warnings = [
+    ...createWarnings(detection, sourceBodyType, targetBodyType, conversionPath),
+    ...(audit.overallStatus === "attention"
+      ? [
+          "Conversion audit flagged follow-up items. Review the conversion audit section in the summary/report before shipping the generated output.",
+        ]
+      : []),
+  ];
+
   return {
     sourceBodyType,
     targetBodyType,
@@ -775,15 +793,11 @@ export async function convertMod(
     conversionPath: conversionPath.label,
     preferredOutputAlias: conversionPath.preferredOutputAlias,
     namingNotes: conversionPath.namingNotes,
+    audit,
     detectionConfidence: detection.confidence,
     convertedFiles,
     skippedFiles,
-    warnings: createWarnings(
-      detection,
-      sourceBodyType,
-      targetBodyType,
-      conversionPath,
-    ),
+    warnings,
     filesAnalyzed: files.length,
     generatedAt: new Date().toISOString(),
   };

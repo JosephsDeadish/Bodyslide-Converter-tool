@@ -193,6 +193,23 @@ function renderResults(result) {
         .map((note) => `<li>${escapeHtml(note)}</li>`)
         .join("")}
     </ul>
+    <div class="result-section-title">Conversion audit (${escapeHtml(conversion.audit.overallStatus)})</div>
+    <ul class="op-list">
+      ${conversion.audit.checks
+        .map(
+          (check) => `
+            <li class="op-item">
+              <div class="op-name">[${escapeHtml(check.status)}] ${escapeHtml(check.title)}</div>
+              <div class="op-desc">${escapeHtml(check.summary)}</div>
+              ${
+                check.details.length > 0
+                  ? `<div class="op-desc">${escapeHtml(check.details.join(" • "))}</div>`
+                  : ""
+              }
+            </li>`,
+        )
+        .join("")}
+    </ul>
     <div class="result-section-title">Generated conversion plan</div>
     <ul class="op-list">
       ${plan.operations

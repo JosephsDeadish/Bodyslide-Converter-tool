@@ -147,6 +147,14 @@ ipcMain.handle(
         `============`,
         ...result.namingNotes.map((note, i) => `${i + 1}. ${note}`),
         ``,
+        `CONVERSION AUDIT`,
+        `================`,
+        `Overall status: ${result.audit.overallStatus}`,
+        ...result.audit.checks.map(
+          (check, i) =>
+            `${i + 1}. [${check.status}] ${check.title}\n   ${check.summary}${check.details.length > 0 ? `\n   ${check.details.join("\n   ")}` : ""}`,
+        ),
+        ``,
         `CONVERTED FILES`,
         `===============`,
         ...result.convertedFiles.map(

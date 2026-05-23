@@ -41,6 +41,20 @@ export type ConversionOperation = {
   description: string;
 };
 
+export type ConversionAuditCheck = {
+  id: string;
+  title: string;
+  status: "pass" | "attention" | "not-applicable";
+  summary: string;
+  details: string[];
+  evidence: string[];
+};
+
+export type ConversionAudit = {
+  overallStatus: "pass" | "attention";
+  checks: ConversionAuditCheck[];
+};
+
 export type ConversionPlan = {
   sourceType: DetectionResult["bodyType"];
   targetBodyType: BodyType;
@@ -71,6 +85,7 @@ export type ConversionResult = {
   conversionPath: string;
   preferredOutputAlias: string;
   namingNotes: string[];
+  audit: ConversionAudit;
   detectionConfidence: number;
   convertedFiles: ConvertedFile[];
   skippedFiles: SkippedFile[];

@@ -85,6 +85,12 @@ program
           "Naming notes:",
           ...result.namingNotes.map((note, index) => `${index + 1}. ${note}`),
           "",
+          `Conversion audit: ${result.audit.overallStatus.toUpperCase()}`,
+          ...result.audit.checks.map(
+            (check, index) =>
+              `${index + 1}. [${check.status}] ${check.title} — ${check.summary}${check.details.length > 0 ? ` (${check.details.join(" | ")})` : ""}`,
+          ),
+          "",
           "Converted files:",
           ...result.convertedFiles.map(
             (file, index) =>

@@ -841,4 +841,70 @@ describe("convertMod", () => {
     expect(rewritten).not.toContain("NPC L Breast01");
     expect(rewritten).not.toContain("NPC L Butt");
   });
+
+  it("produces a structured conversion audit for 3BA-ready outputs", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+
+    const all3baBones = [
+      "NPC L Breast01",
+      "NPC R Breast01",
+      "NPC L Breast02",
+      "NPC R Breast02",
+      "NPC L Breast03",
+      "NPC R Breast03",
+      "NPC LBreastRoot",
+      "NPC RBreastRoot",
+      "NPC L Butt",
+      "NPC R Butt",
+      "NPC Belly",
+      "NPC BellyRoot",
+    ].join("\n");
+
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_0.nif"),
+      all3baBones,
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_1.nif"),
+      all3baBones,
+    );
+    await writeFile(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "3BA_Armor.osp"),
+      '<SliderSetInfo><SliderSet name="3BA Armor"><Slider name="Breast Size" /></SliderSet></SliderSetInfo>',
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_3ba_full.ini"),
+      all3baBones,
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(result.audit.overallStatus).toBe("pass");
+    expect(
+      result.audit.checks.find((check) => check.id === "physics-weight")?.status,
+    ).toBe("pass");
+    expect(
+      result.audit.checks.find((check) => check.id === "physics-config")?.status,
+    ).toBe("pass");
+    expect(
+      result.audit.checks.find((check) => check.id === "3ba-belly")?.status,
+    ).toBe("pass");
+  });
 });
