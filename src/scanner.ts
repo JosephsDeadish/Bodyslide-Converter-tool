@@ -1,5 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
-import { extname, basename, join, relative } from "node:path";
+import { basename, extname, join, relative } from "node:path";
 import type { ScannedFile } from "./types.js";
 
 const TEXT_PREVIEW_BYTES = 4096;
@@ -23,7 +23,10 @@ async function walk(currentDir: string): Promise<string[]> {
 async function readPreview(path: string): Promise<string> {
   try {
     const buffer = await readFile(path);
-    return buffer.subarray(0, TEXT_PREVIEW_BYTES).toString("latin1").toLowerCase();
+    return buffer
+      .subarray(0, TEXT_PREVIEW_BYTES)
+      .toString("latin1")
+      .toLowerCase();
   } catch {
     return "";
   }

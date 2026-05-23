@@ -9,7 +9,7 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
   sos: [/\bsos\b/, /schlongs of skyrim/, /sos body/],
   unp: [/\bunp\b/, /dimonized/, /unpb/],
   bhunp: [/\bbhunp\b/, /bhunp/, /unp special/],
-  uunp: [/\buunp\b/, /unified unp/]
+  uunp: [/\buunp\b/, /unified unp/],
 };
 
 function scoreFileForType(file: ScannedFile, patterns: RegExp[]): number {
@@ -51,7 +51,16 @@ export function detectBodyType(files: ScannedFile[]): DetectionResult {
   }
 
   const sorted = [...BODY_TYPES].sort((a, b) => scores[b] - scores[a]);
-  const bestType = sorted[0];
+  const bestType = sorted.at(0);
+  if (!bestType) {
+    return {
+      bodyType: "unknown",
+      confidence: 0,
+      scores,
+      matchedSignals: [],
+    };
+  }
+
   const bestScore = scores[bestType];
   const total = sorted.reduce((sum, bodyType) => sum + scores[bodyType], 0);
 

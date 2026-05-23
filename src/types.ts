@@ -1,4 +1,13 @@
-export const BODY_TYPES = ["cbbe", "3ba", "himbo", "tbd", "sos", "unp", "bhunp", "uunp"] as const;
+export const BODY_TYPES = [
+  "cbbe",
+  "3ba",
+  "himbo",
+  "tbd",
+  "sos",
+  "unp",
+  "bhunp",
+  "uunp",
+] as const;
 
 export type BodyType = (typeof BODY_TYPES)[number];
 
