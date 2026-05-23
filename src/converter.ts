@@ -537,7 +537,7 @@ function parsePhysicsBoneDescriptor(boneName: string): PhysicsBoneDescriptor {
     group = "breast";
   }
 
-  const stageMatch = lower.match(/\b0?([1-3])\b/);
+  const stageMatch = lower.match(/(?:^|[^0-9])0?([1-3])(?![0-9])/);
   const stage =
     group === "breast" || group === "breast-root"
       ? Number(stageMatch?.[1] ?? "1")
@@ -578,11 +578,13 @@ function findSemanticPhysicsTargetBone(
         ) ??
         pickMatchingBone(
           targetDescriptors,
-          (descriptor) => descriptor.group === "breast" && matchesSide(descriptor),
+          (descriptor) =>
+            descriptor.group === "breast" && matchesSide(descriptor),
         ) ??
         pickMatchingBone(
           targetDescriptors,
-          (descriptor) => descriptor.group === "breast" && descriptor.stage === 1,
+          (descriptor) =>
+            descriptor.group === "breast" && descriptor.stage === 1,
         ) ??
         pickMatchingBone(
           targetDescriptors,
@@ -600,7 +602,8 @@ function findSemanticPhysicsTargetBone(
         ) ??
         pickMatchingBone(
           targetDescriptors,
-          (descriptor) => descriptor.group === "breast" && matchesSide(descriptor),
+          (descriptor) =>
+            descriptor.group === "breast" && matchesSide(descriptor),
         ) ??
         pickMatchingBone(
           targetDescriptors,
@@ -617,7 +620,8 @@ function findSemanticPhysicsTargetBone(
       return (
         pickMatchingBone(
           targetDescriptors,
-          (descriptor) => descriptor.group === "butt" && matchesSide(descriptor),
+          (descriptor) =>
+            descriptor.group === "butt" && matchesSide(descriptor),
         ) ??
         pickMatchingBone(
           targetDescriptors,
@@ -633,7 +637,8 @@ function findSemanticPhysicsTargetBone(
       return (
         pickMatchingBone(
           targetDescriptors,
-          (descriptor) => descriptor.group === "scrotum" && matchesSide(descriptor),
+          (descriptor) =>
+            descriptor.group === "scrotum" && matchesSide(descriptor),
         ) ??
         pickMatchingBone(
           targetDescriptors,
@@ -648,7 +653,8 @@ function findSemanticPhysicsTargetBone(
       return (
         pickMatchingBone(
           targetDescriptors,
-          (descriptor) => descriptor.group === "genitals" && matchesSide(descriptor),
+          (descriptor) =>
+            descriptor.group === "genitals" && matchesSide(descriptor),
         ) ??
         pickMatchingBone(
           targetDescriptors,
@@ -660,7 +666,10 @@ function findSemanticPhysicsTargetBone(
   }
 }
 
-function buildPhysicsRemapPlan(source: BodyType, target: BodyType): PhysicsRemapPlan {
+function buildPhysicsRemapPlan(
+  source: BodyType,
+  target: BodyType,
+): PhysicsRemapPlan {
   const sourceInfo = BODY_TYPE_INFO[source];
   const targetInfo = BODY_TYPE_INFO[target];
   if (
@@ -1335,8 +1344,13 @@ function createWarnings(
   const fallbackPhysicsSteps = physicsRemapPlan.steps.filter(
     (step) => step.kind === "fallback",
   ).length;
-  if (sourceInfo.physicsSupport && targetInfo.physicsSupport && fallbackPhysicsSteps > 0) {
-    const mappedPhysicsSteps = physicsRemapPlan.steps.length - fallbackPhysicsSteps;
+  if (
+    sourceInfo.physicsSupport &&
+    targetInfo.physicsSupport &&
+    fallbackPhysicsSteps > 0
+  ) {
+    const mappedPhysicsSteps =
+      physicsRemapPlan.steps.length - fallbackPhysicsSteps;
     warnings.push(
       `Physics remap coverage for '${source}' → '${target}' is ${mappedPhysicsSteps}/${physicsRemapPlan.steps.length}. ${fallbackPhysicsSteps} source physics bone reference(s) were collapsed to static fallback bones due to missing safe target-chain equivalents.`,
     );
