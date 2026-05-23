@@ -38,7 +38,7 @@ declare module "electron" {
   export const ipcMain: {
     handle(
       channel: string,
-      listener: (event: IpcMainInvokeEvent, ...args: any[]) => unknown,
+      listener: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown,
     ): void;
   };
 
@@ -47,6 +47,6 @@ declare module "electron" {
   };
 
   export const ipcRenderer: {
-    invoke(channel: string, ...args: any[]): Promise<any>;
+    invoke(channel: string, ...args: unknown[]): Promise<unknown>;
   };
 }

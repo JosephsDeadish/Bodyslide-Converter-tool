@@ -4,8 +4,8 @@ import {
   app,
   BrowserWindow,
   dialog,
-  ipcMain,
   type IpcMainInvokeEvent,
+  ipcMain,
 } from "electron";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { convertMod } from "./converter.js";
@@ -80,8 +80,8 @@ ipcMain.handle("get:bodyTypes", () =>
 ipcMain.handle(
   "get:bodyTypeInfo",
   (_event: IpcMainInvokeEvent, bodyType: BodyType) => {
-  const info = BODY_TYPE_INFO[bodyType];
-  return info ?? null;
+    const info = BODY_TYPE_INFO[bodyType];
+    return info ?? null;
   },
 );
 

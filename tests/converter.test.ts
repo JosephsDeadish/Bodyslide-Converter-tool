@@ -96,9 +96,9 @@ describe("convertMod", () => {
 
     expect(result.sourceBodyType).toBe("bhunp");
     expect(result.targetBodyType).toBe("uunp");
-    expect(result.warnings.some((warning) => warning.includes("compatibility mode"))).toBe(
-      true,
-    );
+    expect(
+      result.warnings.some((warning) => warning.includes("compatibility mode")),
+    ).toBe(true);
 
     const rewritten = await readFile(
       join(outputDir, "bodyslide", "slidersets", "uunp_armor.xml"),
