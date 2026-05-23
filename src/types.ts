@@ -66,6 +66,10 @@ export type SkippedFile = {
 export type ConversionResult = {
   sourceBodyType: BodyType;
   targetBodyType: BodyType;
+  conversionMode: "native" | "compatibility";
+  conversionPath: string;
+  preferredOutputAlias: string;
+  namingNotes: string[];
   detectionConfidence: number;
   convertedFiles: ConvertedFile[];
   skippedFiles: SkippedFile[];

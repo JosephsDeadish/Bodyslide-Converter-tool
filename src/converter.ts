@@ -11,38 +11,91 @@ import type {
 const TEXT_EXTENSIONS = new Set([".xml", ".osp", ".txt", ".json", ".ini"]);
 const MESH_EXTENSIONS = new Set([".nif", ".tri"]);
 
-const NATIVE_COMPATIBILITY: Record<BodyType, ReadonlySet<BodyType>> = {
-  cbbe: new Set(["cbbe", "3ba", "tbd"]),
-  "3ba": new Set(["3ba", "cbbe", "tbd"]),
-  himbo: new Set(["himbo"]),
-  tbd: new Set(["tbd", "cbbe", "3ba"]),
-  sos: new Set(["sos"]),
-  unp: new Set(["unp", "uunp", "bhunp"]),
-  bhunp: new Set(["bhunp", "unp", "uunp"]),
-  uunp: new Set(["uunp", "unp", "bhunp"]),
-  "7base": new Set(["7base"]),
-  sam: new Set(["sam"]),
-  vanilla: new Set(["vanilla"]),
+type ConversionPath = {
+  label: string;
+  bodies: readonly BodyType[];
+  namingNotes: string[];
 };
+
+const COMPATIBILITY_PATHS: readonly ConversionPath[] = [
+  {
+    label: "CBBE ↔ 3BA ↔ TBD",
+    bodies: ["cbbe", "3ba", "tbd"],
+    namingNotes: [
+      "Uses canonical CBBE-family output aliases in rewritten file names and BodySlide metadata.",
+      "Preserves meshes for safety, so CBBE-family cross-conversions still need manual mesh QA.",
+    ],
+  },
+  {
+    label: "UNP ↔ UUNP ↔ BHUNP",
+    bodies: ["unp", "uunp", "bhunp"],
+    namingNotes: [
+      "Uses canonical UNP-family output aliases, including UUNP Special/BHUNP-style naming signals.",
+      "Physics-enabled BHUNP outputs still require manual review of copied meshes and configs.",
+    ],
+  },
+  {
+    label: "HIMBO ↔ SAM",
+    bodies: ["himbo", "sam"],
+    namingNotes: [
+      "Uses canonical male BodySlide output aliases for HIMBO and SAM Light style projects.",
+      "Male-family compatibility mode rewrites names and metadata only; it does not retarget mesh proportions.",
+    ],
+  },
+];
 
 const SUPPORTED_NATIVE_PATHS = [
   "same-body output",
-  "CBBE ↔ 3BA ↔ TBD",
-  "UNP ↔ UUNP ↔ BHUNP",
+  ...COMPATIBILITY_PATHS.map((path) => path.label),
 ];
 
+const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
+  cbbe: "CBBE",
+  "3ba": "3BA",
+  himbo: "HIMBO",
+  tbd: "TBD",
+  sos: "SOS",
+  unp: "UNP",
+  bhunp: "BHUNP",
+  uunp: "UUNP",
+  "7base": "7Base",
+  sam: "SAM",
+  vanilla: "Vanilla",
+};
+
 const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
-  cbbe: ["cbbe", "caliente"],
-  "3ba": ["3ba", "3bbb", "3bbb amazing body"],
-  himbo: ["himbo"],
-  tbd: ["tbd", "touched by dibella"],
-  sos: ["sos", "schlongs of skyrim"],
-  unp: ["unp", "unpb", "dimonized"],
-  bhunp: ["bhunp", "bonehunger unp"],
-  uunp: ["uunp", "unified unp"],
+  cbbe: ["cbbe", "caliente", "calientetools", "cbbe body"],
+  "3ba": [
+    "cbbe 3bbb",
+    "cbbe 3ba",
+    "cbbe_3ba",
+    "cbbe-3ba",
+    "3bbb amazing body",
+    "3bbb amazing",
+    "3bbb",
+    "3ba",
+  ],
+  himbo: [
+    "highly improved male body",
+    "high poly male body",
+    "highpolymalebody",
+    "himbo",
+  ],
+  tbd: ["touched by dibella", "tbd body", "tbd"],
+  sos: [
+    "schlongs of skyrim",
+    "schlongsofskyrim",
+    "sos regular",
+    "sos light",
+    "sos body",
+    "sos",
+  ],
+  unp: ["dimonized", "unpb body", "unpb", "unp"],
+  bhunp: ["bonehunger unp", "unp next generation", "bhunp 3bbb", "bhunp"],
+  uunp: ["unified unp", "uunp special", "uunp"],
   "7base": ["7base", "sevenbase", "seven base"],
-  sam: ["sam light", "sam", "shape atlas for men"],
-  vanilla: ["vanilla", "default body"],
+  sam: ["shape atlas for men", "sam light", "samlight", "sam"],
+  vanilla: ["base game body", "default body", "vanilla"],
 };
 
 function escapeRegExp(value: string): string {
@@ -55,18 +108,13 @@ function replaceAliases(
   target: BodyType,
 ): string {
   let next = value;
+  const aliases = [...new Set(BODY_TYPE_ALIASES[source])].sort(
+    (left, right) => right.length - left.length,
+  );
 
-  for (const alias of BODY_TYPE_ALIASES[source]) {
+  for (const alias of aliases) {
     const pattern = new RegExp(escapeRegExp(alias), "gi");
-    next = next.replace(pattern, (match) => {
-      if (match === match.toUpperCase()) {
-        return target.toUpperCase();
-      }
-      if (match[0] && match[0] === match[0].toUpperCase()) {
-        return target.charAt(0).toUpperCase() + target.slice(1);
-      }
-      return target;
-    });
+    next = next.replace(pattern, BODY_TYPE_OUTPUT_ALIASES[target]);
   }
 
   return next;
@@ -87,15 +135,57 @@ function isNativeConversionSupported(
   source: BodyType,
   target: BodyType,
 ): boolean {
-  return NATIVE_COMPATIBILITY[source].has(target);
+  return source === target || COMPATIBILITY_PATHS.some((path) => {
+    const members = new Set(path.bodies);
+    return members.has(source) && members.has(target);
+  });
+}
+
+function getConversionPath(
+  source: BodyType,
+  target: BodyType,
+): {
+  mode: ConversionResult["conversionMode"];
+  label: string;
+  preferredOutputAlias: string;
+  namingNotes: string[];
+} {
+  if (source === target) {
+    return {
+      mode: "native",
+      label: "Same-body output",
+      preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
+      namingNotes: [
+        `Uses the canonical ${BODY_TYPE_OUTPUT_ALIASES[target]} alias for generated file names and rewritten metadata.`,
+      ],
+    };
+  }
+
+  const path = COMPATIBILITY_PATHS.find((candidate) => {
+    const members = new Set(candidate.bodies);
+    return members.has(source) && members.has(target);
+  });
+  if (!path) {
+    throw new Error(
+      `Native conversion is currently supported for: ${SUPPORTED_NATIVE_PATHS.join(", ")}. '${source}' → '${target}' is not implemented yet.`,
+    );
+  }
+
+  return {
+    mode: "compatibility",
+    label: path.label,
+    preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
+    namingNotes: path.namingNotes,
+  };
 }
 
 function createWarnings(
   detection: DetectionResult,
   source: BodyType,
   target: BodyType,
+  path: ReturnType<typeof getConversionPath>,
 ): string[] {
-  const warnings: string[] = [];
+  const warnings = [...path.namingNotes];
 
   if (detection.confidence < 0.55) {
     warnings.push(
@@ -105,7 +195,7 @@ function createWarnings(
 
   if (source !== target) {
     warnings.push(
-      `Native conversion is running in compatibility mode for '${source}' → '${target}'. BodySlide metadata and asset paths were rewritten, but meshes were preserved for safety, so manual QA in Outfit Studio/NifSkope is still required.`,
+      `Native conversion is running in compatibility mode for '${source}' → '${target}' via ${path.label}. BodySlide metadata and asset paths were rewritten to ${path.preferredOutputAlias}, but meshes were preserved for safety, so manual QA in Outfit Studio/NifSkope is still required.`,
     );
   }
 
@@ -142,11 +232,7 @@ export async function convertMod(
   }
 
   const sourceBodyType = detection.bodyType;
-  if (!isNativeConversionSupported(sourceBodyType, targetBodyType)) {
-    throw new Error(
-      `Native conversion is currently supported for: ${SUPPORTED_NATIVE_PATHS.join(", ")}. '${sourceBodyType}' → '${targetBodyType}' is not implemented yet.`,
-    );
-  }
+  const conversionPath = getConversionPath(sourceBodyType, targetBodyType);
 
   await mkdir(outputDir, { recursive: true });
 
@@ -201,10 +287,19 @@ export async function convertMod(
   return {
     sourceBodyType,
     targetBodyType,
+    conversionMode: conversionPath.mode,
+    conversionPath: conversionPath.label,
+    preferredOutputAlias: conversionPath.preferredOutputAlias,
+    namingNotes: conversionPath.namingNotes,
     detectionConfidence: detection.confidence,
     convertedFiles,
     skippedFiles,
-    warnings: createWarnings(detection, sourceBodyType, targetBodyType),
+    warnings: createWarnings(
+      detection,
+      sourceBodyType,
+      targetBodyType,
+      conversionPath,
+    ),
     filesAnalyzed: files.length,
     generatedAt: new Date().toISOString(),
   };

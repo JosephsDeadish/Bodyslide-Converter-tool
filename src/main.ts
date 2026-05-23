@@ -117,10 +117,17 @@ ipcMain.handle(
         ``,
         `SOURCE: ${detection.bodyType} (confidence ${Math.round(detection.confidence * 100)}%)`,
         `TARGET: ${target}`,
+        `MODE: ${result.conversionMode}`,
+        `PATH: ${result.conversionPath}`,
+        `OUTPUT ALIAS: ${result.preferredOutputAlias}`,
         ``,
         detection.rankedCandidates.length > 0
           ? `Top candidates: ${detection.rankedCandidates.map((c) => `${c.bodyType} ${Math.round(c.share * 100)}%`).join(" | ")}`
           : `No strong candidates detected.`,
+        ``,
+        `NAMING NOTES`,
+        `============`,
+        ...result.namingNotes.map((note, i) => `${i + 1}. ${note}`),
         ``,
         `CONVERTED FILES`,
         `===============`,

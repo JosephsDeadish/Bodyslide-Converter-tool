@@ -64,9 +64,15 @@ program
               : "none"
           }`,
           `Target body type: ${targetBodyType}`,
+          `Conversion mode: ${result.conversionMode}`,
+          `Conversion path: ${result.conversionPath}`,
+          `Preferred output alias: ${result.preferredOutputAlias}`,
           `Files analyzed: ${files.length}`,
           `Converted assets: ${result.convertedFiles.length}`,
           `Copied without body-specific changes: ${result.skippedFiles.length}`,
+          "",
+          "Naming notes:",
+          ...result.namingNotes.map((note, index) => `${index + 1}. ${note}`),
           "",
           "Converted files:",
           ...result.convertedFiles.map(

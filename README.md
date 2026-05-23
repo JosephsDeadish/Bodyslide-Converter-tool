@@ -53,6 +53,7 @@ The command generates:
 ## Notes
 
 - Detection is heuristic-based and inspects filenames plus file previews.
-- Native conversion currently supports same-body output plus compatibility-mode paths for CBBE ↔ 3BA ↔ TBD and UNP ↔ UUNP ↔ BHUNP.
+- Native conversion currently supports same-body output plus compatibility-mode paths for CBBE ↔ 3BA ↔ TBD, UNP ↔ UUNP ↔ BHUNP, and HIMBO ↔ SAM.
+- Generated output file names are normalized to canonical target body aliases (for example `3BA`, `BHUNP`, `UUNP`, `HIMBO`, and `SAM`) to make BodySlide outputs easier to identify.
 - Generated outputs should still be reviewed in Outfit Studio/NifSkope.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.

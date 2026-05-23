@@ -175,9 +175,18 @@ function renderResults(result) {
   // Conversion card
   let opsHtml = `
     <div class="result-stats">
+      <span>${escapeHtml(conversion.conversionMode === "native" ? "Native path" : "Compatibility path")}</span>
+      <span>${escapeHtml(conversion.conversionPath)}</span>
+      <span>Alias: ${escapeHtml(conversion.preferredOutputAlias)}</span>
       <span>${conversion.convertedFiles.length} converted</span>
       <span>${conversion.skippedFiles.length} safe copies</span>
     </div>
+    <div class="result-section-title">Naming notes</div>
+    <ul class="meta-list">
+      ${conversion.namingNotes
+        .map((note) => `<li>${escapeHtml(note)}</li>`)
+        .join("")}
+    </ul>
     <div class="result-section-title">Converted files</div>
     <ul class="op-list">
   `;

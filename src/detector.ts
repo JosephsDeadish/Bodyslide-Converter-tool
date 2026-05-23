@@ -11,7 +11,7 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
     /calientetools/,
     /cbbe curvy/,
     /cbbe slim/,
-    /bodytalk/,
+    /cbbe[_ -]?body/,
     // BodySlide folder structure
     /bodyslide[/\\]slidersets[/\\][^/\\]*cbbe/,
     /bodyslide[/\\]shapedata[/\\][^/\\]*cbbe/,
@@ -25,6 +25,8 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
     /cbbe.*cbpc/,
   ],
   "3ba": [
+    /cbbe[_ -]?3ba/,
+    /cbbe[_ -]?3bbb/,
     /\b3ba\b/,
     /\b3bbb\b/,
     /3bbb amazing/,
@@ -46,6 +48,8 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
     /\bhimbo\b/,
     /highly improved male body/,
     /himbo body/,
+    /high poly male body/,
+    /highpolymalebody/,
     /tiktak/,
     // Male-only skeleton signals
     /malebody/,
@@ -58,6 +62,7 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
     /\btbd\b/,
     /thebiggestbody/,
     /touched by dibella/,
+    /tbd body/,
     /maars/,
     // TBD uses same breast-butt bones as CBBE but project files are named tbd
     /bodyslide[/\\]slidersets[/\\][^/\\]*tbd/,
@@ -66,7 +71,10 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
   sos: [
     /\bsos\b/,
     /schlongs of skyrim/,
+    /schlongsofskyrim/,
     /sos body/,
+    /sos[-_ ]regular/,
+    /sos[-_ ]light/,
     /b3lisario/,
     // SOS genital bone names (in NIF binary previews)
     /npc genitalsbase/,
@@ -91,6 +99,8 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
     /\bbhunp\b/,
     /bonehunger unp/,
     /unp 3bbb/,
+    /bhunp 3bbb/,
+    /unp next generation/,
     // Physics bones with BHUNP naming
     /bhunp breast/,
     /bhunp butt/,
@@ -100,6 +110,7 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
   uunp: [
     /\buunp\b/,
     /unified unp/,
+    /uunp special/,
     /ousnius.*unp/,
     /bodyslide[/\\]slidersets[/\\][^/\\]*uunp/,
     /bodyslide[/\\]shapedata[/\\][^/\\]*uunp/,

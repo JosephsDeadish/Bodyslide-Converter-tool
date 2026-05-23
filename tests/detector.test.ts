@@ -50,6 +50,18 @@ describe("detectBodyType", () => {
     expect(detection.rankedCandidates.at(0)?.bodyType).toBe("sam");
     expect(detection.rankedCandidates.at(0)?.share).toBeGreaterThan(0);
   });
+
+  it("does not misclassify male BodyTalk signals as cbbe", () => {
+    const detection = detectBodyType([
+      file(
+        "meshes/actors/character/malebody/bodytalk_body.nif",
+        "bodytalk high poly male body",
+      ),
+    ]);
+
+    expect(detection.bodyType).not.toBe("cbbe");
+    expect(detection.bodyType).toBe("himbo");
+  });
 });
 
 describe("createConversionPlan", () => {

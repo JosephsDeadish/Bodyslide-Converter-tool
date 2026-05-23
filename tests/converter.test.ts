@@ -49,22 +49,24 @@ describe("convertMod", () => {
     );
 
     expect(result.sourceBodyType).toBe("cbbe");
+    expect(result.conversionMode).toBe("compatibility");
+    expect(result.preferredOutputAlias).toBe("3BA");
     expect(
       result.convertedFiles.some((file) =>
-        file.outputPath.endsWith("3ba_armor.xml"),
+        file.outputPath.endsWith("3BA_armor.xml"),
       ),
     ).toBe(true);
     expect(
       result.convertedFiles.some((file) =>
-        file.outputPath.endsWith("3ba_cuirass_1.nif"),
+        file.outputPath.endsWith("3BA_cuirass_1.nif"),
       ),
     ).toBe(true);
 
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "3ba_armor.xml"),
+      join(outputDir, "bodyslide", "slidersets", "3BA_armor.xml"),
       "utf8",
     );
-    expect(rewritten).toContain("3ba");
+    expect(rewritten).toContain("3BA");
   });
 
   it("supports additional compatible female-body native paths", async () => {
@@ -96,15 +98,16 @@ describe("convertMod", () => {
 
     expect(result.sourceBodyType).toBe("bhunp");
     expect(result.targetBodyType).toBe("uunp");
+    expect(result.preferredOutputAlias).toBe("UUNP");
     expect(
       result.warnings.some((warning) => warning.includes("compatibility mode")),
     ).toBe(true);
 
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "uunp_armor.xml"),
+      join(outputDir, "bodyslide", "slidersets", "UUNP_armor.xml"),
       "utf8",
     );
-    expect(rewritten).toContain("uunp");
+    expect(rewritten).toContain("UUNP");
   });
 
   it("supports compatible CBBE-family metadata rewrites", async () => {
@@ -130,10 +133,42 @@ describe("convertMod", () => {
 
     expect(result.sourceBodyType).toBe("tbd");
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "cbbe_fitted.xml"),
+      join(outputDir, "bodyslide", "slidersets", "CBBE_fitted.xml"),
       "utf8",
     );
-    expect(rewritten).toContain("cbbe");
+    expect(rewritten).toContain("CBBE");
+  });
+
+  it("supports compatible male-body metadata rewrites", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
+    await writeFile(
+      join(inputDir, "bodyslide", "slidersets", "HIMBO_armor.xml"),
+      '<set name="HIMBO Armor">highpolymalebody</set>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "sam",
+    );
+
+    expect(result.sourceBodyType).toBe("himbo");
+    expect(result.conversionPath).toBe("HIMBO ↔ SAM");
+    expect(result.preferredOutputAlias).toBe("SAM");
+
+    const rewritten = await readFile(
+      join(outputDir, "bodyslide", "slidersets", "SAM_armor.xml"),
+      "utf8",
+    );
+    expect(rewritten).toContain("SAM");
   });
 
   it("rejects unsupported native conversion paths", async () => {
