@@ -55,7 +55,7 @@ describe("convertMod", () => {
     expect(result.preferredOutputAlias).toBe("3BA");
     expect(
       result.warnings.some((warning) =>
-        warning.includes("external mesh QA is optional"),
+        warning.includes("run BodySlide preview and in-game checks"),
       ),
     ).toBe(true);
     // XML (BodySlide group) → CalienteTools/BodySlide/SliderGroups/
@@ -687,8 +687,10 @@ describe("convertMod", () => {
     ).toBe(true);
     // Must NOT be in SliderGroups as a directly routed (non-synthesized) file
     expect(
-      result.convertedFiles.some((file) =>
-        file.outputPath.includes("SliderGroups") && file.action !== "synthesized",
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.includes("SliderGroups") &&
+          file.action !== "synthesized",
       ),
     ).toBe(false);
   });
@@ -722,8 +724,10 @@ describe("convertMod", () => {
     ).toBe(true);
     // Must NOT be in SliderGroups as a directly routed (non-synthesized) file
     expect(
-      result.convertedFiles.some((file) =>
-        file.outputPath.includes("SliderGroups") && file.action !== "synthesized",
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.includes("SliderGroups") &&
+          file.action !== "synthesized",
       ),
     ).toBe(false);
   });
@@ -1156,20 +1160,25 @@ describe("convertMod", () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
-    await mkdir(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
-      { recursive: true },
-    );
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
     await writeFile(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "cbbe_armor.osp"),
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_armor.osp",
+      ),
       [
         '<?xml version="1.0" encoding="utf-8"?>',
         "<SliderSetInfo>",
         '  <SliderSet name="CBBE Iron Cuirass">',
-        '    <OutputPath>meshes/armor/cbbe_iron_0.nif</OutputPath>',
+        "    <OutputPath>meshes/armor/cbbe_iron_0.nif</OutputPath>",
         "  </SliderSet>",
         '  <SliderSet name="CBBE Iron Gauntlets">',
-        '    <OutputPath>meshes/armor/cbbe_gauntlets_0.nif</OutputPath>',
+        "    <OutputPath>meshes/armor/cbbe_gauntlets_0.nif</OutputPath>",
         "  </SliderSet>",
         "</SliderSetInfo>",
       ].join("\n"),
@@ -1211,25 +1220,80 @@ describe("convertMod", () => {
     ).toBe("pass");
   });
 
+  it("synthesizes a BodySlide SliderSet project when converted meshes have no source OSP", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_plated_0.nif"),
+      "caliente cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const sliderSetEntry = result.convertedFiles.find(
+      (file) =>
+        file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_AutoConverted.osp" &&
+        file.action === "synthesized",
+    );
+    expect(sliderSetEntry).toBeDefined();
+
+    const sliderSetContent = await readFile(
+      join(outputDir, sliderSetEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain('<SliderSet name="3BA Plated">');
+    expect(sliderSetContent).toContain("meshes/armor/3BA_plated_0.nif");
+    expect(sliderSetContent).toContain("meshes/armor/3BA_plated_1.nif");
+
+    const sliderGroupEntry = result.convertedFiles.find(
+      (file) =>
+        file.outputPath ===
+          "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml" &&
+        file.action === "synthesized",
+    );
+    expect(sliderGroupEntry).toBeDefined();
+  });
+
   it("does not synthesize a duplicate SliderGroup when one already exists in the source", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
-    await mkdir(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
-      { recursive: true },
-    );
-    await mkdir(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"),
-      { recursive: true },
-    );
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"), {
+      recursive: true,
+    });
     await writeFile(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "cbbe_shirt.osp"),
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_shirt.osp",
+      ),
       '<SliderSetInfo><SliderSet name="CBBE Shirt"></SliderSet></SliderSetInfo>',
       "utf8",
     );
     await writeFile(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderGroups", "CBBE_Outfits.xml"),
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "CBBE_Outfits.xml",
+      ),
       '<SliderGroups><Group name="CBBE Outfits"><Member name="CBBE Shirt"/></Group></SliderGroups>',
       "utf8",
     );
@@ -1247,8 +1311,7 @@ describe("convertMod", () => {
     // Only one SliderGroup file should exist (the converted original, not an extra synthesized one).
     const synthGroupFiles = result.convertedFiles.filter(
       (f) =>
-        f.outputPath.includes("SliderGroups") &&
-        f.action === "synthesized",
+        f.outputPath.includes("SliderGroups") && f.action === "synthesized",
     );
     expect(synthGroupFiles).toHaveLength(0);
   });

@@ -25,7 +25,7 @@ function baseOperations(sourceType, targetType) {
         {
             id: "extract",
             name: "Extract source mesh and slider assets",
-            description: `Read NIF/TRI/OSP assets and collect morph groups from the ${sourceType} source. Load into Outfit Studio using the ${sourceType} reference body.`,
+            description: `Read NIF/TRI/OSP assets and collect morph groups from the ${sourceType} source. Align converted outputs to the ${sourceType} reference body metadata used by BodySlide.`,
         },
         {
             id: "remap",
@@ -117,7 +117,7 @@ function targetSpecificOperations(targetType) {
         ops.push({
             id: "7base-legacy",
             name: "Legacy topology cleanup for 7Base",
-            description: "7Base uses a non-standard topology that differs from both CBBE and UNP. Automated projection results are unreliable; plan for manual vertex adjustment in Outfit Studio. Pay special attention to neck, wrist, and ankle seam cleanup — do not rely on automatic seam stitching. 7Base Bombshell/Oppai sub-variants have even more extreme proportions.",
+            description: "7Base uses a non-standard topology that differs from both CBBE and UNP. Automated projection results are high-risk; prioritize BodySlide preview plus in-game seam checks at neck, wrist, and ankle points. 7Base Bombshell/Oppai sub-variants have even more extreme proportions.",
         });
     }
     return ops;
@@ -237,7 +237,7 @@ export function createConversionPlan(detection, targetType, files) {
     if (missingWeightPairCount > 0) {
         warnings.push(`Detected ${missingWeightPairCount} mesh file(s) with only one Skyrim weight variant. Skyrim SE expects paired _0/_1 meshes for weight-slider support; missing counterparts should be generated or manually exported.`);
     }
-    warnings.push("Automated conversion outputs should always be smoke-tested in-game before release; external mesh editors are mainly needed for high-risk topology or cross-gender edge cases.");
+    warnings.push("Automated conversion outputs should always be smoke-tested in-game before release; prioritize BodySlide preview and in-game seam checks for high-risk topology or cross-gender edge cases.");
     return {
         sourceType,
         targetBodyType: targetType,

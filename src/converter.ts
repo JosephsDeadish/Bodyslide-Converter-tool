@@ -136,7 +136,7 @@ const MALE_FAMILIES = new Set(["male", "addon"]);
 
 const CROSS_GENDER_NOTES = [
   "Rewrites target aliases plus common female/male asset markers in file names and metadata.",
-  "Applies automatic path and metadata adaptation to reduce cross-gender setup work before optional manual fine-tuning.",
+  "Applies automatic path and metadata adaptation to reduce cross-gender setup work before BodySlide preview and in-game fit checks.",
 ];
 
 const FAMILY_PATHS = {
@@ -554,6 +554,135 @@ function extractSliderSetNames(content: string): string[] {
   return names;
 }
 
+function makeBodySlideDisplayName(value: string): string {
+  return value
+    .replace(/\.[^.]+$/, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+type SliderSetMeshGroup = {
+  key: string;
+  lowWeightPath: string | null;
+  highWeightPath: string | null;
+};
+
+function collectSliderSetMeshGroups(
+  convertedFiles: ConversionResult["convertedFiles"],
+): SliderSetMeshGroup[] {
+  const groups = new Map<string, SliderSetMeshGroup>();
+  for (const file of convertedFiles) {
+    if (
+      file.kind !== "mesh" ||
+      !file.outputPath.toLowerCase().endsWith(".nif")
+    ) {
+      continue;
+    }
+    const lower = file.outputPath.toLowerCase();
+    const lowMatch = lower.match(/^(.*)_0\.nif$/);
+    const highMatch = lower.match(/^(.*)_1\.nif$/);
+    const key = (lowMatch?.[1] ?? highMatch?.[1] ?? lower).toLowerCase();
+    const group = groups.get(key) ?? {
+      key: file.outputPath.replace(/_0\.nif$/i, "").replace(/_1\.nif$/i, ""),
+      lowWeightPath: null,
+      highWeightPath: null,
+    };
+    if (lowMatch) {
+      group.lowWeightPath = file.outputPath;
+    } else if (highMatch) {
+      group.highWeightPath = file.outputPath;
+    } else {
+      group.lowWeightPath ??= file.outputPath;
+      group.highWeightPath ??= file.outputPath;
+    }
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((left, right) =>
+    left.key.localeCompare(right.key),
+  );
+}
+
+/**
+ * Synthesizes a BodySlide SliderSet .osp project when converted output includes
+ * meshes but no BodySlide project definition files. This enables BodySlide-only
+ * workflows without requiring separate manual project-authoring steps.
+ */
+async function synthesizeMissingSliderSetProject(
+  outputDir: string,
+  targetBodyType: BodyType,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<number> {
+  const hasProject = convertedFiles.some(
+    (f) =>
+      f.kind === "text" &&
+      (f.outputPath.endsWith(".osp") ||
+        (f.outputPath.endsWith(".xml") &&
+          /\/slidersets\//i.test(f.outputPath))),
+  );
+  if (hasProject) return 0;
+
+  const meshGroups = collectSliderSetMeshGroups(convertedFiles);
+  if (meshGroups.length === 0) return 0;
+
+  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+  const sliderSetEntries = meshGroups
+    .map((group) => {
+      const displayNameRaw = makeBodySlideDisplayName(
+        group.key.split("/").at(-1) ?? group.key,
+      );
+      const displayName = displayNameRaw
+        .toLowerCase()
+        .startsWith(targetAlias.toLowerCase())
+        ? displayNameRaw
+        : `${targetAlias} ${displayNameRaw}`;
+      const lowPath = group.lowWeightPath ?? group.highWeightPath;
+      const highPath = group.highWeightPath ?? group.lowWeightPath;
+      if (!lowPath || !highPath) return "";
+      return [
+        `  <SliderSet name="${escapeXml(displayName)}">`,
+        `    <OutputPath>${escapeXml(lowPath)}</OutputPath>`,
+        `    <OutputPathLow>${escapeXml(lowPath)}</OutputPathLow>`,
+        `    <OutputPathHigh>${escapeXml(highPath)}</OutputPathHigh>`,
+        "  </SliderSet>",
+      ].join("\n");
+    })
+    .filter(Boolean);
+
+  if (sliderSetEntries.length === 0) return 0;
+
+  const fileName = `${targetAlias}_AutoConverted.osp`;
+  const outputRelPath = `CalienteTools/BodySlide/SliderSets/${fileName}`;
+  const outputAbsPath = join(
+    outputDir,
+    "CalienteTools",
+    "BodySlide",
+    "SliderSets",
+    fileName,
+  );
+
+  const ospContent = [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    "<SliderSetInfo>",
+    ...sliderSetEntries,
+    "</SliderSetInfo>",
+    "",
+  ].join("\n");
+
+  await mkdir(dirname(outputAbsPath), { recursive: true });
+  await writeFile(outputAbsPath, ospContent, "utf8");
+
+  convertedFiles.push({
+    sourcePath: "(native post-process)",
+    outputPath: outputRelPath,
+    kind: "text",
+    action: "synthesized",
+  });
+
+  return sliderSetEntries.length;
+}
+
 /**
  * Synthesizes a BodySlide SliderGroup XML into the output directory whenever
  * the conversion produced BodySlide project files (OSP / SliderSetInfo XML)
@@ -688,9 +817,8 @@ async function synthesizeMissingCbpcStub(
     ";",
     "; NOTE: Physics on NIF meshes also requires that the outfit shapes carry",
     "; bone weights for the bones listed below.  If the outfit was converted",
-    "; from a non-physics source those weights must be added in Outfit Studio",
-    "; using 'Copy Bone Weights' from the reference body before physics will",
-    "; move the mesh at runtime.",
+    "; from a non-physics source those weights may be missing and runtime",
+    "; physics can remain static until the mesh includes target-bone weights.",
     "",
     boneEntries,
     "",
@@ -920,7 +1048,7 @@ function createWarnings(
     warnings.push(
       highRiskConversion
         ? `Native conversion is running in compatibility mode for '${source}' → '${target}' via ${path.label}. Automatic body-path, naming, and config adaptation was applied, but this route is high-risk and should still be manually checked for final seam quality.`
-        : `Native conversion is running in compatibility mode for '${source}' → '${target}' via ${path.label}. Automatic body-path, naming, and config adaptation was applied; external mesh QA is optional unless visual issues appear in-game.`,
+        : `Native conversion is running in compatibility mode for '${source}' → '${target}' via ${path.label}. Automatic body-path, naming, and config adaptation was applied; run BodySlide preview and in-game checks for final fit validation.`,
     );
   }
 
@@ -1069,6 +1197,19 @@ export async function convertMod(
       sourcePath: "(native post-process)",
       outputPath: "(generated weight pairs)",
       reason: `Synthesized ${synthesizedWeightMeshes} missing weight-pair mesh counterpart(s) to improve in-game slider completeness.`,
+    });
+  }
+
+  const synthesizedSliderSets = await synthesizeMissingSliderSetProject(
+    outputDir,
+    targetBodyType,
+    convertedFiles,
+  );
+  if (synthesizedSliderSets > 0) {
+    skippedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: "(generated bodyslide slidersets)",
+      reason: `Synthesized ${synthesizedSliderSets} BodySlide SliderSet entr${synthesizedSliderSets === 1 ? "y" : "ies"} from converted meshes so the outfit appears directly in BodySlide.`,
     });
   }
 

@@ -58,7 +58,8 @@ The command generates:
 - Generated output file names are normalized to canonical target body aliases (for example `3BA`, `BHUNP`, `UUNP`, `HIMBO`, and `SAM`) to make BodySlide outputs easier to identify.
 - Cross-gender adaptation also rewrites common gendered asset markers such as `femalebody`/`malebody` and first-person hand paths so generated outputs line up with the selected target gender.
 - The CLI summary, JSON report, and desktop app all include the generated conversion path metadata plus structured conversion-plan operations for manual follow-up.
-- Generated outputs now apply automatic naming, gender-marker, and physics-reference harmonization; external mesh-editor QA is mainly recommended for high-risk topology/cross-gender cases.
+- Generated outputs now apply automatic naming, gender-marker, and physics-reference harmonization; use BodySlide preview plus in-game checks for high-risk topology/cross-gender cases.
 - Native conversion now auto-synthesizes missing `_0`/`_1` `.nif` weight-pair meshes when only one side exists, improving in-game weight-slider completeness.
+- Native conversion now auto-synthesizes a BodySlide SliderSet `.osp` file when mesh outputs exist but no project file was provided, so converted outfits still appear directly in BodySlide without manual project setup.
 - Reports now include a structured conversion audit that checks extracted mesh/slider assets, BodySlide slider-set generation, topology risk, and target physics-config coverage (including 3BA belly-chain validation).
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.

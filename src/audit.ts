@@ -219,7 +219,7 @@ function buildProjectionCheck(
     status,
     sameTopology
       ? `${sourceType.toUpperCase()} and ${targetType.toUpperCase()} share '${targetInfo.topology}' topology, so slider/morph assets can stay on the same base topology.`
-      : `Topology differs (${sourceInfo.topology} → ${targetInfo.topology}); converted slider assets were generated, but geometric projection still needs manual verification.`,
+      : `Topology differs (${sourceInfo.topology} → ${targetInfo.topology}); converted slider assets were generated, so verify projection quality in BodySlide preview and in-game.`,
     [
       `Source slider-like assets: ${sourceSliderAssets.length}.`,
       `Converted slider-like assets: ${outputSliderAssets.length}.`,
@@ -311,7 +311,7 @@ function buildBodyKnowledgeCheck(
         : []),
       ...(topologyDiffers
         ? [
-            "Topology differs between source and target: manual seam QA is recommended at neck, wrists, ankles, and weight extremes.",
+            "Topology differs between source and target: run seam QA at neck, wrists, ankles, and weight extremes using BodySlide preview plus in-game checks.",
           ]
         : []),
     ],
@@ -392,7 +392,7 @@ function buildPhysicsConfigCheck(
           `Target physics bones referenced in configs: ${hits.length}/${targetInfo.physicsBones.length}.`,
         ]
       : [
-          "If the outfit depends on local CBPC/HDT-SMP rules, add or verify the corresponding config manually before release.",
+          "If the outfit depends on local CBPC/HDT-SMP rules, generate or verify the corresponding config before release.",
         ],
     collectPreviewPaths(configFiles.slice(0, 6)),
   );
@@ -491,13 +491,13 @@ function buildCbpcStubCheck(
     originalConfigs.length > 0
       ? `Source mod included ${originalConfigs.length} physics config file(s); bone remapping was applied.`
       : stubFiles.length > 0
-        ? "No source physics config was found — a starter stub was generated. Bone weights in NIF meshes must still be verified in Outfit Studio."
+        ? "No source physics config was found — a starter stub was generated. Validate runtime motion in BodySlide preview and in-game after build."
         : "No physics config was found or generated. Add CBPC/HDT-SMP rules manually if runtime physics are required.",
     [
       originalConfigs.length > 0
         ? "Physics config files from the source mod were remapped to target bone names."
         : "If the source outfit lacked physics bone weighting in its NIF meshes, the generated stub alone cannot activate runtime physics.",
-      "Verify NIF bone weights in Outfit Studio using 'Copy Bone Weights' from the target reference body.",
+      "Confirm generated outputs include target physics bones and pass in-game motion checks.",
     ],
     collectPreviewPaths(configFiles.slice(0, 4)),
   );

@@ -81,7 +81,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "calves",
     ],
     conversionNotes:
-      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Expect manual cleanup in Outfit Studio, especially at the chest and shoulder area. For HIMBO V5+ physics, the optional HIMBO Physics Addon uses HDT-SMP; enable that separately after the BodySlide conversion.",
+      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Prioritize BodySlide preview and in-game checks for chest and shoulder fit extremes. For HIMBO V5+ physics, the optional HIMBO Physics Addon uses HDT-SMP; enable that separately after the BodySlide conversion.",
   },
   bodytalk: {
     displayName: "BodyTalk – High-Poly Male Body Replacer",
@@ -228,7 +228,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "legacy seam cleanup",
     ],
     conversionNotes:
-      "7Base topology differs from both CBBE and UNP. Manual vertex projection in Outfit Studio is recommended due to significantly different and exaggerated body proportions. Seams at neck, wrist, and ankle all require manual cleanup; do not rely on automated seam stitching. 7Base Bombshell and Oppai are sub-variants with even larger bust proportions.",
+      "7Base topology differs from both CBBE and UNP because of significantly different and exaggerated body proportions. Treat seams at neck, wrist, and ankle as high-risk and validate with BodySlide preview plus in-game checks instead of relying on automatic seam stitching. 7Base Bombshell and Oppai are sub-variants with even larger bust proportions.",
   },
   sam: {
     displayName: "SAM – Shape Atlas for Men",
