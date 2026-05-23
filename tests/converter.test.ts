@@ -1265,6 +1265,47 @@ describe("convertMod", () => {
     expect(sliderGroupEntry).toBeDefined();
   });
 
+  it("disambiguates synthesized SliderSet names when mesh basenames repeat", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor", "seta"), { recursive: true });
+    await mkdir(join(inputDir, "meshes", "armor", "setb"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "seta", "cbbe_cuirass_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "setb", "cbbe_cuirass_0.nif"),
+      "caliente cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const sliderSetEntry = result.convertedFiles.find(
+      (file) =>
+        file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_AutoConverted.osp" &&
+        file.action === "synthesized",
+    );
+    expect(sliderSetEntry).toBeDefined();
+
+    const sliderSetContent = await readFile(
+      join(outputDir, sliderSetEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain('<SliderSet name="3BA Seta 3BA Cuirass">');
+    expect(sliderSetContent).toContain('<SliderSet name="3BA Setb 3BA Cuirass">');
+  });
+
   it("does not synthesize a duplicate SliderGroup when one already exists in the source", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

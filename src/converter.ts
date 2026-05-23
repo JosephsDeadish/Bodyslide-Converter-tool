@@ -563,6 +563,23 @@ function makeBodySlideDisplayName(value: string): string {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function buildSliderSetDisplayName(
+  key: string,
+  targetAlias: string,
+  includeParentContext = false,
+): string {
+  const segments = key.split("/").filter(Boolean);
+  const baseName = segments.at(-1) ?? key;
+  const withContext =
+    includeParentContext && segments.length > 1
+      ? `${segments.at(-2)} ${baseName}`
+      : baseName;
+  const displayNameRaw = makeBodySlideDisplayName(withContext);
+  return displayNameRaw.toLowerCase().startsWith(targetAlias.toLowerCase())
+    ? displayNameRaw
+    : `${targetAlias} ${displayNameRaw}`;
+}
+
 type SliderSetMeshGroup = {
   key: string;
   lowWeightPath: string | null;
@@ -627,16 +644,22 @@ async function synthesizeMissingSliderSetProject(
   if (meshGroups.length === 0) return 0;
 
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+  const baseDisplayNames = meshGroups.map((group) =>
+    buildSliderSetDisplayName(group.key, targetAlias),
+  );
+  const baseDisplayNameCounts = new Map<string, number>();
+  for (const name of baseDisplayNames) {
+    const lower = name.toLowerCase();
+    baseDisplayNameCounts.set(lower, (baseDisplayNameCounts.get(lower) ?? 0) + 1);
+  }
   const sliderSetEntries = meshGroups
-    .map((group) => {
-      const displayNameRaw = makeBodySlideDisplayName(
-        group.key.split("/").at(-1) ?? group.key,
-      );
-      const displayName = displayNameRaw
-        .toLowerCase()
-        .startsWith(targetAlias.toLowerCase())
-        ? displayNameRaw
-        : `${targetAlias} ${displayNameRaw}`;
+    .map((group, index) => {
+      const baseDisplayName = baseDisplayNames[index] ?? "";
+      const needsContext =
+        (baseDisplayNameCounts.get(baseDisplayName.toLowerCase()) ?? 0) > 1;
+      const displayName = needsContext
+        ? buildSliderSetDisplayName(group.key, targetAlias, true)
+        : baseDisplayName;
       const lowPath = group.lowWeightPath ?? group.highWeightPath;
       const highPath = group.highWeightPath ?? group.lowWeightPath;
       if (!lowPath || !highPath) return "";
