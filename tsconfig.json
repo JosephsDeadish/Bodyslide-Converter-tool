@@ -20,5 +20,5 @@
     "resolveJsonModule": true,
     "moduleResolution": "nodenext"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts"]
 }

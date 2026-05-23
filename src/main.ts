@@ -1,6 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  type IpcMainInvokeEvent,
+} from "electron";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
@@ -55,7 +61,7 @@ app.on("window-all-closed", () => {
   }
 });
 
-ipcMain.handle("dialog:openDirectory", async (event) => {
+ipcMain.handle("dialog:openDirectory", async (event: IpcMainInvokeEvent) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return null;
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
@@ -71,14 +77,20 @@ ipcMain.handle("get:bodyTypes", () =>
   })),
 );
 
-ipcMain.handle("get:bodyTypeInfo", (_event, bodyType: BodyType) => {
+ipcMain.handle(
+  "get:bodyTypeInfo",
+  (_event: IpcMainInvokeEvent, bodyType: BodyType) => {
   const info = BODY_TYPE_INFO[bodyType];
   return info ?? null;
-});
+  },
+);
 
 ipcMain.handle(
   "scan:run",
-  async (_event, args: { input: string; target: BodyType; output: string }) => {
+  async (
+    _event: IpcMainInvokeEvent,
+    args: { input: string; target: BodyType; output: string },
+  ) => {
     const { input, target, output } = args;
 
     const files = await scanModFiles(input);

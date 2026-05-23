@@ -1,6 +1,6 @@
 # Bodyslide-Converter-tool
 
-Modern TypeScript CLI for scanning armor/clothing mod folders, auto-detecting likely source body type, and running a native conversion pass for supported target body types.
+Modern TypeScript CLI and desktop app for scanning armor/clothing mod folders, auto-detecting likely source body type, and running a native conversion pass for supported target body types.
 
 ## Supported target body types
 
@@ -26,22 +26,23 @@ node dist/index.js --input /path/to/mod --target 3ba --output /path/to/output
 
 ## Build runnable EXE
 
-To build a Windows executable locally:
+To build the Electron desktop app locally:
 
 ```bash
 npm install
-npm run build:exe
+npm run build:main
+```
+
+To package a Windows portable executable:
+
+```bash
+npm install
+npm run package:win
 ```
 
 Output:
 
 - `release/bodyslide-converter.exe`
-
-To validate packaging in Linux/macOS environments:
-
-```bash
-npm run build:exe:linux
-```
 
 The command generates:
 
@@ -52,6 +53,6 @@ The command generates:
 ## Notes
 
 - Detection is heuristic-based and inspects filenames plus file previews.
-- Native conversion currently supports same-body output plus asset-safe paths for CBBE ↔ 3BA and UNP ↔ UUNP.
+- Native conversion currently supports same-body output plus compatibility-mode paths for CBBE ↔ 3BA ↔ TBD and UNP ↔ UUNP ↔ BHUNP.
 - Generated outputs should still be reviewed in Outfit Studio/NifSkope.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.

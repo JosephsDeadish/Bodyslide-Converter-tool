@@ -12,18 +12,24 @@ const TEXT_EXTENSIONS = new Set([".xml", ".osp", ".txt", ".json", ".ini"]);
 const MESH_EXTENSIONS = new Set([".nif", ".tri"]);
 
 const NATIVE_COMPATIBILITY: Record<BodyType, ReadonlySet<BodyType>> = {
-  cbbe: new Set(["cbbe", "3ba"]),
-  "3ba": new Set(["3ba", "cbbe"]),
+  cbbe: new Set(["cbbe", "3ba", "tbd"]),
+  "3ba": new Set(["3ba", "cbbe", "tbd"]),
   himbo: new Set(["himbo"]),
-  tbd: new Set(["tbd"]),
+  tbd: new Set(["tbd", "cbbe", "3ba"]),
   sos: new Set(["sos"]),
-  unp: new Set(["unp", "uunp"]),
-  bhunp: new Set(["bhunp"]),
-  uunp: new Set(["uunp", "unp"]),
+  unp: new Set(["unp", "uunp", "bhunp"]),
+  bhunp: new Set(["bhunp", "unp", "uunp"]),
+  uunp: new Set(["uunp", "unp", "bhunp"]),
   "7base": new Set(["7base"]),
   sam: new Set(["sam"]),
   vanilla: new Set(["vanilla"]),
 };
+
+const SUPPORTED_NATIVE_PATHS = [
+  "same-body output",
+  "CBBE ↔ 3BA ↔ TBD",
+  "UNP ↔ UUNP ↔ BHUNP",
+];
 
 const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
   cbbe: ["cbbe", "caliente"],
@@ -99,7 +105,7 @@ function createWarnings(
 
   if (source !== target) {
     warnings.push(
-      `Native conversion currently supports asset-safe paths only. Converted files target '${target}', but manual QA in Outfit Studio/NifSkope is still required.`,
+      `Native conversion is running in compatibility mode for '${source}' → '${target}'. BodySlide metadata and asset paths were rewritten, but meshes were preserved for safety, so manual QA in Outfit Studio/NifSkope is still required.`,
     );
   }
 
@@ -107,6 +113,15 @@ function createWarnings(
   if (targetInfo.physicsSupport) {
     warnings.push(
       `${target.toUpperCase()} uses physics-aware assets. This native pass rewrites BodySlide metadata and preserves meshes, but you should still verify runtime physics behavior.`,
+    );
+  }
+
+  const sourceInfo = BODY_TYPE_INFO[source];
+  if (sourceInfo.physicsSupport !== targetInfo.physicsSupport) {
+    warnings.push(
+      sourceInfo.physicsSupport
+        ? `Source body '${source}' includes physics-aware data that '${target}' does not. Review copied meshes and configs for leftover physics references.`
+        : `Target body '${target}' expects physics-aware data that '${source}' does not include. Review copied meshes and configs for any missing physics references.`,
     );
   }
 
@@ -129,7 +144,7 @@ export async function convertMod(
   const sourceBodyType = detection.bodyType;
   if (!isNativeConversionSupported(sourceBodyType, targetBodyType)) {
     throw new Error(
-      `Native conversion is currently supported for: same-body output, CBBE ↔ 3BA, and UNP ↔ UUNP. '${sourceBodyType}' → '${targetBodyType}' is not implemented yet.`,
+      `Native conversion is currently supported for: ${SUPPORTED_NATIVE_PATHS.join(", ")}. '${sourceBodyType}' → '${targetBodyType}' is not implemented yet.`,
     );
   }
 

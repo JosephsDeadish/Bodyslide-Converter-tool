@@ -170,6 +170,7 @@ body {
 .body-info-box .info-notes {
   margin-top: 6px;
   font-size: 12px;
+  color: #7a7aaa;
 }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
@@ -401,6 +402,42 @@ body {
   color: var(--text-dim);
 }
 
+.result-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.result-stats span {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.result-section-title {
+  margin: 12px 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.meta-list {
+  margin-top: 8px;
+  padding-left: 18px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.meta-list li {
+  margin-bottom: 4px;
+}
+
 /* Plan card */
 .op-list {
   list-style: none;
@@ -447,10 +484,13 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
 }
 .output-path-row code {
   color: var(--accent-hi);
   font-size: 12px;
+  word-break: break-all;
 }
 
 /* ── Error ───────────────────────────────────────────────────── */
@@ -479,5 +519,5 @@ body {
 
 /* ── Utilities ───────────────────────────────────────────────── */
 .hidden {
-  display: none !important;
+  display: none;
 }

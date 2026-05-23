@@ -22,13 +22,28 @@ const planBody = document.getElementById("planBody");
 const warningsBlock = document.getElementById("warningsBlock");
 const warningsList = document.getElementById("warningsList");
 const resultBadge = document.getElementById("resultBadge");
-const outputPathResult = document.getElementById("outputPathResult");
+const reportPathResult = document.getElementById("reportPathResult");
+const summaryPathResult = document.getElementById("summaryPathResult");
 const errorMsg = document.getElementById("errorMsg");
 const errorBackBtn = document.getElementById("errorBackBtn");
 
 // ── State ───────────────────────────────────────────────────────
 let inputPath = "";
 let outputPath = "";
+
+function escapeHtml(value) {
+  return String(value).replace(
+    /[&<>"']/g,
+    (char) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[char] ?? char,
+  );
+}
 
 // ── Init ────────────────────────────────────────────────────────
 (async function init() {
@@ -84,10 +99,10 @@ targetSelect.addEventListener("change", async () => {
     : `<span class="tag">No physics</span>`;
   const genderTag = `<span class="tag">${info.gender === "both" ? "Any gender" : info.gender === "male" ? "♂ Male" : "♀ Female"}</span>`;
   bodyInfoBox.innerHTML = `
-    <div class="info-name">${info.displayName}</div>
+    <div class="info-name">${escapeHtml(info.displayName)}</div>
     <div class="info-tags">${genderTag}${physTag}</div>
-    <div>${info.description}</div>
-    <div class="info-notes" style="margin-top:6px;font-size:11px;color:#7a7aaa;"><strong>Conversion notes:</strong> ${info.conversionNotes}</div>
+    <div>${escapeHtml(info.description)}</div>
+    <div class="info-notes"><strong>Conversion notes:</strong> ${escapeHtml(info.conversionNotes)}</div>
   `;
   bodyInfoBox.classList.remove("hidden");
 });
@@ -123,7 +138,7 @@ errorBackBtn.addEventListener("click", () => {
 
 // ── Render helpers ──────────────────────────────────────────────
 function renderResults(result) {
-  const { detection, result: conversion, reportPath } = result;
+  const { detection, result: conversion, reportPath, summaryPath } = result;
 
   // Result badge
   resultBadge.textContent = `${detection.bodyType.toUpperCase()} → ${conversion.targetBodyType.toUpperCase()}`;
@@ -133,32 +148,44 @@ function renderResults(result) {
   const confPct = Math.round(detection.confidence * 100);
   let candidatesHtml = "";
   if (detection.rankedCandidates && detection.rankedCandidates.length > 0) {
-    candidatesHtml = `<div class="candidates-title">Top matches</div>`;
+    candidatesHtml = '<div class="candidates-title">Top matches</div>';
     for (const c of detection.rankedCandidates) {
       const pct = Math.round(c.share * 100);
       candidatesHtml += `
         <div class="candidate-row">
-          <span class="candidate-name">${c.bodyType}</span>
+          <span class="candidate-name">${escapeHtml(c.bodyType)}</span>
           <div class="candidate-bar"><div class="candidate-fill" style="width:${pct}%"></div></div>
           <span class="candidate-pct">${pct}%</span>
         </div>`;
     }
   }
+  const matchedSignals = (detection.matchedSignals ?? [])
+    .slice(0, 5)
+    .map((signal) => `<li>${escapeHtml(signal)}</li>`)
+    .join("");
   detectionBody.innerHTML = `
-    <div class="detection-type">${detection.bodyType.toUpperCase()}</div>
+    <div class="detection-type">${escapeHtml(detection.bodyType.toUpperCase())}</div>
     <div class="conf-label">Confidence: ${confPct}%</div>
     <div class="conf-bar"><div class="conf-fill" style="width:${confPct}%"></div></div>
     ${candidatesHtml}
     <div style="margin-top:10px;font-size:12px;color:#8888b8">Files scanned: ${conversion.filesAnalyzed}</div>
+    ${matchedSignals ? `<div class="result-section-title">Matched signals</div><ul class="meta-list">${matchedSignals}</ul>` : ""}
   `;
 
   // Conversion card
-  let opsHtml = '<ul class="op-list">';
+  let opsHtml = `
+    <div class="result-stats">
+      <span>${conversion.convertedFiles.length} converted</span>
+      <span>${conversion.skippedFiles.length} safe copies</span>
+    </div>
+    <div class="result-section-title">Converted files</div>
+    <ul class="op-list">
+  `;
   for (const file of conversion.convertedFiles) {
     opsHtml += `
       <li class="op-item">
-        <div class="op-name">${file.outputPath}</div>
-        <div class="op-desc">${file.kind} • ${file.action} • source: ${file.sourcePath}</div>
+        <div class="op-name">${escapeHtml(file.outputPath)}</div>
+        <div class="op-desc">${escapeHtml(file.kind)} • ${escapeHtml(file.action)} • source: ${escapeHtml(file.sourcePath)}</div>
       </li>`;
   }
   if (conversion.convertedFiles.length === 0) {
@@ -169,20 +196,37 @@ function renderResults(result) {
       </li>`;
   }
   opsHtml += "</ul>";
+  if (conversion.skippedFiles.length > 0) {
+    opsHtml += `
+      <div class="result-section-title">Safe copied files</div>
+      <ul class="op-list">
+        ${conversion.skippedFiles
+          .map(
+            (file) => `
+              <li class="op-item">
+                <div class="op-name">${escapeHtml(file.outputPath)}</div>
+                <div class="op-desc">${escapeHtml(file.reason)} • source: ${escapeHtml(file.sourcePath)}</div>
+              </li>`,
+          )
+          .join("")}
+      </ul>
+    `;
+  }
   planBody.innerHTML = opsHtml;
 
   // Warnings
   if (conversion.warnings && conversion.warnings.length > 0) {
     warningsList.innerHTML = conversion.warnings
-      .map((w) => `<li>${w}</li>`)
+      .map((w) => `<li>${escapeHtml(w)}</li>`)
       .join("");
     warningsBlock.classList.remove("hidden");
   } else {
     warningsBlock.classList.add("hidden");
   }
 
-  // Output path
-  outputPathResult.textContent = reportPath;
+  // Output paths
+  reportPathResult.textContent = reportPath;
+  summaryPathResult.textContent = summaryPath;
 }
 
 // ── Screen / Status helpers ─────────────────────────────────────

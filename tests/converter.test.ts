@@ -67,6 +67,75 @@ describe("convertMod", () => {
     expect(rewritten).toContain("3ba");
   });
 
+  it("supports additional compatible female-body native paths", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
+
+    await writeFile(
+      join(inputDir, "meshes", "armor", "bhunp_boots_0.nif"),
+      "bhunp body",
+    );
+    await writeFile(
+      join(inputDir, "bodyslide", "slidersets", "bhunp_armor.xml"),
+      '<set name="BHUNP Armor">bhunp preset</set>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "uunp",
+    );
+
+    expect(result.sourceBodyType).toBe("bhunp");
+    expect(result.targetBodyType).toBe("uunp");
+    expect(result.warnings.some((warning) => warning.includes("compatibility mode"))).toBe(
+      true,
+    );
+
+    const rewritten = await readFile(
+      join(outputDir, "bodyslide", "slidersets", "uunp_armor.xml"),
+      "utf8",
+    );
+    expect(rewritten).toContain("uunp");
+  });
+
+  it("supports compatible CBBE-family metadata rewrites", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
+    await writeFile(
+      join(inputDir, "bodyslide", "slidersets", "tbd_fitted.xml"),
+      '<set name="TBD Armor">touched by dibella</set>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "cbbe",
+    );
+
+    expect(result.sourceBodyType).toBe("tbd");
+    const rewritten = await readFile(
+      join(outputDir, "bodyslide", "slidersets", "cbbe_fitted.xml"),
+      "utf8",
+    );
+    expect(rewritten).toContain("cbbe");
+  });
+
   it("rejects unsupported native conversion paths", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
