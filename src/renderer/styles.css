@@ -82,6 +82,9 @@ body {
 .sidebar-footer {
   padding: 12px 16px;
   border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* ── Form controls ───────────────────────────────────────────── */
@@ -209,6 +212,11 @@ body {
 }
 .btn-secondary:hover {
   background: var(--border);
+}
+
+.btn-support {
+  width: 100%;
+  font-size: 12px;
 }
 
 /* ── Badges ─────────────────────────────────────────────────── */

@@ -30,6 +30,7 @@ const summaryPathResult = document.getElementById("summaryPathResult");
 const errorMsg = document.getElementById("errorMsg");
 const errorBackBtn = document.getElementById("errorBackBtn");
 const newConversionBtn = document.getElementById("newConversionBtn");
+const supportPatreonBtn = document.getElementById("supportPatreonBtn");
 
 // ── State ───────────────────────────────────────────────────────
 let inputPath = "";
@@ -187,6 +188,16 @@ errorBackBtn.addEventListener("click", () => {
 newConversionBtn.addEventListener("click", () => {
   showScreen("welcome");
   setStatus("idle");
+});
+
+supportPatreonBtn.addEventListener("click", async () => {
+  try {
+    await api.openPatreonSupport();
+  } catch (err) {
+    errorMsg.textContent = err instanceof Error ? err.message : String(err);
+    showScreen("error");
+    setStatus("error");
+  }
 });
 
 // ── Render helpers ──────────────────────────────────────────────

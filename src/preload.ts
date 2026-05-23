@@ -35,4 +35,7 @@ contextBridge.exposeInMainWorld("bodyslideAPI", {
     output: string;
     sourceOverride?: BodyType;
   }): Promise<ScanResult> => ipcRenderer.invoke("scan:run", args),
+
+  openPatreonSupport: (): Promise<boolean> =>
+    ipcRenderer.invoke("open:patreonSupport"),
 });

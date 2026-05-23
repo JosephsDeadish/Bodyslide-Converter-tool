@@ -6,6 +6,7 @@ import {
   dialog,
   type IpcMainInvokeEvent,
   ipcMain,
+  shell,
 } from "electron";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { convertMod } from "./converter.js";
@@ -14,6 +15,8 @@ import { createConversionPlan } from "./planner.js";
 import { scanModFiles } from "./scanner.js";
 import type { BodyType } from "./types.js";
 import { BODY_TYPES } from "./types.js";
+
+const PATREON_SUPPORT_URL = "https://www.patreon.com/cw/DeadOnTheInside";
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -197,3 +200,8 @@ ipcMain.handle(
     return { detection, plan, result, reportPath, summaryPath };
   },
 );
+
+ipcMain.handle("open:patreonSupport", async () => {
+  await shell.openExternal(PATREON_SUPPORT_URL);
+  return true;
+});
