@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import type {
   BodyType,
@@ -10,6 +10,87 @@ import type {
 
 const TEXT_EXTENSIONS = new Set([".xml", ".osp", ".txt", ".json", ".ini"]);
 const MESH_EXTENSIONS = new Set([".nif", ".tri"]);
+
+// ── MO2 / Skyrim Data canonical root prefixes ──────────────────────────────
+// Any path already rooted under one of these is left exactly where it is.
+// Paths that fall outside these roots are remapped to the correct location so
+// that Mod Organizer 2 — which treats each mod folder as the Skyrim Data root
+// via its virtual file system — can load the files automatically.
+const CANONICAL_DATA_PREFIXES: readonly string[] = [
+  "meshes/",
+  "textures/",
+  "calienTetools/", // checked case-insensitively
+  "scripts/",
+  "skse/",
+  "interface/",
+  "music/",
+  "sound/",
+  "seq/",
+  "strings/",
+  "video/",
+  "shadersfx/",
+  "lodsettings/",
+  "grass/",
+  "terrain/",
+  "facegen/",
+];
+
+// BodySlide XML slider-group files contain one of these markers at the top.
+const BODYSLIDE_XML_MARKERS: readonly string[] = [
+  "<slidergroups",
+  "<slidergroup ",
+  "<slidergroup>",
+];
+
+/**
+ * Remaps a rewritten relative path to its canonical Skyrim Data location so
+ * that MO2 picks it up automatically when the output folder is set as a mod.
+ *
+ * Rules (applied only when the path is NOT already under a canonical root):
+ *   .osp          → CalienteTools/BodySlide/SliderSets/<filename>
+ *   .xml (BS)     → CalienteTools/BodySlide/SliderGroups/<filename>
+ *   .nif / .tri   → meshes/<original-relative-path>
+ *   everything else → unchanged (non-game asset; kept where it is)
+ */
+function normalizeToMo2DataPath(
+  rewrittenPath: string,
+  extension: string,
+  preview: string,
+): string {
+  // Normalise separators to forward-slashes for consistent prefix matching.
+  const forward = rewrittenPath.replace(/\\/g, "/");
+  const lower = forward.toLowerCase();
+
+  // Already in a canonical data root — preserve path as-is.
+  if (
+    CANONICAL_DATA_PREFIXES.some((prefix) =>
+      lower.startsWith(prefix.toLowerCase()),
+    )
+  ) {
+    return forward;
+  }
+
+  // .osp → BodySlide slider-set definition; must live in SliderSets/
+  if (extension === ".osp") {
+    return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
+  }
+
+  // .xml → only move BodySlide group XMLs; other XMLs (MCM, physics, …) stay put
+  if (extension === ".xml") {
+    if (BODYSLIDE_XML_MARKERS.some((marker) => preview.includes(marker))) {
+      return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
+    }
+    return forward;
+  }
+
+  // .nif / .tri → armor/clothing/body meshes must live under meshes/
+  if (extension === ".nif" || extension === ".tri") {
+    return `meshes/${forward}`;
+  }
+
+  // All other file types: keep relative path unchanged.
+  return forward;
+}
 
 type ConversionPath = {
   label: string;
@@ -509,10 +590,10 @@ export async function convertMod(
   const skippedFiles: ConversionResult["skippedFiles"] = [];
 
   for (const file of files) {
-    const rewrittenRelativePath = rewriteRelativePath(
-      file.relativePath,
-      sourceBodyType,
-      targetBodyType,
+    const rewrittenRelativePath = normalizeToMo2DataPath(
+      rewriteRelativePath(file.relativePath, sourceBodyType, targetBodyType),
+      file.extension,
+      file.preview,
     );
     const outputPath = join(outputDir, rewrittenRelativePath);
     await mkdir(dirname(outputPath), { recursive: true });

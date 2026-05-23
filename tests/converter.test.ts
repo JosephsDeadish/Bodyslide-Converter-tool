@@ -25,7 +25,9 @@ describe("convertMod", () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
+    // meshes/ is canonical — path is preserved as-is after alias rewriting.
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    // Non-canonical path → normalised to CalienteTools/BodySlide/SliderSets/
     await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
 
     await writeFile(
@@ -34,7 +36,7 @@ describe("convertMod", () => {
     );
     await writeFile(
       join(inputDir, "bodyslide", "slidersets", "cbbe_armor.xml"),
-      '<set name="CBBE Armor">cbbe curvy</set>',
+      '<SliderGroups><Group name="CBBE Armor">cbbe curvy</Group></SliderGroups>',
       "utf8",
     );
 
@@ -56,11 +58,13 @@ describe("convertMod", () => {
         warning.includes("external mesh QA is optional"),
       ),
     ).toBe(true);
+    // XML (BodySlide group) → CalienteTools/BodySlide/SliderGroups/
     expect(
       result.convertedFiles.some((file) =>
         file.outputPath.endsWith("3BA_armor.xml"),
       ),
     ).toBe(true);
+    // NIF already under meshes/ — preserved
     expect(
       result.convertedFiles.some((file) =>
         file.outputPath.endsWith("3BA_cuirass_1.nif"),
@@ -68,7 +72,13 @@ describe("convertMod", () => {
     ).toBe(true);
 
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "3BA_armor.xml"),
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "3BA_armor.xml",
+      ),
       "utf8",
     );
     expect(rewritten).toContain("3BA");
@@ -78,6 +88,7 @@ describe("convertMod", () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
+    // Non-canonical "configs/" path — not a recognised Skyrim data root.
     await mkdir(join(inputDir, "configs"), { recursive: true });
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
     await writeFile(
@@ -101,6 +112,7 @@ describe("convertMod", () => {
     );
 
     expect(result.sourceBodyType).toBe("3ba");
+    // .ini is not a BodySlide or mesh type — kept at its rewritten relative path
     const rewritten = await readFile(
       join(outputDir, "configs", "cbpc_BHUNP.ini"),
       "utf8",
@@ -114,6 +126,7 @@ describe("convertMod", () => {
     const outputDir = await makeTempDir();
 
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    // Non-canonical — will be normalised to SliderGroups/
     await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
 
     await writeFile(
@@ -122,7 +135,7 @@ describe("convertMod", () => {
     );
     await writeFile(
       join(inputDir, "bodyslide", "slidersets", "bhunp_armor.xml"),
-      '<set name="BHUNP Armor">bhunp preset</set>',
+      '<SliderGroups><Group name="BHUNP Armor">bhunp preset</Group></SliderGroups>',
       "utf8",
     );
 
@@ -144,7 +157,13 @@ describe("convertMod", () => {
     ).toBe(true);
 
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "UUNP_armor.xml"),
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "UUNP_armor.xml",
+      ),
       "utf8",
     );
     expect(rewritten).toContain("UUNP");
@@ -154,10 +173,11 @@ describe("convertMod", () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
+    // Non-canonical — normalised to SliderGroups/
     await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
     await writeFile(
       join(inputDir, "bodyslide", "slidersets", "tbd_fitted.xml"),
-      '<set name="TBD Armor">touched by dibella</set>',
+      '<SliderGroups><Group name="TBD Armor">touched by dibella</Group></SliderGroups>',
       "utf8",
     );
 
@@ -173,7 +193,13 @@ describe("convertMod", () => {
 
     expect(result.sourceBodyType).toBe("tbd");
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "CBBE_fitted.xml"),
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "CBBE_fitted.xml",
+      ),
       "utf8",
     );
     expect(rewritten).toContain("CBBE");
@@ -183,10 +209,11 @@ describe("convertMod", () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
+    // Non-canonical — normalised to SliderGroups/
     await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
     await writeFile(
       join(inputDir, "bodyslide", "slidersets", "HIMBO_armor.xml"),
-      '<set name="HIMBO Armor">highpolymalebody</set>',
+      '<SliderGroups><Group name="HIMBO Armor">highpolymalebody</Group></SliderGroups>',
       "utf8",
     );
 
@@ -205,7 +232,13 @@ describe("convertMod", () => {
     expect(result.preferredOutputAlias).toBe("SAM");
 
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "SAM_armor.xml"),
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "SAM_armor.xml",
+      ),
       "utf8",
     );
     expect(rewritten).toContain("SAM");
@@ -222,6 +255,7 @@ describe("convertMod", () => {
         recursive: true,
       },
     );
+    // Non-canonical — normalised to SliderGroups/
     await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
     await writeFile(
       join(inputDir, "meshes", "armor", "cbbe_cuirass_1.nif"),
@@ -240,7 +274,7 @@ describe("convertMod", () => {
     );
     await writeFile(
       join(inputDir, "bodyslide", "slidersets", "cbbe_female_outfit.xml"),
-      '<set name="CBBE Female Outfit">femalehands cbbe curvy</set>',
+      '<SliderGroups><Group name="CBBE Female Outfit">femalehands cbbe curvy</Group></SliderGroups>',
       "utf8",
     );
 
@@ -266,7 +300,13 @@ describe("convertMod", () => {
     ).toBe(true);
 
     const rewrittenMetadata = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "HIMBO_male_outfit.xml"),
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "HIMBO_male_outfit.xml",
+      ),
       "utf8",
     );
     expect(rewrittenMetadata).toContain("malehands");
@@ -283,10 +323,11 @@ describe("convertMod", () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
+    // Non-canonical — normalised to SliderGroups/
     await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
     await writeFile(
       join(inputDir, "bodyslide", "slidersets", "sam_armor.xml"),
-      '<set name="SAM Armor">shape atlas for men</set>',
+      '<SliderGroups><Group name="SAM Armor">shape atlas for men</Group></SliderGroups>',
       "utf8",
     );
 
@@ -305,7 +346,13 @@ describe("convertMod", () => {
     expect(result.conversionPath).toBe("HIMBO ↔ SAM ↔ BodyTalk ↔ SOS");
 
     const rewritten = await readFile(
-      join(outputDir, "bodyslide", "slidersets", "BodyTalk_armor.xml"),
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "BodyTalk_armor.xml",
+      ),
       "utf8",
     );
     expect(rewritten).toContain("BodyTalk");
@@ -343,5 +390,111 @@ describe("convertMod", () => {
       "utf8",
     );
     expect(synthesized).toContain("caliente");
+  });
+
+  it("normalizes OSP files to CalienteTools/BodySlide/SliderSets", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    // Flat OSP — not under any canonical root
+    await writeFile(
+      join(inputDir, "CBBE_Armor.osp"),
+      "<SliderSetInfo><SliderSet name='CBBE Armor'>cbbe body</SliderSet></SliderSetInfo>",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(result.sourceBodyType).toBe("cbbe");
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_Armor.osp",
+      ),
+    ).toBe(true);
+    const rewritten = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "3BA_Armor.osp",
+      ),
+      "utf8",
+    );
+    expect(rewritten).toContain("3BA");
+  });
+
+  it("normalizes non-canonical NIF files to meshes/ prefix", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    // NIF with no recognised root prefix — should land under meshes/
+    await writeFile(join(inputDir, "cbbe_boots_0.nif"), "caliente cbbe");
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(result.sourceBodyType).toBe("cbbe");
+    expect(
+      result.convertedFiles.some(
+        (file) => file.outputPath === "meshes/3BA_boots_0.nif",
+      ),
+    ).toBe(true);
+  });
+
+  it("preserves already-canonical CalienteTools paths unchanged", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "CBBE_Armor.osp",
+      ),
+      "<SliderSetInfo><SliderSet name='CBBE Armor'>cbbe body</SliderSet></SliderSetInfo>",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // Must stay in CalienteTools/BodySlide/SliderSets/ — no double-nesting
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_Armor.osp",
+      ),
+    ).toBe(true);
   });
 });

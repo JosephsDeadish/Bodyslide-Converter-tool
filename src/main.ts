@@ -101,8 +101,13 @@ ipcMain.handle(
 
     await mkdir(output, { recursive: true });
 
-    const reportPath = join(output, "conversion-report.json");
-    const summaryPath = join(output, "conversion-summary.txt");
+    // Reports go into a dedicated subfolder so MO2's virtual filesystem does
+    // not surface them as Skyrim game assets inside the conversion output mod.
+    const reportsDir = join(output, "_BodyslideConverter");
+    await mkdir(reportsDir, { recursive: true });
+
+    const reportPath = join(reportsDir, "conversion-report.json");
+    const summaryPath = join(reportsDir, "conversion-summary.txt");
 
     await writeFile(
       reportPath,
