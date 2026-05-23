@@ -247,4 +247,19 @@ describe("createConversionPlan", () => {
       true,
     );
   });
+
+  it("warns when only one Skyrim weight variant is present", () => {
+    const detection = detectBodyType([
+      file("meshes/armor/cbbe_outfit_0.nif", "caliente cbbe"),
+    ]);
+    const plan = createConversionPlan(detection, "3ba", [
+      file("meshes/armor/cbbe_outfit_0.nif"),
+    ]);
+
+    expect(
+      plan.warnings.some((warning) =>
+        warning.includes("Skyrim SE expects paired _0/_1 meshes"),
+      ),
+    ).toBe(true);
+  });
 });

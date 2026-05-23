@@ -43,7 +43,11 @@ const BODYSLIDE_SLIDERGROUP_XML_MARKERS: readonly string[] = [
 ];
 
 // BodySlide XML project files (equivalent to .osp) use SliderSetInfo as the root.
-const BODYSLIDE_PROJECT_XML_MARKERS: readonly string[] = ["<slidersetinfo"];
+const BODYSLIDE_PROJECT_XML_MARKERS: readonly string[] = [
+  "<slidersetinfo",
+  "<sliderset ",
+  "<sliderset>",
+];
 
 /**
  * Remaps a rewritten relative path to its canonical Skyrim Data location so

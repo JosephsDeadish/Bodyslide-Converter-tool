@@ -549,6 +549,40 @@ describe("convertMod", () => {
     ).toBe(false);
   });
 
+  it("routes SliderSet XML roots to SliderSets/", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await writeFile(
+      join(inputDir, "CBBE_Outfit.xml"),
+      '<?xml version="1.0"?><SliderSet name="CBBE Outfit">cbbe body</SliderSet>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_Outfit.xml",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.includes("SliderGroups"),
+      ),
+    ).toBe(false);
+  });
+
   it("maps 3BA breast physics bones to BHUNP names without misaligning butt bones", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

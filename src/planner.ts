@@ -229,6 +229,16 @@ function relationshipOperations(
   return ops;
 }
 
+function getWeightPairCounterpart(relativePath: string): string | null {
+  if (/_0\.(nif|osd|tri)$/i.test(relativePath)) {
+    return relativePath.replace(/_0\.(nif|osd|tri)$/i, "_1.$1");
+  }
+  if (/_1\.(nif|osd|tri)$/i.test(relativePath)) {
+    return relativePath.replace(/_1\.(nif|osd|tri)$/i, "_0.$1");
+  }
+  return null;
+}
+
 export function createConversionPlan(
   detection: DetectionResult,
   targetType: BodyType,
@@ -293,6 +303,18 @@ export function createConversionPlan(
   ) {
     warnings.push(
       "3BA shares the same base mesh topology as CBBE. Mesh re-projection is not required; only physics bone weighting and CBPC config updates are needed.",
+    );
+  }
+
+  const knownPaths = new Set(files.map((file) => file.relativePath));
+  const missingWeightPairCount = files.reduce((count, file) => {
+    const counterpart = getWeightPairCounterpart(file.relativePath);
+    if (!counterpart) return count;
+    return knownPaths.has(counterpart) ? count : count + 1;
+  }, 0);
+  if (missingWeightPairCount > 0) {
+    warnings.push(
+      `Detected ${missingWeightPairCount} mesh file(s) with only one Skyrim weight variant. Skyrim SE expects paired _0/_1 meshes for weight-slider support; missing counterparts should be generated or manually exported.`,
     );
   }
 
