@@ -161,7 +161,7 @@ describe("convertMod", () => {
     );
 
     expect(result.sourceBodyType).toBe("himbo");
-    expect(result.conversionPath).toBe("HIMBO ↔ SAM");
+    expect(result.conversionPath).toBe("HIMBO ↔ SAM ↔ BodyTalk ↔ SOS");
     expect(result.preferredOutputAlias).toBe("SAM");
 
     const rewritten = await readFile(
@@ -171,21 +171,98 @@ describe("convertMod", () => {
     expect(rewritten).toContain("SAM");
   });
 
-  it("rejects unsupported native conversion paths", async () => {
+  it("supports cross-gender outfit adaptation and gendered asset renames", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "meshes", "actors", "character", "character assets"), {
+      recursive: true,
+    });
+    await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
     await writeFile(
       join(inputDir, "meshes", "armor", "cbbe_cuirass_1.nif"),
       "caliente",
     );
+    await writeFile(
+      join(
+        inputDir,
+        "meshes",
+        "actors",
+        "character",
+        "character assets",
+        "femalebody_0.nif",
+      ),
+      "caliente femalebody",
+    );
+    await writeFile(
+      join(inputDir, "bodyslide", "slidersets", "cbbe_female_outfit.xml"),
+      '<set name="CBBE Female Outfit">femalehands cbbe curvy</set>',
+      "utf8",
+    );
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "himbo",
+    );
 
-    await expect(
-      convertMod(inputDir, outputDir, files, detection, "himbo"),
-    ).rejects.toThrow("is not implemented yet");
+    expect(result.sourceBodyType).toBe("cbbe");
+    expect(result.targetBodyType).toBe("himbo");
+    expect(result.conversionPath).toBe("Cross-gender outfit adaptation");
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Cross-gender adaptation rewrote common female asset markers"),
+      ),
+    ).toBe(true);
+
+    const rewrittenMetadata = await readFile(
+      join(outputDir, "bodyslide", "slidersets", "HIMBO_male_outfit.xml"),
+      "utf8",
+    );
+    expect(rewrittenMetadata).toContain("malehands");
+    expect(rewrittenMetadata).toContain("HIMBO");
+
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.endsWith("character assets/malebody_0.nif"),
+      ),
+    ).toBe(true);
+  });
+
+  it("supports BodyTalk as a male-family target", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
+    await writeFile(
+      join(inputDir, "bodyslide", "slidersets", "sam_armor.xml"),
+      '<set name="SAM Armor">shape atlas for men</set>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bodytalk",
+    );
+
+    expect(result.sourceBodyType).toBe("sam");
+    expect(result.targetBodyType).toBe("bodytalk");
+    expect(result.conversionPath).toBe("HIMBO ↔ SAM ↔ BodyTalk ↔ SOS");
+
+    const rewritten = await readFile(
+      join(outputDir, "bodyslide", "slidersets", "BodyTalk_armor.xml"),
+      "utf8",
+    );
+    expect(rewritten).toContain("BodyTalk");
   });
 });

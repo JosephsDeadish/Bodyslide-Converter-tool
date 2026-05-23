@@ -2,6 +2,7 @@ export const BODY_TYPES = [
   "cbbe",
   "3ba",
   "himbo",
+  "bodytalk",
   "tbd",
   "sos",
   "unp",

@@ -60,7 +60,7 @@ describe("detectBodyType", () => {
     ]);
 
     expect(detection.bodyType).not.toBe("cbbe");
-    expect(detection.bodyType).toBe("himbo");
+    expect(detection.bodyType).toBe("bodytalk");
   });
 });
 
@@ -88,6 +88,22 @@ describe("createConversionPlan", () => {
 
     expect(
       plan.operations.some((operation) => operation.id === "sam-morph"),
+    ).toBe(true);
+  });
+
+  it("adds cross-gender planning operations when adapting to a male body", () => {
+    const detection = detectBodyType([
+      file("meshes/armor/cbbe_cuirass_0.nif", "caliente cbbe"),
+    ]);
+    const plan = createConversionPlan(detection, "himbo", [
+      file("meshes/armor/cbbe_cuirass_0.nif"),
+    ]);
+
+    expect(
+      plan.operations.some((operation) => operation.id === "cross-gender-shape"),
+    ).toBe(true);
+    expect(
+      plan.operations.some((operation) => operation.id === "cross-gender-assets"),
     ).toBe(true);
   });
 });

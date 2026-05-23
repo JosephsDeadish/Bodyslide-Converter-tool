@@ -13,46 +13,46 @@ const MESH_EXTENSIONS = new Set([".nif", ".tri"]);
 
 type ConversionPath = {
   label: string;
-  bodies: readonly BodyType[];
   namingNotes: string[];
 };
 
-const COMPATIBILITY_PATHS: readonly ConversionPath[] = [
-  {
+const FEMALE_FAMILIES = new Set(["cbbe", "unp"]);
+const MALE_FAMILIES = new Set(["male", "addon"]);
+
+const CROSS_GENDER_NOTES = [
+  "Rewrites target aliases plus common female/male asset markers in file names and metadata.",
+  "Preserves source meshes for safety, so cross-gender outputs still require manual refit and weight cleanup in Outfit Studio.",
+];
+
+const FAMILY_PATHS: Record<string, ConversionPath> = {
+  cbbe: {
     label: "CBBE ↔ 3BA ↔ TBD",
-    bodies: ["cbbe", "3ba", "tbd"],
     namingNotes: [
       "Uses canonical CBBE-family output aliases in rewritten file names and BodySlide metadata.",
       "Preserves meshes for safety, so CBBE-family cross-conversions still need manual mesh QA.",
     ],
   },
-  {
-    label: "UNP ↔ UUNP ↔ BHUNP",
-    bodies: ["unp", "uunp", "bhunp"],
+  unp: {
+    label: "UNP ↔ UUNP ↔ BHUNP ↔ 7Base",
     namingNotes: [
-      "Uses canonical UNP-family output aliases, including UUNP Special/BHUNP-style naming signals.",
-      "Physics-enabled BHUNP outputs still require manual review of copied meshes and configs.",
+      "Uses canonical UNP-family output aliases, including UUNP/BHUNP/7Base naming signals where available.",
+      "UNP-family compatibility mode rewrites names and metadata only; legacy 7Base outputs should be reviewed carefully.",
     ],
   },
-  {
-    label: "HIMBO ↔ SAM",
-    bodies: ["himbo", "sam"],
+  male: {
+    label: "HIMBO ↔ SAM ↔ BodyTalk ↔ SOS",
     namingNotes: [
-      "Uses canonical male BodySlide output aliases for HIMBO and SAM Light style projects.",
+      "Uses canonical male-body output aliases for HIMBO, SAM, BodyTalk, and SOS style projects.",
       "Male-family compatibility mode rewrites names and metadata only; it does not retarget mesh proportions.",
     ],
   },
-];
-
-const SUPPORTED_NATIVE_PATHS = [
-  "same-body output",
-  ...COMPATIBILITY_PATHS.map((path) => path.label),
-];
+};
 
 const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
   cbbe: "CBBE",
   "3ba": "3BA",
   himbo: "HIMBO",
+  bodytalk: "BodyTalk",
   tbd: "TBD",
   sos: "SOS",
   unp: "UNP",
@@ -81,6 +81,14 @@ const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
     "highpolymalebody",
     "himbo",
   ],
+  bodytalk: [
+    "bodytalk v3",
+    "bodytalk v2",
+    "bodytalk_body",
+    "bodytalk body",
+    "bodytalk",
+    "bt3",
+  ],
   tbd: ["touched by dibella", "tbd body", "tbd"],
   sos: [
     "schlongs of skyrim",
@@ -97,6 +105,48 @@ const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
   sam: ["shape atlas for men", "sam light", "samlight", "sam"],
   vanilla: ["base game body", "default body", "vanilla"],
 };
+
+const FEMALE_TO_MALE_MARKERS = [
+  ["1stpersonfemalehands", "1stpersonmalehands"],
+  ["femalehands", "malehands"],
+  ["femalefeet", "malefeet"],
+  ["femalebody", "malebody"],
+  ["femalehead", "malehead"],
+  ["_f_", "_m_"],
+  ["-f-", "-m-"],
+] as const;
+
+const MALE_TO_FEMALE_MARKERS = FEMALE_TO_MALE_MARKERS.map(
+  ([female, male]) => [male, female] as const,
+);
+
+function getGender(bodyType: BodyType): "female" | "male" | "both" {
+  return BODY_TYPE_INFO[bodyType].gender;
+}
+
+function rewriteGenderMarkers(
+  value: string,
+  source: BodyType,
+  target: BodyType,
+): string {
+  const sourceGender = getGender(source);
+  const targetGender = getGender(target);
+
+  if (sourceGender === targetGender || sourceGender === "both" || targetGender === "both") {
+    return value;
+  }
+
+  const replacements =
+    sourceGender === "female" && targetGender === "male"
+      ? FEMALE_TO_MALE_MARKERS
+      : MALE_TO_FEMALE_MARKERS;
+
+  return replacements.reduce(
+    (next, [from, to]) =>
+      next.replaceAll(new RegExp(escapeRegExp(from), "gi"), to),
+    value,
+  );
+}
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -127,7 +177,9 @@ function rewriteRelativePath(
 ): string {
   return relativePath
     .split(/[\\/]/)
-    .map((segment) => replaceAliases(segment, source, target))
+    .map((segment) =>
+      replaceAliases(rewriteGenderMarkers(segment, source, target), source, target),
+    )
     .join("/");
 }
 
@@ -151,21 +203,69 @@ function getConversionPath(
     };
   }
 
-  const path = COMPATIBILITY_PATHS.find((candidate) => {
-    const members = new Set(candidate.bodies);
-    return members.has(source) && members.has(target);
-  });
-  if (!path) {
-    throw new Error(
-      `Native conversion is currently supported for: ${SUPPORTED_NATIVE_PATHS.join(", ")}. '${source}' → '${target}' is not implemented yet.`,
-    );
+  const sourceInfo = BODY_TYPE_INFO[source];
+  const targetInfo = BODY_TYPE_INFO[target];
+
+  if (
+    (sourceInfo.family === targetInfo.family && FAMILY_PATHS[sourceInfo.family]) ||
+    (FEMALE_FAMILIES.has(sourceInfo.family) &&
+      FEMALE_FAMILIES.has(targetInfo.family) &&
+      sourceInfo.gender === "female" &&
+      targetInfo.gender === "female")
+  ) {
+    const family =
+      sourceInfo.family === targetInfo.family ? sourceInfo.family : "female-cross-family";
+    if (family !== "female-cross-family") {
+      const path = FAMILY_PATHS[family];
+      return {
+        mode: "compatibility",
+        label: path.label,
+        preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
+        namingNotes: path.namingNotes,
+      };
+    }
+
+    return {
+      mode: "compatibility",
+      label: "Cross-family female adaptation",
+      preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
+      namingNotes: [
+        "Rewrites target aliases across female-body metadata, output paths, and BodySlide assets.",
+        "Preserves meshes for safety; female cross-family conversions still need seam and slider QA.",
+      ],
+    };
+  }
+
+  if (
+    (sourceInfo.family === targetInfo.family && FAMILY_PATHS[sourceInfo.family]) ||
+    (MALE_FAMILIES.has(sourceInfo.family) &&
+      MALE_FAMILIES.has(targetInfo.family) &&
+      sourceInfo.gender === "male" &&
+      targetInfo.gender === "male")
+  ) {
+    const path = FAMILY_PATHS.male;
+    return {
+      mode: "compatibility",
+      label: path.label,
+      preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
+      namingNotes: path.namingNotes,
+    };
   }
 
   return {
     mode: "compatibility",
-    label: path.label,
+    label:
+      sourceInfo.gender === "both" || targetInfo.gender === "both"
+        ? "Vanilla compatibility adaptation"
+        : "Cross-gender outfit adaptation",
     preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
-    namingNotes: path.namingNotes,
+    namingNotes:
+      sourceInfo.gender === "both" || targetInfo.gender === "both"
+        ? [
+            "Rewrites target aliases across vanilla-style asset names and BodySlide metadata.",
+            "Vanilla compatibility mode preserves meshes, so seam checks are still required.",
+          ]
+        : CROSS_GENDER_NOTES,
   };
 }
 
@@ -205,6 +305,24 @@ function createWarnings(
     );
   }
 
+  if (sourceInfo.gender !== targetInfo.gender && sourceInfo.gender !== "both" && targetInfo.gender !== "both") {
+    warnings.push(
+      `Cross-gender adaptation rewrote common ${sourceInfo.gender} asset markers to ${targetInfo.gender} markers so the generated outfit is labelled for the ${target.toUpperCase()} target body.`,
+    );
+  }
+
+  if (sourceInfo.topology !== targetInfo.topology) {
+    warnings.push(
+      `Source topology '${sourceInfo.topology}' differs from target topology '${targetInfo.topology}'. Review ${targetInfo.adaptationFocus.slice(0, 3).join(", ")} before release.`,
+    );
+  }
+
+  if (sourceInfo.family === "addon" || targetInfo.family === "addon") {
+    warnings.push(
+      "Addon-style body support (for example SOS) keeps partition-sensitive meshes intact. Verify slot assignments and exposed seams before release.",
+    );
+  }
+
   return warnings;
 }
 
@@ -241,7 +359,7 @@ export async function convertMod(
     if (TEXT_EXTENSIONS.has(file.extension)) {
       const content = await readFile(file.absolutePath, "utf8");
       const nextContent = replaceAliases(
-        content,
+        rewriteGenderMarkers(content, sourceBodyType, targetBodyType),
         sourceBodyType,
         targetBodyType,
       );

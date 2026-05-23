@@ -7,6 +7,7 @@ Modern TypeScript CLI and desktop app for scanning armor/clothing mod folders, a
 - cbbe
 - 3ba
 - himbo
+- bodytalk
 - tbd
 - sos
 - unp
@@ -53,8 +54,9 @@ The command generates:
 ## Notes
 
 - Detection is heuristic-based and inspects filenames plus file previews.
-- Native conversion currently supports same-body output plus compatibility-mode paths for CBBE ↔ 3BA ↔ TBD, UNP ↔ UUNP ↔ BHUNP, and HIMBO ↔ SAM.
+- Native conversion currently supports same-body output, same-gender cross-family adaptation, vanilla compatibility adaptation, and cross-gender outfit adaptation. Named compatibility paths include CBBE ↔ 3BA ↔ TBD, UNP ↔ UUNP ↔ BHUNP ↔ 7Base, and HIMBO ↔ SAM ↔ BodyTalk ↔ SOS.
 - Generated output file names are normalized to canonical target body aliases (for example `3BA`, `BHUNP`, `UUNP`, `HIMBO`, and `SAM`) to make BodySlide outputs easier to identify.
+- Cross-gender adaptation also rewrites common gendered asset markers such as `femalebody`/`malebody` and first-person hand paths so generated outputs line up with the selected target gender.
 - The CLI summary, JSON report, and desktop app all include the generated conversion path metadata plus structured conversion-plan operations for manual follow-up.
 - Generated outputs should still be reviewed in Outfit Studio/NifSkope.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.
