@@ -281,6 +281,44 @@ function buildSeamCheck(
   );
 }
 
+function buildBodyKnowledgeCheck(
+  sourceType: BodyType,
+  targetType: BodyType,
+): ConversionAuditCheck {
+  const sourceInfo = BODY_TYPE_INFO[sourceType];
+  const targetInfo = BODY_TYPE_INFO[targetType];
+  const crossGender =
+    sourceInfo.gender !== targetInfo.gender &&
+    sourceInfo.gender !== "both" &&
+    targetInfo.gender !== "both";
+  const topologyDiffers = sourceInfo.topology !== targetInfo.topology;
+  const status: ConversionAuditCheck["status"] =
+    crossGender || topologyDiffers ? "attention" : "pass";
+  const fitFocus = targetInfo.adaptationFocus.slice(0, 6);
+
+  return createCheck(
+    "fit-profile",
+    "Validate body-type fit profile",
+    status,
+    `Target ${targetType.toUpperCase()} fit focus: ${fitFocus.join(", ")}.`,
+    [
+      `Route context: ${sourceType.toUpperCase()} (${sourceInfo.gender}/${sourceInfo.topology}) → ${targetType.toUpperCase()} (${targetInfo.gender}/${targetInfo.topology}).`,
+      `Target guidance: ${targetInfo.conversionNotes}`,
+      ...(crossGender
+        ? [
+            "Cross-gender conversion detected: run extra in-game checks on chest, shoulder, waist, pelvis, and first-person body-part transitions.",
+          ]
+        : []),
+      ...(topologyDiffers
+        ? [
+            "Topology differs between source and target: manual seam QA is recommended at neck, wrists, ankles, and weight extremes.",
+          ]
+        : []),
+    ],
+    fitFocus,
+  );
+}
+
 function buildPhysicsWeightCheck(
   outputFiles: ScannedFile[],
   targetType: BodyType,
@@ -420,6 +458,7 @@ export function createConversionAudit(
     buildProjectionCheck(sourceType, targetType, sourceFiles, outputFiles),
     buildSliderSetCheck(outputFiles),
     buildSeamCheck(sourceType, targetType, outputFiles),
+    buildBodyKnowledgeCheck(sourceType, targetType),
     buildPhysicsWeightCheck(outputFiles, targetType),
     buildPhysicsConfigCheck(outputFiles, targetType),
     buildBellyCheck(outputFiles, targetType),

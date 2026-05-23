@@ -550,6 +550,58 @@ describe("convertMod", () => {
     ).toBe(true);
   });
 
+  it("normalizes Data/ rooted Skyrim paths to canonical output roots", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "Data", "meshes", "armor"), {
+      recursive: true,
+    });
+    await mkdir(
+      join(inputDir, "Data", "CalienteTools", "BodySlide", "SliderSets"),
+      { recursive: true },
+    );
+    await writeFile(
+      join(inputDir, "Data", "meshes", "armor", "cbbe_boots_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "Data",
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "CBBE_Armor.osp",
+      ),
+      "<SliderSetInfo><SliderSet name='CBBE Armor'>cbbe body</SliderSet></SliderSetInfo>",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(result.sourceBodyType).toBe("cbbe");
+    expect(
+      result.convertedFiles.some(
+        (file) => file.outputPath === "meshes/armor/3BA_boots_0.nif",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "CalienteTools/BodySlide/SliderSets/3BA_Armor.osp",
+      ),
+    ).toBe(true);
+  });
+
   it("normalizes OSD files to meshes/ prefix", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -987,6 +1039,41 @@ describe("convertMod", () => {
     expect(rewritten).toContain("NPC Belly");
     expect(rewritten).not.toContain("NPC GenitalsBase01");
     expect(rewritten).not.toContain("NPC L Breast01");
+  });
+
+  it("adds target body fit guidance warnings for conversions", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_0.nif"),
+      "3bbb amazing body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Target fit focus for BHUNP"),
+      ),
+    ).toBe(true);
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Target body knowledge note (BHUNP)"),
+      ),
+    ).toBe(true);
+    expect(
+      result.audit.checks.some((check) => check.id === "fit-profile"),
+    ).toBe(true);
   });
 
   it("produces a structured conversion audit for 3BA-ready outputs", async () => {

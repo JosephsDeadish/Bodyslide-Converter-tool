@@ -36,6 +36,7 @@ const CANONICAL_DATA_PREFIXES: readonly string[] = [
   "terrain/",
   "facegen/",
 ];
+const DATA_CONTAINER_PREFIXES: readonly string[] = ["data/", "data files/"];
 
 // BodySlide XML slider-group files contain one of these markers at the top.
 const BODYSLIDE_SLIDERGROUP_XML_MARKERS: readonly string[] = [
@@ -66,8 +67,19 @@ function normalizeToMo2DataPath(
   extension: string,
   preview: string,
 ): string {
-  // Normalise separators to forward-slashes for consistent prefix matching.
-  const forward = rewrittenPath.replace(/\\/g, "/");
+  // Normalise separators to forward-slashes and strip common archive container roots.
+  let forward = rewrittenPath.replace(/\\/g, "/").replace(/^\.?\//, "");
+  while (
+    DATA_CONTAINER_PREFIXES.some((prefix) =>
+      forward.toLowerCase().startsWith(prefix),
+    )
+  ) {
+    const matchingPrefix = DATA_CONTAINER_PREFIXES.find((prefix) =>
+      forward.toLowerCase().startsWith(prefix),
+    );
+    if (!matchingPrefix) break;
+    forward = forward.slice(matchingPrefix.length);
+  }
   const lower = forward.toLowerCase();
 
   // Already in a canonical data root — preserve path as-is.
@@ -740,6 +752,19 @@ function createWarnings(
       "Addon-style body support (for example SOS) keeps partition-sensitive meshes intact. Verify slot assignments and exposed seams before release.",
     );
   }
+
+  const fitFocus = targetInfo.adaptationFocus.slice(0, 5).join(", ");
+  if (fitFocus.length > 0) {
+    warnings.push(
+      `Target fit focus for ${target.toUpperCase()}: ${fitFocus}.`,
+    );
+  }
+  const targetKnowledgeSummary =
+    targetInfo.conversionNotes.split(/(?<=\.)\s+/)[0] ??
+    targetInfo.conversionNotes;
+  warnings.push(
+    `Target body knowledge note (${target.toUpperCase()}): ${targetKnowledgeSummary}`,
+  );
 
   return warnings;
 }
