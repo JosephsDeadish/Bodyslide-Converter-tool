@@ -7,5 +7,8 @@ export const BODY_TYPES = [
     "unp",
     "bhunp",
     "uunp",
+    "7base",
+    "sam",
+    "vanilla",
 ];
 //# sourceMappingURL=types.js.map

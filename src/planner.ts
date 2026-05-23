@@ -97,6 +97,11 @@ export function createConversionPlan(
   warnings.push(
     "Automated output should be reviewed in Outfit Studio before release.",
   );
+  if (detection.confidence < 0.55) {
+    warnings.push(
+      "Confidence is below 0.55. Review ranked candidates before committing conversion outputs.",
+    );
+  }
 
   return {
     sourceType: detection.bodyType,

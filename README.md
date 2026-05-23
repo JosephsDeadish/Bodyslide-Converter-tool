@@ -12,6 +12,9 @@ Modern TypeScript CLI for scanning armor/clothing mod folders, auto-detecting li
 - unp
 - bhunp
 - uunp
+- 7base
+- sam
+- vanilla
 
 ## Quick start
 
@@ -24,7 +27,7 @@ node dist/index.js --input /path/to/mod --target 3ba --output /path/to/output
 The command generates:
 
 - `conversion-report.json` with detection scores and conversion metadata
-- `conversion-plan.txt` with ordered conversion steps and warnings
+- `conversion-plan.txt` with ordered conversion steps, ranked body-type candidates, and warnings
 
 ## Notes
 

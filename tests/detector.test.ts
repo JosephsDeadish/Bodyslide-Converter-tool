@@ -36,6 +36,18 @@ describe("detectBodyType", () => {
 
     expect(detection.bodyType).toBe("unknown");
     expect(detection.confidence).toBe(0);
+    expect(detection.rankedCandidates).toHaveLength(0);
+  });
+
+  it("detects sam and exposes ranked candidates", () => {
+    const detection = detectBodyType([
+      file("meshes/armor/sam_light_top.nif", "shape atlas for men"),
+      file("calientetools/slidergroups/sam.xml", "sam light"),
+    ]);
+
+    expect(detection.bodyType).toBe("sam");
+    expect(detection.rankedCandidates.at(0)?.bodyType).toBe("sam");
+    expect(detection.rankedCandidates.at(0)?.share).toBeGreaterThan(0);
   });
 });
 

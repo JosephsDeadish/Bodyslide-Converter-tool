@@ -10,6 +10,9 @@ const SIGNALS: Record<BodyType, RegExp[]> = {
   unp: [/\bunp\b/, /dimonized/, /unpb/],
   bhunp: [/\bbhunp\b/, /bhunp/, /unp special/],
   uunp: [/\buunp\b/, /unified unp/],
+  "7base": [/\b7base\b/, /sevenbase/, /7b body/],
+  sam: [/\bsam\b/, /shape atlas for men/, /sam light/],
+  vanilla: [/\bvanilla\b/, /default body/, /base game body/],
 };
 
 function scoreFileForType(file: ScannedFile, patterns: RegExp[]): number {
@@ -52,23 +55,34 @@ export function detectBodyType(files: ScannedFile[]): DetectionResult {
 
   const sorted = [...BODY_TYPES].sort((a, b) => scores[b] - scores[a]);
   const bestType = sorted.at(0);
+  const total = sorted.reduce((sum, bodyType) => sum + scores[bodyType], 0);
+  const rankedCandidates = sorted
+    .map((bodyType) => ({
+      bodyType,
+      score: Number(scores[bodyType].toFixed(2)),
+      share: Number((scores[bodyType] / Math.max(total, 1)).toFixed(2)),
+    }))
+    .filter((candidate) => candidate.score > 0)
+    .slice(0, 5);
+
   if (!bestType) {
     return {
       bodyType: "unknown",
       confidence: 0,
       scores,
+      rankedCandidates: [],
       matchedSignals: [],
     };
   }
 
   const bestScore = scores[bestType];
-  const total = sorted.reduce((sum, bodyType) => sum + scores[bodyType], 0);
 
   if (bestScore <= 0) {
     return {
       bodyType: "unknown",
       confidence: 0,
       scores,
+      rankedCandidates: [],
       matchedSignals: [],
     };
   }
@@ -77,6 +91,7 @@ export function detectBodyType(files: ScannedFile[]): DetectionResult {
     bodyType: bestType,
     confidence: Number((bestScore / Math.max(total, 1)).toFixed(2)),
     scores,
+    rankedCandidates,
     matchedSignals: [...matchedSignals].slice(0, 30),
   };
 }

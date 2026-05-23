@@ -66,6 +66,9 @@ export function createConversionPlan(detection, targetType, files) {
         warnings.push("Source and target body type are the same; conversion may only require slider cleanup.");
     }
     warnings.push("Automated output should be reviewed in Outfit Studio before release.");
+    if (detection.confidence < 0.55) {
+        warnings.push("Confidence is below 0.55. Review ranked candidates before committing conversion outputs.");
+    }
     return {
         sourceType: detection.bodyType,
         targetType,

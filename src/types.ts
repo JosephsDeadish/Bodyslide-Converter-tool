@@ -7,6 +7,9 @@ export const BODY_TYPES = [
   "unp",
   "bhunp",
   "uunp",
+  "7base",
+  "sam",
+  "vanilla",
 ] as const;
 
 export type BodyType = (typeof BODY_TYPES)[number];
@@ -23,6 +26,11 @@ export type DetectionResult = {
   bodyType: BodyType | "unknown";
   confidence: number;
   scores: Record<BodyType, number>;
+  rankedCandidates: Array<{
+    bodyType: BodyType;
+    score: number;
+    share: number;
+  }>;
   matchedSignals: string[];
 };
 

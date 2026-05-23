@@ -28,6 +28,11 @@ program
     await writeFile(reportPath, `${JSON.stringify({ detection, plan }, null, 2)}\n`, "utf8");
     await writeFile(planPath, [
         `Source detected: ${detection.bodyType} (confidence ${detection.confidence})`,
+        `Top candidates: ${detection.rankedCandidates.length > 0
+            ? detection.rankedCandidates
+                .map((candidate) => `${candidate.bodyType} (${candidate.share.toFixed(2)})`)
+                .join(", ")
+            : "none"}`,
         `Target body type: ${targetBodyType}`,
         `Files analyzed: ${files.length}`,
         "",
