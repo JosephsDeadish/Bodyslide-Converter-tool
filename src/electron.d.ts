@@ -36,9 +36,12 @@ declare module "electron" {
   };
 
   export const ipcMain: {
-    handle(
+    handle<TArgs extends unknown[], TResult>(
       channel: string,
-      listener: (event: IpcMainInvokeEvent, ...args: unknown[]) => unknown,
+      listener: (
+        event: IpcMainInvokeEvent,
+        ...args: TArgs
+      ) => TResult | Promise<TResult>,
     ): void;
   };
 
@@ -47,6 +50,6 @@ declare module "electron" {
   };
 
   export const ipcRenderer: {
-    invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+    invoke<TResult>(channel: string, ...args: unknown[]): Promise<TResult>;
   };
 }
