@@ -755,9 +755,7 @@ function createWarnings(
 
   const fitFocus = targetInfo.adaptationFocus.slice(0, 5).join(", ");
   if (fitFocus.length > 0) {
-    warnings.push(
-      `Target fit focus for ${target.toUpperCase()}: ${fitFocus}.`,
-    );
+    warnings.push(`Target fit focus for ${target.toUpperCase()}: ${fitFocus}.`);
   }
   const targetKnowledgeSummary =
     targetInfo.conversionNotes.split(/(?<=\.)\s+/)[0] ??

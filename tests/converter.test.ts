@@ -597,7 +597,8 @@ describe("convertMod", () => {
     expect(
       result.convertedFiles.some(
         (file) =>
-          file.outputPath === "CalienteTools/BodySlide/SliderSets/3BA_Armor.osp",
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_Armor.osp",
       ),
     ).toBe(true);
   });
