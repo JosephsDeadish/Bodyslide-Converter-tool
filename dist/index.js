@@ -11,7 +11,7 @@ import { BODY_TYPES } from "./types.js";
 const targetSchema = z.enum(BODY_TYPES);
 const program = new Command();
 program
-    .name("bodyslide-converter")
+    .name("slidesmith")
     .description("Detect source body type and run a native BodySlide asset conversion.")
     .requiredOption("-i, --input <path>", "Path to clothing/armor mod folder")
     .requiredOption("-t, --target <bodyType>", "Desired target body type")
