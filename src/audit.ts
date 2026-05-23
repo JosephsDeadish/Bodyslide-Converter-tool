@@ -323,36 +323,36 @@ function buildPhysicsWeightCheck(
   outputFiles: ScannedFile[],
   targetType: BodyType,
 ) {
-  if (targetType !== "3ba") {
+  const targetInfo = BODY_TYPE_INFO[targetType];
+  if (!targetInfo.physicsSupport) {
     return createCheck(
       "physics-weight",
-      "Add physics bone weighting (3BA)",
+      `Add physics bone weighting (${targetType.toUpperCase()})`,
       "not-applicable",
-      "3BA-specific physics weighting validation is only required when targeting 3BA.",
+      `${targetType.toUpperCase()} does not use physics bone weighting.`,
     );
   }
 
+  const label = targetType.toUpperCase();
   const outputHaystack = outputFiles
     .filter((file) => isMesh(file) || isPhysicsConfig(file))
     .map((file) => `${file.relativePath}\n${file.preview}`)
     .join("\n");
-  const hits = findMatches(outputHaystack, BODY_TYPE_INFO["3ba"].physicsBones);
+  const hits = findMatches(outputHaystack, targetInfo.physicsBones);
   const status =
-    hits.length === BODY_TYPE_INFO["3ba"].physicsBones.length
-      ? "pass"
-      : "attention";
+    hits.length === targetInfo.physicsBones.length ? "pass" : "attention";
 
   return createCheck(
     "physics-weight",
-    "Add physics bone weighting (3BA)",
+    `Add physics bone weighting (${label})`,
     status,
-    `Detected ${hits.length}/${BODY_TYPE_INFO["3ba"].physicsBones.length} required 3BA physics bone marker(s) across converted meshes/configs.`,
-    hits.length === BODY_TYPE_INFO["3ba"].physicsBones.length
+    `Detected ${hits.length}/${targetInfo.physicsBones.length} required ${label} physics bone marker(s) across converted meshes/configs.`,
+    hits.length === targetInfo.physicsBones.length
       ? [
-          "All required 3BA breast, butt, and belly chain names were detected in converted assets.",
+          `All required ${label} physics bone chain names were detected in converted assets.`,
         ]
       : [
-          `Missing 3BA physics markers: ${BODY_TYPE_INFO["3ba"].physicsBones.filter((bone) => !hits.includes(bone)).join(", ")}.`,
+          `Missing ${label} physics markers: ${targetInfo.physicsBones.filter((bone) => !hits.includes(bone)).join(", ")}.`,
         ],
     hits,
   );

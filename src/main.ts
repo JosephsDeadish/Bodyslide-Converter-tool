@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   app,
   BrowserWindow,
@@ -107,6 +107,14 @@ ipcMain.handle(
   ) => {
     const { input, target, output, sourceOverride } = args;
 
+    // Reject conversions where input and output resolve to the same directory,
+    // which would overwrite the source mod files in place.
+    if (resolve(input) === resolve(output)) {
+      throw new Error(
+        "Input and output directories must be different. Using the same folder as both input and output would overwrite your source files.",
+      );
+    }
+
     const files = await scanModFiles(input);
     const autoDetection = detectBodyType(files);
 
@@ -117,8 +125,6 @@ ipcMain.handle(
         : autoDetection;
     const plan = createConversionPlan(detection, target, files);
     const result = await convertMod(input, output, files, detection, target);
-
-    await mkdir(output, { recursive: true });
 
     // Reports go into a dedicated subfolder so MO2's virtual filesystem does
     // not surface them as Skyrim game assets inside the conversion output mod.

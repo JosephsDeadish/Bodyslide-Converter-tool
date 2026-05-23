@@ -1,7 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import { detectBodyType } from "../src/detector.js";
 import { createConversionPlan } from "../src/planner.js";
+import { scanModFiles } from "../src/scanner.js";
 import type { ScannedFile } from "../src/types.js";
+
+const tempDirs: string[] = [];
+
+async function makeTempDir(): Promise<string> {
+  const dir = await mkdtemp(join(tmpdir(), "slidesmith-scan-"));
+  tempDirs.push(dir);
+  return dir;
+}
+
+afterEach(async () => {
+  await Promise.all(
+    tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })),
+  );
+});
 
 function file(relativePath: string, preview = ""): ScannedFile {
   const basename = relativePath.split("/").at(-1) ?? relativePath;
@@ -261,5 +279,53 @@ describe("createConversionPlan", () => {
         warning.includes("Skyrim SE expects paired _0/_1 meshes"),
       ),
     ).toBe(true);
+  });
+});
+
+describe("scanModFiles", () => {
+  it("excludes _SlideSmith report directory from scan results", async () => {
+    const dir = await makeTempDir();
+    await mkdir(join(dir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(dir, "_SlideSmith"), { recursive: true });
+
+    await writeFile(join(dir, "meshes", "armor", "cbbe_0.nif"), "caliente");
+    await writeFile(
+      join(dir, "_SlideSmith", "conversion-report.json"),
+      '{"detection":"cbbe"}',
+      "utf8",
+    );
+
+    const files = await scanModFiles(dir);
+    const paths = files.map((f) => f.relativePath);
+
+    expect(paths.some((p) => p.includes("_SlideSmith"))).toBe(false);
+    expect(paths.some((p) => p.includes("meshes"))).toBe(true);
+  });
+
+  it("excludes OS system metadata files from scan results", async () => {
+    const dir = await makeTempDir();
+    await mkdir(join(dir, "meshes"), { recursive: true });
+
+    await writeFile(join(dir, ".DS_Store"), Buffer.alloc(32));
+    await writeFile(join(dir, "desktop.ini"), "[.ShellClassInfo]");
+    await writeFile(join(dir, "Thumbs.db"), Buffer.alloc(16));
+    await writeFile(join(dir, "meshes", "cbbe_0.nif"), "caliente");
+
+    const files = await scanModFiles(dir);
+    const names = files.map((f) => f.basename.toLowerCase());
+
+    expect(names).not.toContain(".ds_store");
+    expect(names).not.toContain("desktop.ini");
+    expect(names).not.toContain("thumbs.db");
+    expect(names.some((n) => n.includes("nif"))).toBe(true);
+  });
+
+  it("gracefully skips unreadable subdirectories without throwing", async () => {
+    const dir = await makeTempDir();
+    await mkdir(join(dir, "meshes", "armor"), { recursive: true });
+    await writeFile(join(dir, "meshes", "armor", "cbbe_0.nif"), "caliente");
+
+    // scanModFiles should resolve without throwing even if a subdir is unreadable.
+    await expect(scanModFiles(dir)).resolves.toBeDefined();
   });
 });

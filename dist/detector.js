@@ -231,8 +231,8 @@ function scoreGenderHint(file, bodyType) {
     return 0;
 }
 function detectGenderHint(haystack) {
-    const hasFemale = /(femalebody|femalehands|femalefeet|femalebody|1stpersonfemale)/.test(haystack);
-    const hasMale = /(malebody|malehands|malefeet|malebody|1stpersonmale)/.test(haystack);
+    const hasFemale = /(femalebody|femalehands|femalefeet|1stpersonfemale)/.test(haystack);
+    const hasMale = /(malebody|malehands|malefeet|1stpersonmale)/.test(haystack);
     if (hasFemale && !hasMale)
         return "female";
     if (hasMale && !hasFemale)

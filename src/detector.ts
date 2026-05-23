@@ -245,13 +245,10 @@ function scoreGenderHint(file: ScannedFile, bodyType: BodyType): number {
 }
 
 function detectGenderHint(haystack: string): GenderHint {
-  const hasFemale =
-    /(femalebody|femalehands|femalefeet|femalebody|1stpersonfemale)/.test(
-      haystack,
-    );
-  const hasMale = /(malebody|malehands|malefeet|malebody|1stpersonmale)/.test(
+  const hasFemale = /(femalebody|femalehands|femalefeet|1stpersonfemale)/.test(
     haystack,
   );
+  const hasMale = /(malebody|malehands|malefeet|1stpersonmale)/.test(haystack);
 
   if (hasFemale && !hasMale) return "female";
   if (hasMale && !hasFemale) return "male";

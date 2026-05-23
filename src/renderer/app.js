@@ -29,6 +29,7 @@ const reportPathResult = document.getElementById("reportPathResult");
 const summaryPathResult = document.getElementById("summaryPathResult");
 const errorMsg = document.getElementById("errorMsg");
 const errorBackBtn = document.getElementById("errorBackBtn");
+const newConversionBtn = document.getElementById("newConversionBtn");
 
 // ── State ───────────────────────────────────────────────────────
 let inputPath = "";
@@ -154,6 +155,7 @@ convertBtn.addEventListener("click", async () => {
   const target = targetSelect.value;
   if (!inputPath || !outputPath || !target) return;
 
+  convertBtn.disabled = true;
   showScreen("loading");
   setStatus("scanning");
 
@@ -172,10 +174,17 @@ convertBtn.addEventListener("click", async () => {
     errorMsg.textContent = err instanceof Error ? err.message : String(err);
     showScreen("error");
     setStatus("error");
+  } finally {
+    convertBtn.disabled = false;
   }
 });
 
 errorBackBtn.addEventListener("click", () => {
+  showScreen("welcome");
+  setStatus("idle");
+});
+
+newConversionBtn.addEventListener("click", () => {
   showScreen("welcome");
   setStatus("idle");
 });
