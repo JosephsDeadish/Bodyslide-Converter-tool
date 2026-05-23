@@ -10,6 +10,7 @@ import {
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
+import { createConversionPlan } from "./planner.js";
 import { scanModFiles } from "./scanner.js";
 import type { BodyType } from "./types.js";
 import { BODY_TYPES } from "./types.js";
@@ -95,6 +96,7 @@ ipcMain.handle(
 
     const files = await scanModFiles(input);
     const detection = detectBodyType(files);
+    const plan = createConversionPlan(detection, target, files);
     const result = await convertMod(input, output, files, detection, target);
 
     await mkdir(output, { recursive: true });
@@ -104,7 +106,7 @@ ipcMain.handle(
 
     await writeFile(
       reportPath,
-      `${JSON.stringify({ detection, result }, null, 2)}\n`,
+      `${JSON.stringify({ detection, plan, result }, null, 2)}\n`,
       "utf8",
     );
 
@@ -125,6 +127,17 @@ ipcMain.handle(
           ? `Top candidates: ${detection.rankedCandidates.map((c) => `${c.bodyType} ${Math.round(c.share * 100)}%`).join(" | ")}`
           : `No strong candidates detected.`,
         ``,
+        `CONVERSION PLAN`,
+        `===============`,
+        ...plan.operations.map(
+          (operation, i) =>
+            `${i + 1}. ${operation.name}\n   ${operation.description}`,
+        ),
+        ``,
+        `PLAN WARNINGS`,
+        `=============`,
+        ...plan.warnings.map((warning, i) => `${i + 1}. ${warning}`),
+        ``,
         `NAMING NOTES`,
         `============`,
         ...result.namingNotes.map((note, i) => `${i + 1}. ${note}`),
@@ -143,6 +156,6 @@ ipcMain.handle(
       "utf8",
     );
 
-    return { detection, result, reportPath, summaryPath };
+    return { detection, plan, result, reportPath, summaryPath };
   },
 );

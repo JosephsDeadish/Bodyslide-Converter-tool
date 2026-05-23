@@ -138,7 +138,7 @@ errorBackBtn.addEventListener("click", () => {
 
 // ── Render helpers ──────────────────────────────────────────────
 function renderResults(result) {
-  const { detection, result: conversion, reportPath, summaryPath } = result;
+  const { detection, plan, result: conversion, reportPath, summaryPath } = result;
 
   // Result badge
   resultBadge.textContent = `${detection.bodyType.toUpperCase()} → ${conversion.targetBodyType.toUpperCase()}`;
@@ -187,6 +187,18 @@ function renderResults(result) {
         .map((note) => `<li>${escapeHtml(note)}</li>`)
         .join("")}
     </ul>
+    <div class="result-section-title">Generated conversion plan</div>
+    <ul class="op-list">
+      ${plan.operations
+        .map(
+          (operation) => `
+            <li class="op-item">
+              <div class="op-name">${escapeHtml(operation.name)}</div>
+              <div class="op-desc">${escapeHtml(operation.description)}</div>
+            </li>`,
+        )
+        .join("")}
+    </ul>
     <div class="result-section-title">Converted files</div>
     <ul class="op-list">
   `;
@@ -224,8 +236,9 @@ function renderResults(result) {
   planBody.innerHTML = opsHtml;
 
   // Warnings
-  if (conversion.warnings && conversion.warnings.length > 0) {
-    warningsList.innerHTML = conversion.warnings
+  const warnings = [...new Set([...(plan.warnings ?? []), ...(conversion.warnings ?? [])])];
+  if (warnings.length > 0) {
+    warningsList.innerHTML = warnings
       .map((w) => `<li>${escapeHtml(w)}</li>`)
       .join("");
     warningsBlock.classList.remove("hidden");

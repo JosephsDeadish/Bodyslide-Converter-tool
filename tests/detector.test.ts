@@ -77,4 +77,17 @@ describe("createConversionPlan", () => {
       plan.operations.some((operation) => operation.id === "physics-weight"),
     ).toBe(true);
   });
+
+  it("adds target specific operations for sam", () => {
+    const detection = detectBodyType([
+      file("meshes/actors/character/himbo_body_0.nif", "himbo"),
+    ]);
+    const plan = createConversionPlan(detection, "sam", [
+      file("meshes/actors/character/himbo_body_0.nif"),
+    ]);
+
+    expect(
+      plan.operations.some((operation) => operation.id === "sam-morph"),
+    ).toBe(true);
+  });
 });

@@ -5,6 +5,7 @@ import { Command } from "commander";
 import { z } from "zod";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
+import { createConversionPlan } from "./planner.js";
 import { scanModFiles } from "./scanner.js";
 import { BODY_TYPES } from "./types.js";
 
@@ -31,6 +32,7 @@ program
 
       const files = await scanModFiles(input);
       const detection = detectBodyType(files);
+      const plan = createConversionPlan(detection, targetBodyType, files);
       const result = await convertMod(
         input,
         output,
@@ -46,7 +48,7 @@ program
 
       await writeFile(
         reportPath,
-        `${JSON.stringify({ detection, result }, null, 2)}\n`,
+        `${JSON.stringify({ detection, plan, result }, null, 2)}\n`,
         "utf8",
       );
       await writeFile(
@@ -70,6 +72,15 @@ program
           `Files analyzed: ${files.length}`,
           `Converted assets: ${result.convertedFiles.length}`,
           `Copied without body-specific changes: ${result.skippedFiles.length}`,
+          "",
+          "Generated conversion plan:",
+          ...plan.operations.map(
+            (operation, index) =>
+              `${index + 1}. ${operation.name} — ${operation.description}`,
+          ),
+          "",
+          "Plan warnings:",
+          ...plan.warnings.map((warning, index) => `${index + 1}. ${warning}`),
           "",
           "Naming notes:",
           ...result.namingNotes.map((note, index) => `${index + 1}. ${note}`),
