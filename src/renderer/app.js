@@ -138,7 +138,13 @@ errorBackBtn.addEventListener("click", () => {
 
 // ── Render helpers ──────────────────────────────────────────────
 function renderResults(result) {
-  const { detection, plan, result: conversion, reportPath, summaryPath } = result;
+  const {
+    detection,
+    plan,
+    result: conversion,
+    reportPath,
+    summaryPath,
+  } = result;
 
   // Result badge
   resultBadge.textContent = `${detection.bodyType.toUpperCase()} → ${conversion.targetBodyType.toUpperCase()}`;
@@ -236,7 +242,9 @@ function renderResults(result) {
   planBody.innerHTML = opsHtml;
 
   // Warnings
-  const warnings = [...new Set([...(plan.warnings ?? []), ...(conversion.warnings ?? [])])];
+  const warnings = [
+    ...new Set([...(plan.warnings ?? []), ...(conversion.warnings ?? [])]),
+  ];
   if (warnings.length > 0) {
     warningsList.innerHTML = warnings
       .map((w) => `<li>${escapeHtml(w)}</li>`)

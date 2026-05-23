@@ -5,6 +5,7 @@ import { Command } from "commander";
 import { z } from "zod";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
+import { createConversionPlan } from "./planner.js";
 import { scanModFiles } from "./scanner.js";
 import { BODY_TYPES } from "./types.js";
 const targetSchema = z.enum(BODY_TYPES);
@@ -21,11 +22,12 @@ program
     const targetBodyType = targetSchema.parse(options.target.toLowerCase());
     const files = await scanModFiles(input);
     const detection = detectBodyType(files);
+    const plan = createConversionPlan(detection, targetBodyType, files);
     const result = await convertMod(input, output, files, detection, targetBodyType);
     await mkdir(output, { recursive: true });
     const reportPath = join(output, "conversion-report.json");
     const summaryPath = join(output, "conversion-summary.txt");
-    await writeFile(reportPath, `${JSON.stringify({ detection, result }, null, 2)}\n`, "utf8");
+    await writeFile(reportPath, `${JSON.stringify({ detection, plan, result }, null, 2)}\n`, "utf8");
     await writeFile(summaryPath, [
         `Source detected: ${detection.bodyType} (confidence ${detection.confidence})`,
         `Top candidates: ${detection.rankedCandidates.length > 0
@@ -40,6 +42,12 @@ program
         `Files analyzed: ${files.length}`,
         `Converted assets: ${result.convertedFiles.length}`,
         `Copied without body-specific changes: ${result.skippedFiles.length}`,
+        "",
+        "Generated conversion plan:",
+        ...plan.operations.map((operation, index) => `${index + 1}. ${operation.name} — ${operation.description}`),
+        "",
+        "Plan warnings:",
+        ...plan.warnings.map((warning, index) => `${index + 1}. ${warning}`),
         "",
         "Naming notes:",
         ...result.namingNotes.map((note, index) => `${index + 1}. ${note}`),
