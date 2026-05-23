@@ -146,6 +146,7 @@ targetSelect.addEventListener("change", async () => {
     <div class="info-name">${escapeHtml(info.displayName)}</div>
     <div class="info-tags">${genderTag}${physTag}</div>
     <div>${escapeHtml(info.description)}</div>
+    <div class="info-notes"><strong>Skeleton profile:</strong> ${escapeHtml(info.skeletonProfile)} — ${escapeHtml(info.skeletonNotes)}</div>
     <div class="info-notes"><strong>Conversion notes:</strong> ${escapeHtml(info.conversionNotes)}</div>
   `;
   bodyInfoBox.classList.remove("hidden");

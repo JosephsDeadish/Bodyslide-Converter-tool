@@ -303,6 +303,8 @@ function buildBodyKnowledgeCheck(
     `Target ${targetType.toUpperCase()} fit focus: ${fitFocus.join(", ")}.`,
     [
       `Route context: ${sourceType.toUpperCase()} (${sourceInfo.gender}/${sourceInfo.topology}) → ${targetType.toUpperCase()} (${targetInfo.gender}/${targetInfo.topology}).`,
+      `Target skeleton profile: ${targetInfo.skeletonProfile}.`,
+      `Skeleton guidance: ${targetInfo.skeletonNotes}`,
       `Target guidance: ${targetInfo.conversionNotes}`,
       ...(crossGender
         ? [

@@ -64,5 +64,6 @@ The command generates:
 - Reports now include a structured conversion audit that checks extracted mesh/slider assets, BodySlide slider-set generation, topology risk, and target physics-config coverage (including 3BA belly-chain validation).
 - Physics config auditing now requires full target-bone marker coverage before passing the check, helping catch partial/incomplete config remaps.
 - Physics-bone remapping now includes semantic cross-body matching (breast/butt/belly/genitals chains with side/level handling) before fallback collapse, improving compatibility across physics-capable body-type pairs.
+- Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
 - The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact bundle (`slidesmith-release`) for workflow-run approval and testing.

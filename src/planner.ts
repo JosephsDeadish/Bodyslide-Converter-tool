@@ -82,6 +82,14 @@ function targetSpecificOperations(targetType: BodyType): ConversionOperation[] {
     });
   }
 
+  if (targetType !== "vanilla") {
+    ops.push({
+      id: "skeleton-compat",
+      name: "Validate target skeleton compatibility",
+      description: `${targetType.toUpperCase()} expects ${info.skeletonProfile}. ${info.skeletonNotes}`,
+    });
+  }
+
   if (targetType === "himbo") {
     ops.push({
       id: "male-proportions",

@@ -7,6 +7,8 @@ export type BodyTypeInfo = {
   family: "cbbe" | "unp" | "male" | "addon" | "vanilla";
   topology: "cbbe" | "unp" | "male" | "legacy-female" | "vanilla";
   physicsSupport: boolean;
+  skeletonProfile: string;
+  skeletonNotes: string;
   referenceProject: string;
   physicsBones: string[];
   adaptationFocus: string[];
@@ -22,6 +24,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: false,
+    skeletonProfile: "Vanilla female-compatible (XPMSSE recommended)",
+    skeletonNotes:
+      "Base CBBE can run on the vanilla female skeleton, but XPMSSE (XP32 Maximum Skeleton Special Extended) is the Skyrim SE compatibility standard for mixed BodySlide setups.",
     referenceProject: "CalienteTools / BodySlide by Caliente & ousnius",
     physicsBones: [],
     adaptationFocus: ["bust", "waist", "hips", "wrist seams", "ankle seams"],
@@ -36,6 +41,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: true,
+    skeletonProfile: "XPMSSE / XP32 Extended required",
+    skeletonNotes:
+      "3BA expects XPMSSE-style extended breast/butt/belly chains (including L/R BreastRoot). Using a non-XP32 skeleton usually breaks runtime physics behavior.",
     referenceProject: "3BA / 3BBB Amazing Body by acro748",
     physicsBones: [
       "NPC L Breast01",
@@ -69,6 +77,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "male",
     topology: "male",
     physicsSupport: false,
+    skeletonProfile: "XPMSSE male skeleton recommended",
+    skeletonNotes:
+      "HIMBO armor conversion is most reliable with XPMSSE-compatible male skeleton paths and modern animation behavior packs.",
     referenceProject: "HIMBO by Tiktak123",
     physicsBones: [],
     adaptationFocus: [
@@ -91,6 +102,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "male",
     topology: "male",
     physicsSupport: false,
+    skeletonProfile: "XPMSSE male skeleton recommended",
+    skeletonNotes:
+      "BodyTalk packs generally assume XP32/XPMSSE-era skeleton layouts in Skyrim SE ports, especially when mixed with modern animation and physics mods.",
     referenceProject:
       "BodyTalk by Haeun / Bad Dog / assorted community maintainers",
     physicsBones: [],
@@ -111,6 +125,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: true,
+    skeletonProfile: "XPMSSE / XP32-compatible skeleton recommended",
+    skeletonNotes:
+      "TBD uses CBBE-family physics naming and is typically deployed on XPMSSE in Skyrim SE modlists to keep CBPC/HDT-SMP behavior consistent.",
     referenceProject: "TBD / Touched by Dibella by Maars",
     physicsBones: [
       "NPC L Breast01",
@@ -140,6 +157,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "addon",
     topology: "male",
     physicsSupport: true,
+    skeletonProfile: "XPMSSE + SOS-compatible skeleton nodes required",
+    skeletonNotes:
+      "SOS Regular relies on extended genital/scrotum nodes provided by XPMSSE-compatible skeleton setups; missing nodes prevent expected runtime motion.",
     referenceProject: "Schlongs of Skyrim by b3lisario",
     physicsBones: [
       "NPC GenitalsBase01",
@@ -162,6 +182,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "unp",
     physicsSupport: false,
+    skeletonProfile: "Vanilla UNP-compatible (XPMSSE recommended)",
+    skeletonNotes:
+      "Legacy UNP conversions can run on vanilla-compatible female skeletons, but XPMSSE remains the common Skyrim SE baseline for mixed BodySlide ecosystems.",
     referenceProject: "Dimonized UNP by dimon99",
     physicsBones: [],
     adaptationFocus: ["waist", "hips", "thighs", "leg seams", "ankle seams"],
@@ -176,6 +199,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "unp",
     physicsSupport: true,
+    skeletonProfile: "XPMSSE / XP32 Extended required",
+    skeletonNotes:
+      "BHUNP physics chains are usually deployed through XPMSSE-compatible setups; confirm BHUNP-prefixed breast/butt node support before shipping.",
     referenceProject: "BHUNP by BoneHunger",
     physicsBones: [
       "BHUNP Breast L01",
@@ -205,6 +231,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "unp",
     physicsSupport: true,
+    skeletonProfile: "XPMSSE / XP32-compatible skeleton recommended",
+    skeletonNotes:
+      "UUNP Special physics deployments in Skyrim SE usually rely on XPMSSE-compatible bone layouts for breast/butt/belly runtime motion.",
     referenceProject: "UUNP by ousnius",
     physicsBones: [
       "NPC L Breast01",
@@ -234,6 +263,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "legacy-female",
     physicsSupport: false,
+    skeletonProfile: "Legacy UNP-family (XPMSSE recommended)",
+    skeletonNotes:
+      "Most Skyrim SE 7Base ports are paired with XPMSSE-compatible skeleton stacks even when the conversion itself is non-physics.",
     referenceProject: "SevenBase by Crosscrusade",
     physicsBones: [],
     adaptationFocus: [
@@ -253,6 +285,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "male",
     topology: "male",
     physicsSupport: false,
+    skeletonProfile: "XPMSSE / SAM-compatible male skeleton required",
+    skeletonNotes:
+      "SAM and SAM Light typically expect XP32/XPMSSE-style male skeleton extensions and bodymorph-compatible setup in Skyrim SE.",
     referenceProject: "SAM by Vector / SAM Light by KouLeifoh",
     physicsBones: [],
     adaptationFocus: [
@@ -272,6 +307,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "vanilla",
     topology: "vanilla",
     physicsSupport: false,
+    skeletonProfile: "Vanilla Skyrim skeleton",
+    skeletonNotes:
+      "Vanilla targets should stay compatible with Bethesda's default skeleton paths; XPMSSE is optional unless physics-heavy body mods are mixed in.",
     referenceProject: "Bethesda Softworks",
     physicsBones: [],
     adaptationFocus: [

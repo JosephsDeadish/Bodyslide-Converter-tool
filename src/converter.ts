@@ -485,6 +485,7 @@ type PhysicsBoneDescriptor = {
 
 type PhysicsRemapStep = {
   sourceBone: string;
+  sourceAliases: readonly string[];
   targetBone: string;
   kind: PhysicsRemapKind;
 };
@@ -493,15 +494,47 @@ type PhysicsRemapPlan = {
   steps: PhysicsRemapStep[];
 };
 
+const PHYSICS_BONE_SOURCE_ALIASES: Partial<
+  Record<BodyType, Partial<Record<string, readonly string[]>>>
+> = {
+  "3ba": {
+    "NPC L Breast01": ["NPC L Breast"],
+    "NPC R Breast01": ["NPC R Breast"],
+    "NPC LBreastRoot": ["NPC L BreastRoot", "NPC L Breast Root"],
+    "NPC RBreastRoot": ["NPC R BreastRoot", "NPC R Breast Root"],
+    "NPC BellyRoot": ["NPC Belly Root"],
+  },
+  tbd: {
+    "NPC L Breast01": ["NPC L Breast"],
+    "NPC R Breast01": ["NPC R Breast"],
+  },
+  uunp: {
+    "NPC L Breast01": ["NPC L Breast"],
+    "NPC R Breast01": ["NPC R Breast"],
+  },
+  bhunp: {
+    "BHUNP Breast L01": ["BHUNP Breast L"],
+    "BHUNP Breast R01": ["BHUNP Breast R"],
+  },
+};
+
+function getSourcePhysicsAliases(
+  sourceType: BodyType,
+  sourceBone: string,
+): readonly string[] {
+  const aliases = PHYSICS_BONE_SOURCE_ALIASES[sourceType]?.[sourceBone] ?? [];
+  return [sourceBone, ...aliases];
+}
+
 function detectPhysicsBoneSide(lowerBoneName: string): PhysicsBoneSide {
   if (
     /\bleft\b/.test(lowerBoneName) ||
     /\bl\b/.test(lowerBoneName) ||
     /(^|[^a-z])l(?=breast|butt|genitals|scrotum)/.test(lowerBoneName) ||
-    /\bbreast\s*l/.test(lowerBoneName) ||
-    /\bbutt\s*l/.test(lowerBoneName) ||
+    /\bbreast[\s_-]*l\b/.test(lowerBoneName) ||
+    /\bbutt[\s_-]*l\b/.test(lowerBoneName) ||
     /\bgenitals\w*\s*l/.test(lowerBoneName) ||
-    /\bscrotum\w*\s*l/.test(lowerBoneName)
+    /\bscrotum\w*[\s_-]*l\b/.test(lowerBoneName)
   ) {
     return "left";
   }
@@ -509,10 +542,10 @@ function detectPhysicsBoneSide(lowerBoneName: string): PhysicsBoneSide {
     /\bright\b/.test(lowerBoneName) ||
     /\br\b/.test(lowerBoneName) ||
     /(^|[^a-z])r(?=breast|butt|genitals|scrotum)/.test(lowerBoneName) ||
-    /\bbreast\s*r/.test(lowerBoneName) ||
-    /\bbutt\s*r/.test(lowerBoneName) ||
+    /\bbreast[\s_-]*r\b/.test(lowerBoneName) ||
+    /\bbutt[\s_-]*r\b/.test(lowerBoneName) ||
     /\bgenitals\w*\s*r/.test(lowerBoneName) ||
-    /\bscrotum\w*\s*r/.test(lowerBoneName)
+    /\bscrotum\w*[\s_-]*r\b/.test(lowerBoneName)
   ) {
     return "right";
   }
@@ -531,7 +564,7 @@ function parsePhysicsBoneDescriptor(boneName: string): PhysicsBoneDescriptor {
     group = "belly";
   } else if (lower.includes("butt")) {
     group = "butt";
-  } else if (lower.includes("breastroot")) {
+  } else if (/breast[\s_-]*root/.test(lower)) {
     group = "breast-root";
   } else if (lower.includes("breast")) {
     group = "breast";
@@ -696,7 +729,12 @@ function buildPhysicsRemapPlan(
     (sourceBone, index) => {
       const explicitTarget = explicitMapLookup.get(sourceBone.toLowerCase());
       if (explicitTarget) {
-        return { sourceBone, targetBone: explicitTarget, kind: "explicit" };
+        return {
+          sourceBone,
+          sourceAliases: getSourcePhysicsAliases(source, sourceBone),
+          targetBone: explicitTarget,
+          kind: "explicit",
+        };
       }
 
       const semanticTarget = findSemanticPhysicsTargetBone(
@@ -704,18 +742,29 @@ function buildPhysicsRemapPlan(
         targetInfo.physicsBones,
       );
       if (semanticTarget) {
-        return { sourceBone, targetBone: semanticTarget, kind: "semantic" };
+        return {
+          sourceBone,
+          sourceAliases: getSourcePhysicsAliases(source, sourceBone),
+          targetBone: semanticTarget,
+          kind: "semantic",
+        };
       }
 
       if (canUseIndexedPhysicsMapping) {
         const indexedTarget = targetInfo.physicsBones[index];
         if (indexedTarget) {
-          return { sourceBone, targetBone: indexedTarget, kind: "indexed" };
+          return {
+            sourceBone,
+            sourceAliases: getSourcePhysicsAliases(source, sourceBone),
+            targetBone: indexedTarget,
+            kind: "indexed",
+          };
         }
       }
 
       return {
         sourceBone,
+        sourceAliases: getSourcePhysicsAliases(source, sourceBone),
         targetBone: getStaticFallbackBone(sourceBone),
         kind: "fallback",
       };
@@ -731,7 +780,12 @@ function applyPhysicsRemapPlan(value: string, plan: PhysicsRemapPlan): string {
   for (const [index, step] of plan.steps.entries()) {
     const placeholder = `__SLIDESMITH_BONE_${index}__`;
     placeholders.push(placeholder);
-    next = next.replaceAll(buildBoundedPattern(step.sourceBone), placeholder);
+    const aliases = [...step.sourceAliases].sort(
+      (left, right) => right.length - left.length,
+    );
+    for (const sourceAlias of aliases) {
+      next = next.replaceAll(buildBoundedPattern(sourceAlias), placeholder);
+    }
   }
   for (const [index, step] of plan.steps.entries()) {
     next = next.replaceAll(placeholders[index] ?? "", step.targetBone);
@@ -752,6 +806,7 @@ function replacePhysicsReferences(
     const fallbackPlan: PhysicsRemapPlan = {
       steps: sourceInfo.physicsBones.map((sourceBone) => ({
         sourceBone,
+        sourceAliases: getSourcePhysicsAliases(source, sourceBone),
         targetBone: getStaticFallbackBone(sourceBone),
         kind: "fallback",
       })),
@@ -1385,6 +1440,9 @@ function createWarnings(
   const targetKnowledgeSummary =
     targetInfo.conversionNotes.split(/(?<=\.)\s+/)[0] ??
     targetInfo.conversionNotes;
+  warnings.push(
+    `Target skeleton note (${target.toUpperCase()}): ${targetInfo.skeletonProfile}. ${targetInfo.skeletonNotes}`,
+  );
   warnings.push(
     `Target body knowledge note (${target.toUpperCase()}): ${targetKnowledgeSummary}`,
   );

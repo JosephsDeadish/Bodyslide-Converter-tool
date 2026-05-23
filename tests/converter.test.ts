@@ -828,10 +828,12 @@ describe("convertMod", () => {
       join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_3ba.ini"),
       [
         "NPC LBreastRoot=1",
+        "NPC L Breast=0.65",
         "NPC L Breast01=0.7",
         "NPC L Breast02=0.6",
         "NPC L Breast03=0.5",
         "NPC RBreastRoot=1",
+        "NPC R Breast=0.65",
         "NPC R Breast01=0.7",
         "NPC R Breast02=0.6",
         "NPC R Breast03=0.5",
@@ -886,6 +888,7 @@ describe("convertMod", () => {
     expect(rewritten).toContain("NPC Belly");
     // No original 3BA breast names should remain
     expect(rewritten).not.toContain("NPC L Breast01");
+    expect(rewritten).not.toContain("NPC L Breast=");
     expect(rewritten).not.toContain("NPC L Butt");
   });
 
@@ -1228,6 +1231,11 @@ describe("convertMod", () => {
     expect(
       result.warnings.some((warning) =>
         warning.includes("Target fit focus for BHUNP"),
+      ),
+    ).toBe(true);
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Target skeleton note (BHUNP)"),
       ),
     ).toBe(true);
     expect(
