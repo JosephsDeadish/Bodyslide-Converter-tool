@@ -59,4 +59,5 @@ The command generates:
 - Cross-gender adaptation also rewrites common gendered asset markers such as `femalebody`/`malebody` and first-person hand paths so generated outputs line up with the selected target gender.
 - The CLI summary, JSON report, and desktop app all include the generated conversion path metadata plus structured conversion-plan operations for manual follow-up.
 - Generated outputs now apply automatic naming, gender-marker, and physics-reference harmonization; external mesh-editor QA is mainly recommended for high-risk topology/cross-gender cases.
+- Native conversion now auto-synthesizes missing `_0`/`_1` `.nif` weight-pair meshes when only one side exists, improving in-game weight-slider completeness.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.

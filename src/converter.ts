@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import type {
@@ -237,6 +237,75 @@ function getStaticFallbackBone(physicsBoneName: string): string {
   if (bone.includes("belly")) return "NPC Belly";
   if (bone.includes("genitals")) return "NPC Pelvis";
   return "NPC Spine2";
+}
+
+function getWeightPairSuffixInfo(path: string): {
+  matched: "_0" | "_1";
+  counterpart: "_0" | "_1";
+} | null {
+  if (/_0\.nif$/i.test(path)) {
+    return { matched: "_0", counterpart: "_1" };
+  }
+
+  if (/_1\.nif$/i.test(path)) {
+    return { matched: "_1", counterpart: "_0" };
+  }
+
+  return null;
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function synthesizeMissingWeightMeshes(
+  outputDir: string,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<number> {
+  const knownOutputPaths = new Set(convertedFiles.map((file) => file.outputPath));
+  const synthCandidates = convertedFiles.filter(
+    (file) => file.kind === "mesh" && file.outputPath.toLowerCase().endsWith(".nif"),
+  );
+  let synthesizedCount = 0;
+
+  for (const file of synthCandidates) {
+    const suffixInfo = getWeightPairSuffixInfo(file.outputPath);
+    if (!suffixInfo) continue;
+
+    const counterpartOutputPath = file.outputPath.replace(
+      new RegExp(`${suffixInfo.matched}\\.nif$`, "i"),
+      `${suffixInfo.counterpart}.nif`,
+    );
+    if (knownOutputPaths.has(counterpartOutputPath)) {
+      continue;
+    }
+
+    const sourceAbsolutePath = join(outputDir, file.outputPath);
+    const counterpartAbsolutePath = join(outputDir, counterpartOutputPath);
+
+    if (await pathExists(counterpartAbsolutePath)) {
+      knownOutputPaths.add(counterpartOutputPath);
+      continue;
+    }
+
+    await mkdir(dirname(counterpartAbsolutePath), { recursive: true });
+    await copyFile(sourceAbsolutePath, counterpartAbsolutePath);
+    knownOutputPaths.add(counterpartOutputPath);
+    convertedFiles.push({
+      sourcePath: file.sourcePath,
+      outputPath: counterpartOutputPath,
+      kind: "mesh",
+      action: "synthesized",
+    });
+    synthesizedCount += 1;
+  }
+
+  return synthesizedCount;
 }
 
 function rewriteRelativePath(
@@ -482,6 +551,18 @@ export async function convertMod(
       sourcePath: file.relativePath,
       outputPath: rewrittenRelativePath,
       reason: "Copied without body-specific changes.",
+    });
+  }
+
+  const synthesizedWeightMeshes = await synthesizeMissingWeightMeshes(
+    outputDir,
+    convertedFiles,
+  );
+  if (synthesizedWeightMeshes > 0) {
+    skippedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: "(generated weight pairs)",
+      reason: `Synthesized ${synthesizedWeightMeshes} missing weight-pair mesh counterpart(s) to improve in-game slider completeness.`,
     });
   }
 

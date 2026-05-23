@@ -4,6 +4,7 @@ import { BODY_TYPES } from "./types.js";
 
 type WeightedSignal = RegExp | readonly [RegExp, number];
 type GenderHint = "female" | "male" | "neutral";
+type EvidenceKind = "mesh" | "sliders" | "config" | "metadata";
 
 // Each array can contain plain RegExp (1 point) or a tuple [RegExp, weight] for custom weighting.
 // The haystack per file is: relativePath + "\n" + basename + "\n" + first-4KB binary preview (latin1 lowercase).
@@ -237,6 +238,27 @@ function scoreKeywordHit(haystack: string, bodyType: BodyType): number {
     if (haystack.includes(keyword)) {
       matches += 1;
     }
+
+    function getEvidenceKind(file: ScannedFile): EvidenceKind {
+      const path = file.relativePath.toLowerCase();
+
+      if (file.extension === ".nif" || file.extension === ".tri") {
+        return "mesh";
+      }
+
+      if (
+        file.extension === ".osp" ||
+        (file.extension === ".xml" && path.includes("bodyslide"))
+      ) {
+        return "sliders";
+      }
+
+      if (file.extension === ".ini" || file.extension === ".json") {
+        return "config";
+      }
+
+      return "metadata";
+    }
   }
 
   return Math.min(matches, 2) * 0.25;
@@ -284,6 +306,13 @@ export function detectBodyType(files: ScannedFile[]): DetectionResult {
     },
     {} as Record<BodyType, number>,
   );
+  const evidenceKinds = BODY_TYPES.reduce<Record<BodyType, Set<EvidenceKind>>>(
+    (acc, bodyType) => {
+      acc[bodyType] = new Set<EvidenceKind>();
+      return acc;
+    },
+    {} as Record<BodyType, Set<EvidenceKind>>,
+  );
 
   for (const file of files) {
     for (const bodyType of BODY_TYPES) {
@@ -292,6 +321,7 @@ export function detectBodyType(files: ScannedFile[]): DetectionResult {
       if (score > 0) {
         matchedSignals.add(`${bodyType}:${file.relativePath}`);
         evidenceCount[bodyType] += 1;
+        evidenceKinds[bodyType].add(getEvidenceKind(file));
       }
     }
   }
@@ -335,10 +365,17 @@ export function detectBodyType(files: ScannedFile[]): DetectionResult {
   const scoreShare = bestScore / totalSafe;
   const margin = Math.max(bestScore - secondBest, 0) / Math.max(bestScore, 1);
   const evidenceQuality = Math.min(evidenceCount[bestType] / 4, 1);
+  const diversityQuality = Math.min(evidenceKinds[bestType].size / 3, 1);
   const confidence = Number(
     Math.max(
       0,
-      Math.min(1, scoreShare * 0.4 + margin * 0.4 + evidenceQuality * 0.2),
+      Math.min(
+        1,
+        scoreShare * 0.35 +
+          margin * 0.35 +
+          evidenceQuality * 0.15 +
+          diversityQuality * 0.15,
+      ),
     ).toFixed(2),
   );
 

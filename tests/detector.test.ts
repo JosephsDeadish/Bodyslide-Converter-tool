@@ -74,6 +74,17 @@ describe("detectBodyType", () => {
     expect(detection.bodyType).toBe("himbo");
     expect(detection.confidence).toBeGreaterThan(0);
   });
+
+  it("raises confidence when evidence spans mesh, sliders, and config files", () => {
+    const detection = detectBodyType([
+      file("meshes/actors/character/character assets/femalebody_0.nif", "cbbe"),
+      file("bodyslide/slidersets/cbbe_armor.xml", "cbbe curvy"),
+      file("SKSE/plugins/cbpc/cbbe.ini", "cbpc cbbe"),
+    ]);
+
+    expect(detection.bodyType).toBe("cbbe");
+    expect(detection.confidence).toBeGreaterThan(0.7);
+  });
 });
 
 describe("createConversionPlan", () => {

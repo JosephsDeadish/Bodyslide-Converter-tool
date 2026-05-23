@@ -310,4 +310,38 @@ describe("convertMod", () => {
     );
     expect(rewritten).toContain("BodyTalk");
   });
+
+  it("synthesizes missing _1 weight mesh when only _0 exists", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_cuirass_0.nif"),
+      "caliente cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.endsWith("3BA_cuirass_1.nif") &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    const synthesized = await readFile(
+      join(outputDir, "meshes", "armor", "3BA_cuirass_1.nif"),
+      "utf8",
+    );
+    expect(synthesized).toContain("caliente");
+  });
 });
