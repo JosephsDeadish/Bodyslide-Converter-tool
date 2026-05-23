@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
   "files": {
-    "includes": ["**", "!dist", "!dist-exe", "!release"]
+    "includes": ["**", "!dist", "!dist-exe", "!dist-main", "!release"]
   },
   "formatter": {
     "enabled": true,

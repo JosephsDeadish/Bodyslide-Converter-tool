@@ -25,7 +25,7 @@ export type ConversionOperation = {
 };
 export type ConversionPlan = {
     sourceType: DetectionResult["bodyType"];
-    targetType: BodyType;
+    targetBodyType: BodyType;
     detectionConfidence: number;
     operations: ConversionOperation[];
     warnings: string[];

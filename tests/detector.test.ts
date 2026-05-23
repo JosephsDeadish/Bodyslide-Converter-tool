@@ -41,8 +41,9 @@ describe("detectBodyType", () => {
 
   it("detects sam and exposes ranked candidates", () => {
     const detection = detectBodyType([
-      file("meshes/armor/sam_light_top.nif", "shape atlas for men"),
-      file("calientetools/slidergroups/sam.xml", "sam light"),
+      file("meshes/actors/character/sam_light_body.nif", "shape atlas for men"),
+      file("bodyslide/slidersets/sam_light_armor.xml", "sam light"),
+      file("bodyslide/shapedata/sam_light_body/sam_light.nif", "vectorplexus"),
     ]);
 
     expect(detection.bodyType).toBe("sam");
@@ -61,7 +62,7 @@ describe("createConversionPlan", () => {
     ]);
 
     expect(
-      plan.operations.some((operation) => operation.id === "physics"),
+      plan.operations.some((operation) => operation.id === "physics-weight"),
     ).toBe(true);
   });
 });

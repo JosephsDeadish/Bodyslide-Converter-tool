@@ -30,16 +30,10 @@ jobs:
       - name: Test
         run: npm run test
 
-      - name: Build
+      - name: Build (ESM CLI)
         run: npm run build
 
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bodyslide-converter-dist
-          path: dist/
-
-  windows-exe:
+  windows-app:
     runs-on: windows-latest
     needs: verify
     permissions:
@@ -57,11 +51,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Windows executable
-        run: npm run build:exe
+      - name: Build Electron app (portable EXE)
+        run: npm run package:win
 
-      - name: Upload windows exe artifact
+      - name: Create source archive
+        run: |
+          git archive --format=zip --output release/source-code.zip HEAD
+
+      - name: Bundle release zip
+        shell: pwsh
+        run: |
+          $exePath = Get-ChildItem -Path release -Filter "*.exe" | Select-Object -First 1 -ExpandProperty FullName
+          Compress-Archive -Path $exePath, release/source-code.zip `
+            -DestinationPath release/bodyslide-converter-release.zip
+
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bodyslide-converter-windows-exe
-          path: release/bodyslide-converter.exe
+          name: bodyslide-converter-release
+          path: release/bodyslide-converter-release.zip
+

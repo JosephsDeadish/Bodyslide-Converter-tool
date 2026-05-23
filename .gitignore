@@ -1,3 +1,5 @@
 node_modules/
+dist/
 dist-exe/
+dist-main/
 release/

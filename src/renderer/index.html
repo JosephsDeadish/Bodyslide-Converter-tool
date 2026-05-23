@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bodyslide Converter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-title">
+        <span class="logo">⚙</span>
+        <span>Bodyslide Converter</span>
+      </div>
+
+      <div class="form-section">
+        <label class="field-label">Source Mod Folder</label>
+        <div class="path-row">
+          <input id="inputPath" class="path-input" type="text" placeholder="Select folder…" readonly />
+          <button type="button" id="browseInput" class="btn btn-secondary" title="Browse">📁</button>
+        </div>
+
+        <label class="field-label" style="margin-top:1rem;">Target Body Type</label>
+        <select id="targetSelect" class="select-control">
+          <option value="">Loading…</option>
+        </select>
+
+        <div id="bodyInfoBox" class="body-info-box hidden"></div>
+
+        <label class="field-label" style="margin-top:1rem;">Output Folder</label>
+        <div class="path-row">
+          <input id="outputPath" class="path-input" type="text" placeholder="Select folder…" readonly />
+          <button type="button" id="browseOutput" class="btn btn-secondary" title="Browse">📁</button>
+        </div>
+
+        <button type="button" id="convertBtn" class="btn btn-primary" disabled>
+          ▶ Convert
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <span id="statusBadge" class="badge badge-idle">Idle</span>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="content">
+      <!-- Welcome -->
+      <div id="screenWelcome" class="screen active">
+        <div class="welcome-card">
+          <div class="welcome-icon">⚙</div>
+          <h1>Bodyslide Converter</h1>
+          <p>Auto-detect your mod's body type and generate a complete BodySlide conversion plan for any target body.</p>
+          <ul class="feature-list">
+            <li>✓ Detects CBBE, 3BA, HIMBO, TBD, SOS, UNP, BHUNP, UUNP, 7base, SAM, Vanilla</li>
+            <li>✓ Physics-aware conversion steps (CBPC / HDT-SMP)</li>
+            <li>✓ Cross-gender conversion warnings</li>
+            <li>✓ Writes <code>conversion-plan.txt</code> and <code>conversion-report.json</code></li>
+          </ul>
+          <p class="hint">Select a mod folder and target body type to get started.</p>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div id="screenLoading" class="screen">
+        <div class="loading-wrap">
+          <div class="spinner"></div>
+          <p>Scanning mod files…</p>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="screenResults" class="screen">
+        <div class="results-header">
+          <h2>Conversion Results</h2>
+          <span id="resultBadge" class="badge">—</span>
+        </div>
+
+        <div class="card-grid">
+          <div class="card" id="cardDetection">
+            <h3>Detection</h3>
+            <div id="detectionBody"></div>
+          </div>
+          <div class="card" id="cardPlan">
+            <h3>Conversion Plan</h3>
+            <div id="planBody"></div>
+          </div>
+        </div>
+
+        <div id="warningsBlock" class="card warnings hidden">
+          <h3>⚠ Warnings</h3>
+          <ul id="warningsList"></ul>
+        </div>
+
+        <div class="output-path-row">
+          <span>Output written to:</span>
+          <code id="outputPathResult"></code>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div id="screenError" class="screen">
+        <div class="error-card">
+          <div class="error-icon">✕</div>
+          <h2>Scan Failed</h2>
+          <p id="errorMsg"></p>
+          <button type="button" id="errorBackBtn" class="btn btn-secondary">← Back</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
