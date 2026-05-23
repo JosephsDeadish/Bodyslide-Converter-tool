@@ -24,6 +24,25 @@ npm run build
 node dist/index.js --input /path/to/mod --target 3ba --output /path/to/output
 ```
 
+## Build runnable EXE
+
+To build a Windows executable locally:
+
+```bash
+npm install
+npm run build:exe
+```
+
+Output:
+
+- `release/bodyslide-converter.exe`
+
+To validate packaging in Linux/macOS environments:
+
+```bash
+npm run build:exe:linux
+```
+
 The command generates:
 
 - `conversion-report.json` with detection scores and conversion metadata
@@ -33,4 +52,4 @@ The command generates:
 
 - Detection is heuristic-based and inspects filenames plus file previews.
 - Generated plans are intended to speed up conversion workflows and should still be reviewed in Outfit Studio/NifSkope.
-- CI workflow (`.github/workflows/build.yml`) runs lint, test, build, and uploads the `dist/` artifact so you can approve workflow runs and test builds.
+- CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact (`bodyslide-converter-windows-exe`) for workflow-run approval and testing.
