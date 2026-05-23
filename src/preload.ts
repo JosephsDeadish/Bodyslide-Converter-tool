@@ -18,17 +18,17 @@ export type ScanResult = {
 
 contextBridge.exposeInMainWorld("bodyslideAPI", {
   openDirectory: (): Promise<string | null> =>
-    ipcRenderer.invoke<string | null>("dialog:openDirectory"),
+    ipcRenderer.invoke("dialog:openDirectory"),
 
   getBodyTypes: (): Promise<BodyTypeOption[]> =>
-    ipcRenderer.invoke<BodyTypeOption[]>("get:bodyTypes"),
+    ipcRenderer.invoke("get:bodyTypes"),
 
   getBodyTypeInfo: (bodyType: BodyType): Promise<BodyTypeInfo | null> =>
-    ipcRenderer.invoke<BodyTypeInfo | null>("get:bodyTypeInfo", bodyType),
+    ipcRenderer.invoke("get:bodyTypeInfo", bodyType),
 
   runScan: (args: {
     input: string;
     target: BodyType;
     output: string;
-  }): Promise<ScanResult> => ipcRenderer.invoke<ScanResult>("scan:run", args),
+  }): Promise<ScanResult> => ipcRenderer.invoke("scan:run", args),
 });
