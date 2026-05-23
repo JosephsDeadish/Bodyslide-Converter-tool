@@ -180,29 +180,34 @@ const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
 
 const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
   cbbe: [
+    "cbbe body special",
     "cbbe body",
     "cbbe-body",
     "cbbe_body",
     "cbbebody",
     "cbbe",
+    "caliente beautiful bodies",
     "caliente body",
     "calientebody",
     "caliente",
   ],
   "3ba": [
+    "cbbe 3bbb amazing body",
+    "cbbe 3bbb amazing",
+    "3bbb amazing body",
+    "3bbb amazing",
     "cbbe 3bbb",
     "cbbe 3ba",
     "cbbe_3ba",
     "cbbe-3ba",
     "3bbbbody",
     "3bbb_body",
-    "3bbb amazing body",
-    "3bbb amazing",
     "3ba body",
     "3bbb",
     "3ba",
   ],
   himbo: [
+    "highly improved male body overhaul",
     "highly improved male body",
     "high poly male body",
     "highpolymalebody",
@@ -236,18 +241,52 @@ const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
     "sos body",
     "sos",
   ],
-  unp: ["dimonized", "unpb body", "unpb", "unp body", "unp_body", "unp"],
+  unp: [
+    "dimonized unp female body",
+    "unp female body renewed",
+    "dimonized",
+    "unpb body",
+    "unpb",
+    "unp body",
+    "unp_body",
+    "unp",
+  ],
   bhunp: [
+    "bonehunger unp 3bbb",
     "bonehunger unp",
     "unp next generation",
+    "bhunp 3bbb body",
     "bhunp 3bbb",
     "bhunp body",
     "bhunp_body",
     "bhunp",
   ],
-  uunp: ["unified unp", "uunp special", "uunp body", "uunp_body", "uunp"],
-  "7base": ["7base body", "7base_body", "7base", "sevenbase", "seven base"],
-  sam: ["shape atlas for men", "sam light", "samlight", "sam body", "sam"],
+  uunp: [
+    "unified unp special",
+    "unified unp",
+    "uunp special",
+    "uunp body",
+    "uunp_body",
+    "uunp",
+  ],
+  "7base": [
+    "sevenbase bombshell",
+    "sevenbase oppai",
+    "7base body",
+    "7base_body",
+    "7base",
+    "sevenbase",
+    "seven base",
+  ],
+  sam: [
+    "shape atlas for men",
+    "sam light body",
+    "samlightbase",
+    "sam light",
+    "samlight",
+    "sam body",
+    "sam",
+  ],
   vanilla: ["base game body", "default body", "vanilla body", "vanilla"],
 };
 
@@ -486,6 +525,190 @@ function getStaticFallbackBone(physicsBoneName: string): string {
   if (bone.includes("belly")) return "NPC Belly";
   if (bone.includes("genitals")) return "NPC Pelvis";
   return "NPC Spine2";
+}
+
+// ── XML / text helpers for BodySlide synthesis ─────────────────────────────
+
+function escapeXml(value: string): string {
+  return value.replace(
+    /[&<>"']/g,
+    (c) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&apos;",
+      })[c] ?? c,
+  );
+}
+
+// Matches a `name="…"` or `name='…'` attribute inside a <SliderSet …> opening tag.
+const SLIDERSET_NAME_RE = /<SliderSet\b[^>]*\bname=["']([^"']+)["'][^>]*>/gi;
+
+function extractSliderSetNames(content: string): string[] {
+  const names: string[] = [];
+  for (const match of content.matchAll(SLIDERSET_NAME_RE)) {
+    if (match[1]) names.push(match[1].trim());
+  }
+  return names;
+}
+
+/**
+ * Synthesizes a BodySlide SliderGroup XML into the output directory whenever
+ * the conversion produced BodySlide project files (OSP / SliderSetInfo XML)
+ * but no SliderGroup XML.  Without a group registration BodySlide cannot list
+ * the converted outfit in its left-hand panel.
+ */
+async function synthesizeMissingSliderGroup(
+  outputDir: string,
+  targetBodyType: BodyType,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<void> {
+  const projectFiles = convertedFiles.filter(
+    (f) =>
+      f.kind === "text" &&
+      (f.outputPath.endsWith(".osp") ||
+        (f.outputPath.endsWith(".xml") &&
+          /\/slidersets\//i.test(f.outputPath))),
+  );
+  const hasSliderGroup = convertedFiles.some(
+    (f) =>
+      f.kind === "text" &&
+      f.outputPath.endsWith(".xml") &&
+      /\/slidergroups\//i.test(f.outputPath),
+  );
+
+  if (projectFiles.length === 0 || hasSliderGroup) return;
+
+  // Extract slider-set names from the already-written converted project files.
+  const setNames: string[] = [];
+  for (const file of projectFiles) {
+    const absPath = join(outputDir, ...file.outputPath.split("/"));
+    const content = await readFile(absPath, "utf8").catch(() => "");
+    setNames.push(...extractSliderSetNames(content));
+  }
+
+  const uniqueNames = [...new Set(setNames)];
+  if (uniqueNames.length === 0) return;
+
+  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+  const groupName = `${targetAlias} Outfits`;
+  const memberLines = uniqueNames
+    .map((name) => `        <Member name="${escapeXml(name)}"/>`)
+    .join("\n");
+  const xmlContent = [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    "<SliderGroups>",
+    `    <Group name="${escapeXml(groupName)}">`,
+    memberLines,
+    "    </Group>",
+    "</SliderGroups>",
+    "",
+  ].join("\n");
+
+  const fileName = `${targetAlias}_Outfits.xml`;
+  const outputRelPath = `CalienteTools/BodySlide/SliderGroups/${fileName}`;
+  const outputAbsPath = join(
+    outputDir,
+    "CalienteTools",
+    "BodySlide",
+    "SliderGroups",
+    fileName,
+  );
+
+  await mkdir(dirname(outputAbsPath), { recursive: true });
+  await writeFile(outputAbsPath, xmlContent, "utf8");
+
+  convertedFiles.push({
+    sourcePath: "(native post-process)",
+    outputPath: outputRelPath,
+    kind: "text",
+    action: "synthesized",
+  });
+}
+
+// Default CBPC weights used when generating a physics config stub.
+// These represent safe starting values that match typical community conventions.
+const CBPC_BREAST_DEFAULT = "0.600";
+const CBPC_BUTT_DEFAULT = "0.450";
+const CBPC_BELLY_DEFAULT = "0.300";
+const CBPC_BREASTROOT_DEFAULT = "1.000";
+
+function cbpcDefaultWeight(boneName: string): string {
+  const lower = boneName.toLowerCase();
+  if (lower.includes("breastroot")) return CBPC_BREASTROOT_DEFAULT;
+  if (lower.includes("breast")) return CBPC_BREAST_DEFAULT;
+  if (lower.includes("butt")) return CBPC_BUTT_DEFAULT;
+  if (lower.includes("belly")) return CBPC_BELLY_DEFAULT;
+  return CBPC_BREAST_DEFAULT;
+}
+
+/**
+ * Generates a CBPC physics config stub when the conversion targets a physics-
+ * capable body but the source mod contained no existing physics config file.
+ *
+ * The stub is deliberately minimal and commented so the user knows it is a
+ * starting point; they can tune weights with CBPC Physics Tuner in-game.
+ */
+async function synthesizeMissingCbpcStub(
+  outputDir: string,
+  targetBodyType: BodyType,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<void> {
+  const targetInfo = BODY_TYPE_INFO[targetBodyType];
+  if (!targetInfo.physicsSupport || targetInfo.physicsBones.length === 0) {
+    return;
+  }
+
+  // Skip if at least one physics config file already came from the source mod.
+  const hasPhysicsConfig = convertedFiles.some(
+    (f) =>
+      f.action !== "synthesized" &&
+      /cbpc|hdt|physics/i.test(f.outputPath.toLowerCase()),
+  );
+  if (hasPhysicsConfig) return;
+
+  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+  const boneEntries = targetInfo.physicsBones
+    .map((bone) => `${bone}=${cbpcDefaultWeight(bone)}`)
+    .join("\n");
+
+  const iniContent = [
+    `; Auto-generated CBPC physics stub for ${targetAlias}`,
+    `; Created by Bodyslide Converter — ${new Date().toISOString()}`,
+    ";",
+    "; This file registers the standard physics bones for this outfit with CBPC.",
+    "; Default weight values are community-convention starting points.",
+    "; Tune them in-game with CBPC Physics Tuner or edit this file directly.",
+    ";",
+    `; Required mod: ${targetInfo.referenceProject}`,
+    "; Required mod: CBPC — Physics with Collisions for SSE and VR",
+    ";   (https://www.nexusmods.com/skyrimspecialedition/mods/21224)",
+    ";",
+    "; NOTE: Physics on NIF meshes also requires that the outfit shapes carry",
+    "; bone weights for the bones listed below.  If the outfit was converted",
+    "; from a non-physics source those weights must be added in Outfit Studio",
+    "; using 'Copy Bone Weights' from the reference body before physics will",
+    "; move the mesh at runtime.",
+    "",
+    boneEntries,
+    "",
+  ].join("\n");
+
+  const fileName = `${targetAlias}_PhysicsStub.ini`;
+  const outputRelPath = `SKSE/Plugins/CBPC/${fileName}`;
+  const outputAbsPath = join(outputDir, "SKSE", "Plugins", "CBPC", fileName);
+
+  await mkdir(dirname(outputAbsPath), { recursive: true });
+  await writeFile(outputAbsPath, iniContent, "utf8");
+
+  convertedFiles.push({
+    sourcePath: "(native post-process)",
+    outputPath: outputRelPath,
+    kind: "text",
+    action: "synthesized",
+  });
 }
 
 function getWeightPairSuffixInfo(path: string): {
@@ -848,6 +1071,15 @@ export async function convertMod(
       reason: `Synthesized ${synthesizedWeightMeshes} missing weight-pair mesh counterpart(s) to improve in-game slider completeness.`,
     });
   }
+
+  // Synthesize a BodySlide SliderGroup XML when project files exist but no
+  // group file was part of the source mod.  Without a group registration
+  // BodySlide cannot list the outfit in its left-hand panel.
+  await synthesizeMissingSliderGroup(outputDir, targetBodyType, convertedFiles);
+
+  // Synthesize a CBPC physics config stub when the target body supports
+  // physics but the source mod contained no physics config files at all.
+  await synthesizeMissingCbpcStub(outputDir, targetBodyType, convertedFiles);
 
   const outputFiles = await scanModFiles(outputDir);
   const audit = createConversionAudit(

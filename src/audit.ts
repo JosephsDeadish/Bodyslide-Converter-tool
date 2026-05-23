@@ -431,6 +431,78 @@ function buildBellyCheck(outputFiles: ScannedFile[], targetType: BodyType) {
   );
 }
 
+function buildSliderGroupCheck(
+  outputFiles: ScannedFile[],
+): ConversionAuditCheck {
+  const groups = outputFiles.filter(isSliderGroup);
+  const projects = outputFiles.filter(isBodySlideProject);
+  const status: ConversionAuditCheck["status"] =
+    projects.length === 0 || groups.length > 0 ? "pass" : "attention";
+
+  return createCheck(
+    "slider-group",
+    "BodySlide SliderGroup registration",
+    status,
+    projects.length === 0
+      ? "No BodySlide project files were found; SliderGroup registration is not required."
+      : groups.length > 0
+        ? `Detected ${groups.length} SliderGroup file(s) — outfit will appear in BodySlide's group list.`
+        : "No SliderGroup XML was found. The outfit may not appear in BodySlide's left-hand panel.",
+    groups.length === 0 && projects.length > 0
+      ? [
+          "A SliderGroup XML should be present in CalienteTools/BodySlide/SliderGroups/.",
+          "Without it, the converted outfit will be listed under 'Unassigned' in BodySlide.",
+          "The converter synthesizes a SliderGroup automatically; if it is missing, check for write errors in the output directory.",
+        ]
+      : [],
+    collectPreviewPaths(groups.slice(0, 4)),
+  );
+}
+
+function buildCbpcStubCheck(
+  outputFiles: ScannedFile[],
+  targetType: BodyType,
+): ConversionAuditCheck {
+  const targetInfo = BODY_TYPE_INFO[targetType];
+  if (!targetInfo.physicsSupport) {
+    return createCheck(
+      "cbpc-stub",
+      "CBPC physics config completeness",
+      "not-applicable",
+      `${targetType.toUpperCase()} does not use CBPC physics; no stub check needed.`,
+    );
+  }
+
+  const configFiles = outputFiles.filter(isPhysicsConfig);
+  const stubFiles = configFiles.filter((f) =>
+    f.relativePath.toLowerCase().includes("physicsstub"),
+  );
+  const originalConfigs = configFiles.filter(
+    (f) => !f.relativePath.toLowerCase().includes("physicsstub"),
+  );
+
+  const status: ConversionAuditCheck["status"] =
+    originalConfigs.length > 0 ? "pass" : "attention";
+
+  return createCheck(
+    "cbpc-stub",
+    "CBPC physics config completeness",
+    status,
+    originalConfigs.length > 0
+      ? `Source mod included ${originalConfigs.length} physics config file(s); bone remapping was applied.`
+      : stubFiles.length > 0
+        ? "No source physics config was found — a starter stub was generated. Bone weights in NIF meshes must still be verified in Outfit Studio."
+        : "No physics config was found or generated. Add CBPC/HDT-SMP rules manually if runtime physics are required.",
+    [
+      originalConfigs.length > 0
+        ? "Physics config files from the source mod were remapped to target bone names."
+        : "If the source outfit lacked physics bone weighting in its NIF meshes, the generated stub alone cannot activate runtime physics.",
+      "Verify NIF bone weights in Outfit Studio using 'Copy Bone Weights' from the target reference body.",
+    ],
+    collectPreviewPaths(configFiles.slice(0, 4)),
+  );
+}
+
 export function createConversionAudit(
   detection: DetectionResult,
   targetType: BodyType,
@@ -457,10 +529,12 @@ export function createConversionAudit(
     buildSkeletonCheck(outputFiles, sourceType, targetType),
     buildProjectionCheck(sourceType, targetType, sourceFiles, outputFiles),
     buildSliderSetCheck(outputFiles),
+    buildSliderGroupCheck(outputFiles),
     buildSeamCheck(sourceType, targetType, outputFiles),
     buildBodyKnowledgeCheck(sourceType, targetType),
     buildPhysicsWeightCheck(outputFiles, targetType),
     buildPhysicsConfigCheck(outputFiles, targetType),
+    buildCbpcStubCheck(outputFiles, targetType),
     buildBellyCheck(outputFiles, targetType),
   ];
 

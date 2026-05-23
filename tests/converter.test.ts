@@ -685,10 +685,10 @@ describe("convertMod", () => {
           "CalienteTools/BodySlide/SliderSets/3BA_Outfit.xml",
       ),
     ).toBe(true);
-    // Must NOT be in SliderGroups
+    // Must NOT be in SliderGroups as a directly routed (non-synthesized) file
     expect(
       result.convertedFiles.some((file) =>
-        file.outputPath.includes("SliderGroups"),
+        file.outputPath.includes("SliderGroups") && file.action !== "synthesized",
       ),
     ).toBe(false);
   });
@@ -720,9 +720,10 @@ describe("convertMod", () => {
           "CalienteTools/BodySlide/SliderSets/3BA_Outfit.xml",
       ),
     ).toBe(true);
+    // Must NOT be in SliderGroups as a directly routed (non-synthesized) file
     expect(
       result.convertedFiles.some((file) =>
-        file.outputPath.includes("SliderGroups"),
+        file.outputPath.includes("SliderGroups") && file.action !== "synthesized",
       ),
     ).toBe(false);
   });
@@ -1149,5 +1150,192 @@ describe("convertMod", () => {
     expect(
       result.audit.checks.find((check) => check.id === "3ba-belly")?.status,
     ).toBe("pass");
+  });
+
+  it("synthesizes a SliderGroup XML when OSP exists but no group file is present", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
+      { recursive: true },
+    );
+    await writeFile(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "cbbe_armor.osp"),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Iron Cuirass">',
+        '    <OutputPath>meshes/armor/cbbe_iron_0.nif</OutputPath>',
+        "  </SliderSet>",
+        '  <SliderSet name="CBBE Iron Gauntlets">',
+        '    <OutputPath>meshes/armor/cbbe_gauntlets_0.nif</OutputPath>',
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // A synthesized SliderGroup file should appear in the converted files list.
+    const groupEntry = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.includes("SliderGroups") &&
+        f.outputPath.endsWith(".xml") &&
+        f.action === "synthesized",
+    );
+    expect(groupEntry).toBeDefined();
+
+    // The SliderGroup file should physically exist and contain the expected XML.
+    const groupContent = await readFile(
+      join(outputDir, groupEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(groupContent).toContain("3BA");
+    expect(groupContent).toContain("3BA Iron Cuirass");
+    expect(groupContent).toContain("3BA Iron Gauntlets");
+    expect(groupContent).toContain("<Member");
+
+    // The audit check for slider-group should pass.
+    expect(
+      result.audit.checks.find((check) => check.id === "slider-group")?.status,
+    ).toBe("pass");
+  });
+
+  it("does not synthesize a duplicate SliderGroup when one already exists in the source", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
+      { recursive: true },
+    );
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"),
+      { recursive: true },
+    );
+    await writeFile(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "cbbe_shirt.osp"),
+      '<SliderSetInfo><SliderSet name="CBBE Shirt"></SliderSet></SliderSetInfo>',
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderGroups", "CBBE_Outfits.xml"),
+      '<SliderGroups><Group name="CBBE Outfits"><Member name="CBBE Shirt"/></Group></SliderGroups>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // Only one SliderGroup file should exist (the converted original, not an extra synthesized one).
+    const synthGroupFiles = result.convertedFiles.filter(
+      (f) =>
+        f.outputPath.includes("SliderGroups") &&
+        f.action === "synthesized",
+    );
+    expect(synthGroupFiles).toHaveLength(0);
+  });
+
+  it("synthesizes a CBPC physics stub for a physics target with no source physics config", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "caliente",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // A synthesized CBPC stub should appear in convertedFiles.
+    const stubEntry = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("cbpc") &&
+        f.outputPath.endsWith(".ini") &&
+        f.action === "synthesized",
+    );
+    expect(stubEntry).toBeDefined();
+
+    // The stub should contain meaningful content.
+    const stubContent = await readFile(
+      join(outputDir, stubEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(stubContent).toContain("Auto-generated CBPC physics stub");
+    expect(stubContent).toContain("NPC L Breast01");
+
+    // The cbpc-stub audit check should flag attention since no original config was present.
+    const cbpcCheck = result.audit.checks.find(
+      (check) => check.id === "cbpc-stub",
+    );
+    expect(cbpcCheck).toBeDefined();
+    expect(cbpcCheck?.status).toBe("attention");
+  });
+
+  it("does not synthesize a CBPC stub when the source already has a physics config", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_cbbe.ini"),
+      "NPC L Breast01=0.6\nNPC R Breast01=0.6\n",
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "caliente",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // No additional stub should be synthesized since a real config was present.
+    const synthStubs = result.convertedFiles.filter(
+      (f) =>
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.action === "synthesized",
+    );
+    expect(synthStubs).toHaveLength(0);
+
+    // The cbpc-stub audit check should pass since the source had a config.
+    const cbpcCheck = result.audit.checks.find(
+      (check) => check.id === "cbpc-stub",
+    );
+    expect(cbpcCheck?.status).toBe("pass");
   });
 });
