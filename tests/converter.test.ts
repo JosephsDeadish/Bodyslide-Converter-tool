@@ -1493,6 +1493,73 @@ describe("convertMod", () => {
     expect(cbpcCheck?.status).toBe("attention");
   });
 
+  it("synthesizes a CBPC physics stub for UUNP targets", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"), "caliente");
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "uunp",
+    );
+
+    const stubEntry = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.outputPath.endsWith(".ini") &&
+        f.action === "synthesized",
+    );
+    expect(stubEntry).toBeDefined();
+
+    const stubContent = await readFile(
+      join(outputDir, stubEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(stubContent).toContain("NPC L Breast01=0.600");
+    expect(stubContent).toContain("NPC Belly=0.300");
+  });
+
+  it("uses genital-specific defaults for synthesized SOS CBPC stubs", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(join(inputDir, "meshes", "armor", "himbo_outfit_0.nif"), "himbo");
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "sos",
+    );
+
+    const stubEntry = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.outputPath.endsWith(".ini") &&
+        f.action === "synthesized",
+    );
+    expect(stubEntry).toBeDefined();
+
+    const stubContent = await readFile(
+      join(outputDir, stubEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(stubContent).toContain("NPC GenitalsBase01=0.350");
+    expect(stubContent).toContain("NPC L GenitalsScrotum01=0.250");
+    expect(stubContent).toContain("NPC R GenitalsScrotum01=0.250");
+  });
+
   it("does not synthesize a CBPC stub when the source already has a physics config", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

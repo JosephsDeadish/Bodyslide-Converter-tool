@@ -808,6 +808,8 @@ const CBPC_BREAST_DEFAULT = "0.600";
 const CBPC_BUTT_DEFAULT = "0.450";
 const CBPC_BELLY_DEFAULT = "0.300";
 const CBPC_BREASTROOT_DEFAULT = "1.000";
+const CBPC_GENITALS_DEFAULT = "0.350";
+const CBPC_SCROTUM_DEFAULT = "0.250";
 
 function cbpcDefaultWeight(boneName: string): string {
   const lower = boneName.toLowerCase();
@@ -815,6 +817,8 @@ function cbpcDefaultWeight(boneName: string): string {
   if (lower.includes("breast")) return CBPC_BREAST_DEFAULT;
   if (lower.includes("butt")) return CBPC_BUTT_DEFAULT;
   if (lower.includes("belly")) return CBPC_BELLY_DEFAULT;
+  if (lower.includes("scrotum")) return CBPC_SCROTUM_DEFAULT;
+  if (lower.includes("genitals")) return CBPC_GENITALS_DEFAULT;
   return CBPC_BREAST_DEFAULT;
 }
 
