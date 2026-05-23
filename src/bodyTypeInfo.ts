@@ -48,6 +48,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "NPC RBreastRoot",
       "NPC L Butt",
       "NPC R Butt",
+      "NPC Belly",
+      "NPC BellyRoot",
     ],
     adaptationFocus: [
       "breast volume",
@@ -61,7 +63,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   himbo: {
     displayName: "HIMBO – Highly Improved Male Body Overhaul",
     description:
-      "Leading male body replacer with extensive BodySlide support and a full slider set. Uses a different bone hierarchy and proportions from all female bodies.",
+      "Leading male body replacer with extensive BodySlide support and a full slider set. Uses a different bone hierarchy and proportions from all female bodies. HIMBO V5+ supports optional physics via the HIMBO Physics Addon (HDT-SMP).",
     gender: "male",
     family: "male",
     topology: "male",
@@ -76,7 +78,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "pelvis width",
     ],
     conversionNotes:
-      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Expect manual cleanup in Outfit Studio.",
+      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Expect manual cleanup in Outfit Studio. For HIMBO V5+ physics, the optional HIMBO Physics Addon uses HDT-SMP; enable that separately after the BodySlide conversion.",
   },
   bodytalk: {
     displayName: "BodyTalk – Male Body Replacer",
@@ -115,11 +117,11 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   sos: {
     displayName: "SOS – Schlongs of Skyrim",
     description:
-      "Male genital addon for Skyrim that adds a physics-ready genital mesh and skeleton extension. Often used alongside SAM or HIMBO.",
+      "Male genital addon for Skyrim that adds a physics-ready genital mesh and skeleton extension. SOS Regular uses HDT-SMP physics for the genital mesh; SOS Light is the static (no-physics) variant. Often used alongside SAM or HIMBO.",
     gender: "male",
     family: "addon",
     topology: "male",
-    physicsSupport: false,
+    physicsSupport: true,
     referenceProject: "Schlongs of Skyrim by b3lisario",
     physicsBones: [
       "NPC GenitalsBase01",
@@ -132,7 +134,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     ],
     adaptationFocus: ["pelvis seam", "waistband partition", "SBP 52 slot"],
     conversionNotes:
-      "Pelvis partition and seam vertices around the waistband must be preserved exactly when converting armors to SOS compatibility. Always verify the partition slot (SBP 52) is clean.",
+      "Pelvis partition and seam vertices around the waistband must be preserved exactly when converting armors to SOS compatibility. Always verify the partition slot (SBP 52) is clean. SOS Regular requires HDT-SMP; ensure the corresponding SMP XML config is present. SOS Light skips physics entirely.",
   },
   unp: {
     displayName: "UNP – Dimonized UNP Female Body",
@@ -151,7 +153,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   bhunp: {
     displayName: "BHUNP – BoneHunger UNP",
     description:
-      "UNP variant with CBPC/HDT-SMP physics support. Adds breast and butt physics chains to the UNP skeleton. Compatible with BodySlide.",
+      "UNP variant with CBPC/HDT-SMP physics support. Adds breast, butt, and belly physics chains to the UNP skeleton. Compatible with BodySlide.",
     gender: "female",
     family: "unp",
     topology: "unp",
@@ -162,8 +164,11 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "BHUNP Breast R01",
       "BHUNP Breast L02",
       "BHUNP Breast R02",
+      "BHUNP Breast L03",
+      "BHUNP Breast R03",
       "BHUNP Butt L",
       "BHUNP Butt R",
+      "NPC Belly",
     ],
     adaptationFocus: [
       "breast weighting",
@@ -172,7 +177,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "waist seams",
     ],
     conversionNotes:
-      "Similar conversion path to 3BA but uses different physics bone names. Confirm CBPC config file references BHUNP bone names specifically, not 3BA bone names.",
+      "Similar conversion path to 3BA but uses different physics bone names for breast chains (BHUNP Breast L/R01-03 vs NPC L/R Breast01-03). Belly physics uses the shared NPC Belly bone. Confirm CBPC config file references BHUNP bone names specifically, not 3BA bone names.",
   },
   uunp: {
     displayName: "UUNP – Unified UNP",

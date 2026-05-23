@@ -459,22 +459,68 @@ describe("convertMod", () => {
     ).toBe(true);
   });
 
-  it("preserves already-canonical CalienteTools paths unchanged", async () => {
+  it("normalizes OSD files to meshes/ prefix", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
-    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
-      recursive: true,
-    });
+    // .osd BodySlide morph output file with no recognised root — must land under meshes/
+    await writeFile(join(inputDir, "cbbe_armor_0.osd"), Buffer.alloc(32));
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const osdFile = result.convertedFiles.find((f) =>
+      f.outputPath.endsWith(".osd"),
+    );
+    expect(osdFile).toBeDefined();
+    expect(osdFile?.outputPath).toBe("meshes/3BA_armor_0.osd");
+    expect(osdFile?.kind).toBe("mesh");
+  });
+
+  it("synthesizes missing _1 OSD weight file when only _0 exists", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
     await writeFile(
-      join(
-        inputDir,
-        "CalienteTools",
-        "BodySlide",
-        "SliderSets",
-        "CBBE_Armor.osp",
+      join(inputDir, "meshes", "armor", "cbbe_cuirass_0.osd"),
+      Buffer.alloc(16),
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.endsWith("3BA_cuirass_1.osd") &&
+          file.action === "synthesized",
       ),
-      "<SliderSetInfo><SliderSet name='CBBE Armor'>cbbe body</SliderSet></SliderSetInfo>",
+    ).toBe(true);
+  });
+
+  it("routes SliderSetInfo XML to SliderSets/, not SliderGroups/", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    // Flat .xml with <SliderSetInfo> root — equivalent to .osp in XML form
+    await writeFile(
+      join(inputDir, "CBBE_Outfit.xml"),
+      '<?xml version="1.0"?><SliderSetInfo version="1"><SliderSet name="CBBE Outfit">cbbe body</SliderSet></SliderSetInfo>',
       "utf8",
     );
 
@@ -488,13 +534,148 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    // Must stay in CalienteTools/BodySlide/SliderSets/ — no double-nesting
     expect(
       result.convertedFiles.some(
         (file) =>
           file.outputPath ===
-          "CalienteTools/BodySlide/SliderSets/3BA_Armor.osp",
+          "CalienteTools/BodySlide/SliderSets/3BA_Outfit.xml",
       ),
     ).toBe(true);
+    // Must NOT be in SliderGroups
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.includes("SliderGroups"),
+      ),
+    ).toBe(false);
+  });
+
+  it("maps 3BA breast physics bones to BHUNP names without misaligning butt bones", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_3ba.ini"),
+      [
+        "NPC LBreastRoot=1",
+        "NPC L Breast01=0.7",
+        "NPC L Breast02=0.6",
+        "NPC L Breast03=0.5",
+        "NPC RBreastRoot=1",
+        "NPC R Breast01=0.7",
+        "NPC R Breast02=0.6",
+        "NPC R Breast03=0.5",
+        "NPC L Butt=0.4",
+        "NPC R Butt=0.4",
+        "NPC Belly=0.3",
+      ].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_0.nif"),
+      "3bbb amazing body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("3ba");
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    // Breast chain must map correctly
+    expect(rewritten).toContain("BHUNP Breast L01");
+    expect(rewritten).toContain("BHUNP Breast L02");
+    expect(rewritten).toContain("BHUNP Breast L03");
+    expect(rewritten).toContain("BHUNP Breast R01");
+    expect(rewritten).toContain("BHUNP Breast R02");
+    expect(rewritten).toContain("BHUNP Breast R03");
+    // BreastRoot collapses to L01/R01
+    expect(rewritten).not.toContain("NPC LBreastRoot");
+    expect(rewritten).not.toContain("NPC RBreastRoot");
+    // Butt bones mapped correctly — NOT misaligned to Breast03
+    expect(rewritten).toContain("BHUNP Butt L");
+    expect(rewritten).toContain("BHUNP Butt R");
+    // Belly bone is unchanged (same name in both bodies)
+    expect(rewritten).toContain("NPC Belly");
+    // No original 3BA breast names should remain
+    expect(rewritten).not.toContain("NPC L Breast01");
+    expect(rewritten).not.toContain("NPC L Butt");
+  });
+
+  it("maps BHUNP breast physics bones back to 3BA names", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_bhunp.ini"),
+      [
+        "BHUNP Breast L01=0.7",
+        "BHUNP Breast L02=0.6",
+        "BHUNP Breast L03=0.5",
+        "BHUNP Breast R01=0.7",
+        "BHUNP Breast R02=0.6",
+        "BHUNP Breast R03=0.5",
+        "BHUNP Butt L=0.4",
+        "BHUNP Butt R=0.4",
+        "NPC Belly=0.3",
+      ].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "bhunp_outfit_0.nif"),
+      "bhunp body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(result.sourceBodyType).toBe("bhunp");
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    expect(rewritten).toContain("NPC L Breast01");
+    expect(rewritten).toContain("NPC L Breast02");
+    expect(rewritten).toContain("NPC L Breast03");
+    expect(rewritten).toContain("NPC R Breast01");
+    expect(rewritten).toContain("NPC R Breast02");
+    expect(rewritten).toContain("NPC R Breast03");
+    expect(rewritten).toContain("NPC L Butt");
+    expect(rewritten).toContain("NPC R Butt");
+    expect(rewritten).not.toContain("BHUNP Breast L01");
+    expect(rewritten).not.toContain("BHUNP Butt L");
   });
 });

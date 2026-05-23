@@ -9,7 +9,7 @@ import type {
 } from "./types.js";
 
 const TEXT_EXTENSIONS = new Set([".xml", ".osp", ".txt", ".json", ".ini"]);
-const MESH_EXTENSIONS = new Set([".nif", ".tri"]);
+const MESH_EXTENSIONS = new Set([".nif", ".tri", ".osd"]);
 
 // ── MO2 / Skyrim Data canonical root prefixes ──────────────────────────────
 // Any path already rooted under one of these is left exactly where it is.
@@ -36,11 +36,14 @@ const CANONICAL_DATA_PREFIXES: readonly string[] = [
 ];
 
 // BodySlide XML slider-group files contain one of these markers at the top.
-const BODYSLIDE_XML_MARKERS: readonly string[] = [
+const BODYSLIDE_SLIDERGROUP_XML_MARKERS: readonly string[] = [
   "<slidergroups",
   "<slidergroup ",
   "<slidergroup>",
 ];
+
+// BodySlide XML project files (equivalent to .osp) use SliderSetInfo as the root.
+const BODYSLIDE_PROJECT_XML_MARKERS: readonly string[] = ["<slidersetinfo"];
 
 /**
  * Remaps a rewritten relative path to its canonical Skyrim Data location so
@@ -75,20 +78,29 @@ function normalizeToMo2DataPath(
     return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
   }
 
-  // .xml → only move BodySlide group XMLs; other XMLs (MCM, physics, …) stay put
+  // .xml → route BodySlide project XMLs (<SliderSetInfo>) to SliderSets/,
+  //        route BodySlide group XMLs (<SliderGroups>) to SliderGroups/,
+  //        leave all other XMLs (MCM, physics, …) unchanged
   if (extension === ".xml") {
-    const xmlLooksLikeBodySlide =
-      BODYSLIDE_XML_MARKERS.some((marker) => preview.includes(marker)) ||
+    if (
+      BODYSLIDE_PROJECT_XML_MARKERS.some((marker) => preview.includes(marker))
+    ) {
+      return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
+    }
+    const xmlLooksLikeBodySlideGroup =
+      BODYSLIDE_SLIDERGROUP_XML_MARKERS.some((marker) =>
+        preview.includes(marker),
+      ) ||
       /(^|\/)bodyslide\/(slidersets|slidergroups)\//.test(lower) ||
       /(^|\/)(slidersets|slidergroups)\//.test(lower);
-    if (xmlLooksLikeBodySlide) {
+    if (xmlLooksLikeBodySlideGroup) {
       return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
     }
     return forward;
   }
 
-  // .nif / .tri → armor/clothing/body meshes must live under meshes/
-  if (extension === ".nif" || extension === ".tri") {
+  // .nif / .tri / .osd → armor/clothing/body meshes must live under meshes/
+  if (extension === ".nif" || extension === ".tri" || extension === ".osd") {
     return `meshes/${forward}`;
   }
 
@@ -269,6 +281,41 @@ function replaceAliases(
   return next;
 }
 
+// Semantic physics bone mappings for known body type pairs.
+// Checked first in replacePhysicsReferences before falling back to index-based matching.
+// Source bone names are matched case-insensitively; target bone names are applied verbatim.
+const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
+  Record<BodyType, Partial<Record<BodyType, Readonly<Record<string, string>>>>>
+> = {
+  "3ba": {
+    bhunp: {
+      "NPC L Breast01": "BHUNP Breast L01",
+      "NPC R Breast01": "BHUNP Breast R01",
+      "NPC L Breast02": "BHUNP Breast L02",
+      "NPC R Breast02": "BHUNP Breast R02",
+      "NPC L Breast03": "BHUNP Breast L03",
+      "NPC R Breast03": "BHUNP Breast R03",
+      "NPC LBreastRoot": "BHUNP Breast L01",
+      "NPC RBreastRoot": "BHUNP Breast R01",
+      "NPC L Butt": "BHUNP Butt L",
+      "NPC R Butt": "BHUNP Butt R",
+      // NPC Belly is the same bone in both bodies — no remapping needed
+    },
+  },
+  bhunp: {
+    "3ba": {
+      "BHUNP Breast L01": "NPC L Breast01",
+      "BHUNP Breast R01": "NPC R Breast01",
+      "BHUNP Breast L02": "NPC L Breast02",
+      "BHUNP Breast R02": "NPC R Breast02",
+      "BHUNP Breast L03": "NPC L Breast03",
+      "BHUNP Breast R03": "NPC R Breast03",
+      "BHUNP Butt L": "NPC L Butt",
+      "BHUNP Butt R": "NPC R Butt",
+    },
+  },
+};
+
 function replacePhysicsReferences(
   value: string,
   source: BodyType,
@@ -280,10 +327,38 @@ function replacePhysicsReferences(
   const targetInfo = BODY_TYPE_INFO[target];
   let next = value;
 
-  if (
-    sourceInfo.physicsBones.length > 0 &&
-    targetInfo.physicsBones.length > 0
-  ) {
+  if (sourceInfo.physicsBones.length === 0) return next;
+
+  // Use explicit semantic mapping when available — avoids index-alignment errors.
+  const explicitMap = EXPLICIT_PHYSICS_BONE_MAPS[source]?.[target];
+  if (explicitMap) {
+    for (const [sourceBone, targetBone] of Object.entries(explicitMap)) {
+      next = next.replaceAll(
+        new RegExp(escapeRegExp(sourceBone), "gi"),
+        targetBone,
+      );
+    }
+    // Any source physics bones not covered by the explicit map: collapse to
+    // static fallbacks when the target has no physics.
+    if (targetInfo.physicsBones.length === 0) {
+      const mappedKeys = new Set(
+        Object.keys(explicitMap).map((k) => k.toLowerCase()),
+      );
+      for (const sourceBone of sourceInfo.physicsBones) {
+        if (!mappedKeys.has(sourceBone.toLowerCase())) {
+          const fallback = getStaticFallbackBone(sourceBone);
+          next = next.replaceAll(
+            new RegExp(escapeRegExp(sourceBone), "gi"),
+            fallback,
+          );
+        }
+      }
+    }
+    return next;
+  }
+
+  // Index-based fallback for body type pairs without explicit maps.
+  if (targetInfo.physicsBones.length > 0) {
     const pairCount = Math.min(
       sourceInfo.physicsBones.length,
       targetInfo.physicsBones.length,
@@ -297,12 +372,8 @@ function replacePhysicsReferences(
         targetBone,
       );
     }
-  }
-
-  if (
-    sourceInfo.physicsBones.length > 0 &&
-    targetInfo.physicsBones.length === 0
-  ) {
+  } else {
+    // Target has no physics — collapse all source physics bones to static fallbacks.
     for (const sourceBone of sourceInfo.physicsBones) {
       const fallback = getStaticFallbackBone(sourceBone);
       next = next.replaceAll(
@@ -327,13 +398,16 @@ function getStaticFallbackBone(physicsBoneName: string): string {
 function getWeightPairSuffixInfo(path: string): {
   matched: "_0" | "_1";
   counterpart: "_0" | "_1";
+  extension: string;
 } | null {
-  if (/_0\.nif$/i.test(path)) {
-    return { matched: "_0", counterpart: "_1" };
+  if (/_0\.(nif|osd)$/i.test(path)) {
+    const ext = path.slice(path.lastIndexOf("."));
+    return { matched: "_0", counterpart: "_1", extension: ext };
   }
 
-  if (/_1\.nif$/i.test(path)) {
-    return { matched: "_1", counterpart: "_0" };
+  if (/_1\.(nif|osd)$/i.test(path)) {
+    const ext = path.slice(path.lastIndexOf("."));
+    return { matched: "_1", counterpart: "_0", extension: ext };
   }
 
   return null;
@@ -357,7 +431,8 @@ async function synthesizeMissingWeightMeshes(
   );
   const synthCandidates = convertedFiles.filter(
     (file) =>
-      file.kind === "mesh" && file.outputPath.toLowerCase().endsWith(".nif"),
+      file.kind === "mesh" &&
+      /\.(nif|osd)$/i.test(file.outputPath.toLowerCase()),
   );
   let synthesizedCount = 0;
 
@@ -366,8 +441,8 @@ async function synthesizeMissingWeightMeshes(
     if (!suffixInfo) continue;
 
     const counterpartOutputPath = file.outputPath.replace(
-      new RegExp(`${suffixInfo.matched}\\.nif$`, "i"),
-      `${suffixInfo.counterpart}.nif`,
+      new RegExp(`${suffixInfo.matched}\\${suffixInfo.extension}$`, "i"),
+      `${suffixInfo.counterpart}${suffixInfo.extension}`,
     );
     if (knownOutputPaths.has(counterpartOutputPath)) {
       continue;
@@ -604,8 +679,8 @@ export async function convertMod(
 
     if (TEXT_EXTENSIONS.has(file.extension)) {
       const content = await readFile(file.absolutePath, "utf8");
-      const nextContent = replacePhysicsReferences(
-        replaceAliases(
+      const nextContent = replaceAliases(
+        replacePhysicsReferences(
           rewriteGenderMarkers(content, sourceBodyType, targetBodyType),
           sourceBodyType,
           targetBodyType,

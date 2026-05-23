@@ -36,7 +36,7 @@ const SIGNALS = {
         [/npc rbreastroot/, 2.5],
         [/npc l breast0[123]/, 2],
         [/npc r breast0[123]/, 2],
-        [/npc belly/, 1],
+        [/npc belly/, 1.8],
         // HDT-SMP or CBPC config referencing 3BA
         [/hdtphysicsextensions.*3b/, 2],
         [/3ba.*cbpc/, 1.8],
@@ -74,7 +74,6 @@ const SIGNALS = {
     ],
     tbd: [
         [/\btbd\b/, 2.5],
-        [/thebiggestbody/, 2],
         [/touched by dibella/, 2.5],
         [/touchedbydibella/, 2.5],
         [/tbd body/, 2],
@@ -116,9 +115,11 @@ const SIGNALS = {
         [/unp 3bbb/, 2.5],
         [/bhunp 3bbb/, 2.8],
         [/unp next generation/, 2.2],
-        // Physics bones with BHUNP naming
-        [/bhunp breast/, 2.2],
-        [/bhunp butt/, 2.2],
+        // Physics bones with BHUNP naming (all three chain levels)
+        [/bhunp breast [lr]01/, 2.2],
+        [/bhunp breast [lr]02/, 2.2],
+        [/bhunp breast [lr]03/, 2.2],
+        [/bhunp butt [lr]/, 2.2],
         [/bodyslide[/\\]slidersets[/\\][^/\\]*bhunp/, 2.8],
         [/bodyslide[/\\]shapedata[/\\][^/\\]*bhunp/, 2.8],
     ],

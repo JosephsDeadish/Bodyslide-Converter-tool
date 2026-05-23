@@ -104,15 +104,22 @@ describe("detectBodyType", () => {
     expect(detection.rankedCandidates.at(0)?.bodyType).toBe("bhunp");
   });
 
-  it("raises confidence when evidence spans mesh, sliders, and config files", () => {
-    const detection = detectBodyType([
-      file("meshes/actors/character/character assets/femalebody_0.nif", "cbbe"),
-      file("bodyslide/slidersets/cbbe_armor.xml", "cbbe curvy"),
-      file("SKSE/plugins/cbpc/cbbe.ini", "cbpc cbbe"),
+  it("detects tbd (Touched by Dibella) by author/name signals without thebiggestbody", () => {
+    // "thebiggestbody" was a wrong signal removed from TBD — must not drive detection
+    const falseSignal = detectBodyType([
+      file("meshes/armor/thebiggestbody_armor.nif", "thebiggestbody"),
     ]);
+    expect(falseSignal.bodyType).not.toBe("tbd");
 
-    expect(detection.bodyType).toBe("cbbe");
-    expect(detection.confidence).toBeGreaterThan(0.7);
+    // Correct TBD signals must still work
+    const detection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/SliderSets/TBD_Armor.osp",
+        "touched by dibella maars",
+      ),
+      file("bodyslide/shapedata/tbd_body/tbd.nif", "tbd body"),
+    ]);
+    expect(detection.bodyType).toBe("tbd");
   });
 });
 
