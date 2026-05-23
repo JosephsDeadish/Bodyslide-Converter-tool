@@ -1,9 +1,10 @@
 // Copies renderer/ assets into dist-main/renderer/ and writes a package.json
 // with "type":"commonjs" into dist-main/ so Node treats CJS .js files correctly.
 import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname;
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC_RENDERER = join(ROOT, "src", "renderer");
 const DEST_RENDERER = join(ROOT, "dist-main", "renderer");
 const DEST_PKG = join(ROOT, "dist-main", "package.json");
