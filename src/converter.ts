@@ -167,7 +167,7 @@ const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
 };
 
 const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
-  cbbe: ["cbbe", "caliente", "calientetools", "cbbe body"],
+  cbbe: ["cbbe", "caliente", "cbbe body"],
   "3ba": [
     "cbbe 3bbb",
     "cbbe 3ba",
@@ -269,6 +269,13 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function buildAliasPattern(alias: string): RegExp {
+  return new RegExp(
+    `(?<![a-z0-9])${escapeRegExp(alias)}(?![a-z0-9])`,
+    "gi",
+  );
+}
+
 function replaceAliases(
   value: string,
   source: BodyType,
@@ -280,7 +287,7 @@ function replaceAliases(
   );
 
   for (const alias of aliases) {
-    const pattern = new RegExp(escapeRegExp(alias), "gi");
+    const pattern = buildAliasPattern(alias);
     next = next.replace(pattern, BODY_TYPE_OUTPUT_ALIASES[target]);
   }
 

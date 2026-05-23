@@ -84,6 +84,56 @@ describe("convertMod", () => {
     expect(rewritten).toContain("3BA");
   });
 
+  it("keeps canonical CalienteTools roots intact while rewriting aliases", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "CBBE_Custom.xml",
+      ),
+      '<SliderGroups><Group name="CBBE Armor">cbbe body</Group></SliderGroups>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderGroups/3BA_Custom.xml",
+      ),
+    ).toBe(true);
+
+    const rewritten = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "3BA_Custom.xml",
+      ),
+      "utf8",
+    );
+    expect(rewritten).toContain("3BA");
+  });
+
   it("remaps known physics bone references in text configs", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
