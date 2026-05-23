@@ -421,7 +421,7 @@ describe("convertMod", () => {
     );
     await writeFile(
       join(inputDir, "cbbe_physics_profile.txt"),
-      "CBBE Physics body\ncbbe smp",
+      "CBBE Physics body\ncbbe smp\nNPC LBreastRoot",
       "utf8",
     );
 
@@ -777,10 +777,9 @@ describe("convertMod", () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
-    await mkdir(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
-      { recursive: true },
-    );
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
     await writeFile(
       join(
         inputDir,
@@ -814,7 +813,7 @@ describe("convertMod", () => {
       result.convertedFiles.some(
         (file) =>
           file.outputPath ===
-          "CalienteTools/BodySlide/SliderGroups/3BA_PathOnly.xml" &&
+            "CalienteTools/BodySlide/SliderGroups/3BA_PathOnly.xml" &&
           file.action !== "synthesized",
       ),
     ).toBe(false);

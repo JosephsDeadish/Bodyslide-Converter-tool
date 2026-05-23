@@ -38,8 +38,8 @@ const SIGNALS: Record<BodyType, WeightedSignal[]> = {
     [/3ba body/, 2],
     [/acro748/, 1.5],
     // "CBBE SMP" and "CBBE Physics" are physics-enabled CBBE variants sharing 3BA bones
-    [/cbbe[_ -]?smp/, 1.5],
-    [/cbbe[_ -]?physics/, 1.2],
+    [/cbbe[_ -]?smp/, 1.9],
+    [/cbbe[_ -]?physics/, 1.7],
     // Physics chain bones unique to 3BA (in NIF or CBPC configs)
     [/npc lbreastroot/, 2.5],
     [/npc rbreastroot/, 2.5],
@@ -196,6 +196,7 @@ const BODY_KEYWORDS: Record<BodyType, string[]> = {
 const FALSE_POSITIVE_PENALTIES: Record<BodyType, Array<[RegExp, number]>> = {
   cbbe: [
     [/\b3ba\b|\b3bbb\b/, 0.9],
+    [/cbbe[_ -]?smp|cbbe[_ -]?physics/, 1],
     [/\btbd\b|touched by dibella/, 0.8],
     [/\bbhunp\b|\buunp\b|\b7base\b/, 0.7],
     [/\bhimbo\b|\bbodytalk\b|\bsamlight\b|shape atlas for men/, 1.2],

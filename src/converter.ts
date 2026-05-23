@@ -105,6 +105,12 @@ function normalizeToMo2DataPath(
     ) {
       return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
     }
+    const xmlLooksLikeBodySlideGroup = BODYSLIDE_SLIDERGROUP_XML_MARKERS.some(
+      (marker) => preview.includes(marker),
+    );
+    if (xmlLooksLikeBodySlideGroup) {
+      return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
+    }
     if (
       /(^|\/)calientetools\/bodyslide\/slidersets\//.test(lower) ||
       /(^|\/)bodyslide\/slidersets\//.test(lower) ||
@@ -117,13 +123,6 @@ function normalizeToMo2DataPath(
       /(^|\/)bodyslide\/slidergroups\//.test(lower) ||
       /(^|\/)slidergroups\//.test(lower)
     ) {
-      return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
-    }
-    const xmlLooksLikeBodySlideGroup =
-      BODYSLIDE_SLIDERGROUP_XML_MARKERS.some((marker) =>
-        preview.includes(marker),
-      );
-    if (xmlLooksLikeBodySlideGroup) {
       return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
     }
     return forward;
