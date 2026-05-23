@@ -64,6 +64,13 @@ function targetSpecificOperations(targetType) {
             description: `Confirm the physics config file (CBPC.ini or hdtPhysicsExtensions .xml) references the correct bone names for ${targetType.toUpperCase()}. Missing entries will cause stiff or broken physics at runtime.`,
         });
     }
+    if (targetType !== "vanilla") {
+        ops.push({
+            id: "skeleton-compat",
+            name: "Validate target skeleton compatibility",
+            description: `${targetType.toUpperCase()} expects ${info.skeletonProfile}. ${info.skeletonNotes}`,
+        });
+    }
     if (targetType === "himbo") {
         ops.push({
             id: "male-proportions",
