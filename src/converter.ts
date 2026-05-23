@@ -131,16 +131,6 @@ function rewriteRelativePath(
     .join("/");
 }
 
-function isNativeConversionSupported(
-  source: BodyType,
-  target: BodyType,
-): boolean {
-  return source === target || COMPATIBILITY_PATHS.some((path) => {
-    const members = new Set(path.bodies);
-    return members.has(source) && members.has(target);
-  });
-}
-
 function getConversionPath(
   source: BodyType,
   target: BodyType,
