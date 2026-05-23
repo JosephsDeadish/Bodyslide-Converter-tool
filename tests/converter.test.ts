@@ -176,9 +176,12 @@ describe("convertMod", () => {
     const outputDir = await makeTempDir();
 
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
-    await mkdir(join(inputDir, "meshes", "actors", "character", "character assets"), {
-      recursive: true,
-    });
+    await mkdir(
+      join(inputDir, "meshes", "actors", "character", "character assets"),
+      {
+        recursive: true,
+      },
+    );
     await mkdir(join(inputDir, "bodyslide", "slidersets"), { recursive: true });
     await writeFile(
       join(inputDir, "meshes", "armor", "cbbe_cuirass_1.nif"),
@@ -216,7 +219,9 @@ describe("convertMod", () => {
     expect(result.conversionPath).toBe("Cross-gender outfit adaptation");
     expect(
       result.warnings.some((warning) =>
-        warning.includes("Cross-gender adaptation rewrote common female asset markers"),
+        warning.includes(
+          "Cross-gender adaptation rewrote common female asset markers",
+        ),
       ),
     ).toBe(true);
 

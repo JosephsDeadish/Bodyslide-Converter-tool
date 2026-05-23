@@ -1,5 +1,5 @@
-import type { BodyType, DetectionResult, ScannedFile } from "./types.js";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
+import type { BodyType, DetectionResult, ScannedFile } from "./types.js";
 import { BODY_TYPES } from "./types.js";
 
 type WeightedSignal = RegExp | readonly [RegExp, number];
@@ -160,7 +160,10 @@ const SIGNALS: Record<BodyType, WeightedSignal[]> = {
     [/base game body/, 2.2],
     [/bethesda.*body/, 2],
     // Vanilla bodies are found directly in meshes/actors/character/
-    [/meshes[/\\]actors[/\\]character[/\\]character assets[/\\]femalebody/, 2.2],
+    [
+      /meshes[/\\]actors[/\\]character[/\\]character assets[/\\]femalebody/,
+      2.2,
+    ],
     [/meshes[/\\]actors[/\\]character[/\\]character assets[/\\]malebody/, 2.2],
   ],
 };
@@ -169,11 +172,11 @@ function getSignalParts(signal: WeightedSignal): {
   pattern: RegExp;
   weight: number;
 } {
-  if (Array.isArray(signal)) {
-    return { pattern: signal[0], weight: signal[1] };
+  if (signal instanceof RegExp) {
+    return { pattern: signal, weight: 1 };
   }
 
-  return { pattern: signal, weight: 1 };
+  return { pattern: signal[0], weight: signal[1] };
 }
 
 function scoreGenderHint(file: ScannedFile, bodyType: BodyType): number {
@@ -195,7 +198,11 @@ function scoreGenderHint(file: ScannedFile, bodyType: BodyType): number {
   return 0;
 }
 
-function scoreFileForType(file: ScannedFile, patterns: WeightedSignal[], bodyType: BodyType): number {
+function scoreFileForType(
+  file: ScannedFile,
+  patterns: WeightedSignal[],
+  bodyType: BodyType,
+): number {
   const haystack = `${file.relativePath.toLowerCase()}\n${file.basename}\n${file.preview}`;
   let score = 0;
 

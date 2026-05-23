@@ -1,4 +1,4 @@
-export declare const BODY_TYPES: readonly ["cbbe", "3ba", "himbo", "tbd", "sos", "unp", "bhunp", "uunp", "7base", "sam", "vanilla"];
+export declare const BODY_TYPES: readonly ["cbbe", "3ba", "himbo", "bodytalk", "tbd", "sos", "unp", "bhunp", "uunp", "7base", "sam", "vanilla"];
 export type BodyType = (typeof BODY_TYPES)[number];
 export type ScannedFile = {
     absolutePath: string;

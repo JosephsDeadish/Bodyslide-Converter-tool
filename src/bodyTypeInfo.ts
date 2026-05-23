@@ -86,7 +86,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "male",
     topology: "male",
     physicsSupport: false,
-    referenceProject: "BodyTalk by Haeun / Bad Dog / assorted community maintainers",
+    referenceProject:
+      "BodyTalk by Haeun / Bad Dog / assorted community maintainers",
     physicsBones: [],
     adaptationFocus: [
       "shoulders",
@@ -230,7 +231,11 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     physicsSupport: false,
     referenceProject: "Bethesda Softworks",
     physicsBones: [],
-    adaptationFocus: ["base-game seams", "default partitions", "weight slider range"],
+    adaptationFocus: [
+      "base-game seams",
+      "default partitions",
+      "weight slider range",
+    ],
     conversionNotes:
       "Converting FROM vanilla means the mod was built for the base game. Converting TO vanilla is uncommon but may be required for maximum compatibility patches.",
   },

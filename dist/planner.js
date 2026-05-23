@@ -8,7 +8,12 @@ const FEMALE_BODIES = new Set([
     "uunp",
     "7base",
 ]);
-const MALE_BODIES = new Set(["himbo", "sos", "sam"]);
+const MALE_BODIES = new Set([
+    "himbo",
+    "bodytalk",
+    "sos",
+    "sam",
+]);
 function isFemale(bt) {
     return bt !== "unknown" && FEMALE_BODIES.has(bt);
 }
@@ -66,6 +71,13 @@ function targetSpecificOperations(targetType) {
             description: "Rebalance shoulder, chest, and arm morph channels for HIMBO shape ranges. Male body proportions differ significantly from female bodies; manual vertex touch-up in Outfit Studio is recommended.",
         });
     }
+    if (targetType === "bodytalk") {
+        ops.push({
+            id: "bodytalk-shape",
+            name: "Tune BodyTalk silhouette and slider naming",
+            description: "BodyTalk outputs often keep older male slider naming. Align chest, abdomen, and thigh proportions to the BodyTalk reference and confirm the generated slider-set naming matches BodyTalk conventions.",
+        });
+    }
     if (targetType === "sos") {
         ops.push({
             id: "sos-seam",
@@ -85,6 +97,45 @@ function targetSpecificOperations(targetType) {
             id: "3ba-belly",
             name: "Add 3BA belly physics group",
             description: "3BA supports a belly physics chain in addition to breast/butt. Confirm belly bone (NPC Belly) is weighted and present in the CBPC config for full 3BA physics support.",
+        });
+    }
+    return ops;
+}
+function relationshipOperations(sourceType, targetType) {
+    if (sourceType === "unknown") {
+        return [];
+    }
+    const sourceInfo = BODY_TYPE_INFO[sourceType];
+    const targetInfo = BODY_TYPE_INFO[targetType];
+    const ops = [];
+    if (sourceInfo.gender !== "both" &&
+        targetInfo.gender !== "both" &&
+        sourceInfo.gender !== targetInfo.gender) {
+        ops.push({
+            id: "cross-gender-shape",
+            name: "Retune cross-gender silhouette",
+            description: `Adapt the outfit from the ${sourceInfo.gender} ${sourceType} silhouette to the ${targetInfo.gender} ${targetType} silhouette. Focus on ${targetInfo.adaptationFocus.slice(0, 4).join(", ")} and re-balance chest, shoulder, waist, and pelvis proportions.`,
+        });
+        ops.push({
+            id: "cross-gender-assets",
+            name: "Rewrite gendered asset markers",
+            description: "Update BodySlide project names and gendered asset path markers (body, hands, feet, and first-person variants) so the generated outfit resolves to the target gender asset set.",
+        });
+    }
+    else if (sourceInfo.gender === targetInfo.gender &&
+        sourceInfo.family !== targetInfo.family &&
+        sourceInfo.gender !== "both") {
+        ops.push({
+            id: "cross-family-profile",
+            name: "Adapt between body-family silhouettes",
+            description: `Source and target use different ${sourceInfo.gender} body families. Validate slider projection and seam cleanup for ${targetInfo.adaptationFocus.slice(0, 4).join(", ")}.`,
+        });
+    }
+    if (sourceInfo.topology !== targetInfo.topology) {
+        ops.push({
+            id: "topology-delta",
+            name: "Review topology-driven seam differences",
+            description: `Source topology '${sourceInfo.topology}' differs from target topology '${targetInfo.topology}'. Verify neck, wrist, ankle, and weight-slider seam behavior after conversion.`,
         });
     }
     return ops;
@@ -135,6 +186,7 @@ export function createConversionPlan(detection, targetType, files) {
         detectionConfidence: detection.confidence,
         operations: [
             ...baseOperations(sourceType, targetType),
+            ...relationshipOperations(sourceType, targetType),
             ...targetSpecificOperations(targetType),
         ],
         warnings,

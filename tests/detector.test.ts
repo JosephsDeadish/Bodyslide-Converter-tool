@@ -100,10 +100,14 @@ describe("createConversionPlan", () => {
     ]);
 
     expect(
-      plan.operations.some((operation) => operation.id === "cross-gender-shape"),
+      plan.operations.some(
+        (operation) => operation.id === "cross-gender-shape",
+      ),
     ).toBe(true);
     expect(
-      plan.operations.some((operation) => operation.id === "cross-gender-assets"),
+      plan.operations.some(
+        (operation) => operation.id === "cross-gender-assets",
+      ),
     ).toBe(true);
   });
 });

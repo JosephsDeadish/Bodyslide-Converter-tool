@@ -24,7 +24,7 @@ const CROSS_GENDER_NOTES = [
   "Preserves source meshes for safety, so cross-gender outputs still require manual refit and weight cleanup in Outfit Studio.",
 ];
 
-const FAMILY_PATHS: Record<string, ConversionPath> = {
+const FAMILY_PATHS = {
   cbbe: {
     label: "CBBE ↔ 3BA ↔ TBD",
     namingNotes: [
@@ -46,7 +46,7 @@ const FAMILY_PATHS: Record<string, ConversionPath> = {
       "Male-family compatibility mode rewrites names and metadata only; it does not retarget mesh proportions.",
     ],
   },
-};
+} satisfies Record<"cbbe" | "unp" | "male", ConversionPath>;
 
 const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
   cbbe: "CBBE",
@@ -112,6 +112,10 @@ const FEMALE_TO_MALE_MARKERS = [
   ["femalefeet", "malefeet"],
   ["femalebody", "malebody"],
   ["femalehead", "malehead"],
+  ["female_", "male_"],
+  ["_female", "_male"],
+  ["-female", "-male"],
+  ["female-", "male-"],
   ["_f_", "_m_"],
   ["-f-", "-m-"],
 ] as const;
@@ -119,6 +123,12 @@ const FEMALE_TO_MALE_MARKERS = [
 const MALE_TO_FEMALE_MARKERS = FEMALE_TO_MALE_MARKERS.map(
   ([female, male]) => [male, female] as const,
 );
+
+function hasFamilyPath(
+  family: (typeof BODY_TYPE_INFO)[BodyType]["family"],
+): family is keyof typeof FAMILY_PATHS {
+  return family in FAMILY_PATHS;
+}
 
 function getGender(bodyType: BodyType): "female" | "male" | "both" {
   return BODY_TYPE_INFO[bodyType].gender;
@@ -132,7 +142,11 @@ function rewriteGenderMarkers(
   const sourceGender = getGender(source);
   const targetGender = getGender(target);
 
-  if (sourceGender === targetGender || sourceGender === "both" || targetGender === "both") {
+  if (
+    sourceGender === targetGender ||
+    sourceGender === "both" ||
+    targetGender === "both"
+  ) {
     return value;
   }
 
@@ -178,7 +192,11 @@ function rewriteRelativePath(
   return relativePath
     .split(/[\\/]/)
     .map((segment) =>
-      replaceAliases(rewriteGenderMarkers(segment, source, target), source, target),
+      replaceAliases(
+        rewriteGenderMarkers(segment, source, target),
+        source,
+        target,
+      ),
     )
     .join("/");
 }
@@ -207,22 +225,27 @@ function getConversionPath(
   const targetInfo = BODY_TYPE_INFO[target];
 
   if (
-    (sourceInfo.family === targetInfo.family && FAMILY_PATHS[sourceInfo.family]) ||
+    (sourceInfo.family === targetInfo.family &&
+      hasFamilyPath(sourceInfo.family)) ||
     (FEMALE_FAMILIES.has(sourceInfo.family) &&
       FEMALE_FAMILIES.has(targetInfo.family) &&
       sourceInfo.gender === "female" &&
       targetInfo.gender === "female")
   ) {
     const family =
-      sourceInfo.family === targetInfo.family ? sourceInfo.family : "female-cross-family";
+      sourceInfo.family === targetInfo.family
+        ? sourceInfo.family
+        : "female-cross-family";
     if (family !== "female-cross-family") {
-      const path = FAMILY_PATHS[family];
-      return {
-        mode: "compatibility",
-        label: path.label,
-        preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
-        namingNotes: path.namingNotes,
-      };
+      const path = FAMILY_PATHS[family as keyof typeof FAMILY_PATHS];
+      if (path) {
+        return {
+          mode: "compatibility",
+          label: path.label,
+          preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
+          namingNotes: path.namingNotes,
+        };
+      }
     }
 
     return {
@@ -237,7 +260,8 @@ function getConversionPath(
   }
 
   if (
-    (sourceInfo.family === targetInfo.family && FAMILY_PATHS[sourceInfo.family]) ||
+    (sourceInfo.family === targetInfo.family &&
+      hasFamilyPath(sourceInfo.family)) ||
     (MALE_FAMILIES.has(sourceInfo.family) &&
       MALE_FAMILIES.has(targetInfo.family) &&
       sourceInfo.gender === "male" &&
@@ -305,7 +329,11 @@ function createWarnings(
     );
   }
 
-  if (sourceInfo.gender !== targetInfo.gender && sourceInfo.gender !== "both" && targetInfo.gender !== "both") {
+  if (
+    sourceInfo.gender !== targetInfo.gender &&
+    sourceInfo.gender !== "both" &&
+    targetInfo.gender !== "both"
+  ) {
     warnings.push(
       `Cross-gender adaptation rewrote common ${sourceInfo.gender} asset markers to ${targetInfo.gender} markers so the generated outfit is labelled for the ${target.toUpperCase()} target body.`,
     );
