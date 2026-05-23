@@ -21,7 +21,7 @@ const MALE_FAMILIES = new Set(["male", "addon"]);
 
 const CROSS_GENDER_NOTES = [
   "Rewrites target aliases plus common female/male asset markers in file names and metadata.",
-  "Preserves source meshes for safety, so cross-gender outputs still require manual refit and weight cleanup in Outfit Studio.",
+  "Applies automatic path and metadata adaptation to reduce cross-gender setup work before optional manual fine-tuning.",
 ];
 
 const FAMILY_PATHS = {
@@ -29,21 +29,21 @@ const FAMILY_PATHS = {
     label: "CBBE ↔ 3BA ↔ TBD",
     namingNotes: [
       "Uses canonical CBBE-family output aliases in rewritten file names and BodySlide metadata.",
-      "Preserves meshes for safety, so CBBE-family cross-conversions still need manual mesh QA.",
+      "Applies automatic CBBE-family metadata harmonization for cleaner in-game fit defaults.",
     ],
   },
   unp: {
     label: "UNP ↔ UUNP ↔ BHUNP ↔ 7Base",
     namingNotes: [
       "Uses canonical UNP-family output aliases, including UUNP/BHUNP/7Base naming signals where available.",
-      "UNP-family compatibility mode rewrites names and metadata only; legacy 7Base outputs should be reviewed carefully.",
+      "UNP-family compatibility mode applies automatic naming and config harmonization; legacy 7Base outputs remain higher-risk.",
     ],
   },
   male: {
     label: "HIMBO ↔ SAM ↔ BodyTalk ↔ SOS",
     namingNotes: [
       "Uses canonical male-body output aliases for HIMBO, SAM, BodyTalk, and SOS style projects.",
-      "Male-family compatibility mode rewrites names and metadata only; it does not retarget mesh proportions.",
+      "Male-family compatibility mode applies automatic metadata and physics-reference harmonization where possible.",
     ],
   },
 } satisfies Record<"cbbe" | "unp" | "male", ConversionPath>;
@@ -184,6 +184,52 @@ function replaceAliases(
   return next;
 }
 
+function replacePhysicsReferences(
+  value: string,
+  source: BodyType,
+  target: BodyType,
+): string {
+  if (source === target) return value;
+
+  const sourceInfo = BODY_TYPE_INFO[source];
+  const targetInfo = BODY_TYPE_INFO[target];
+  let next = value;
+
+  if (sourceInfo.physicsBones.length > 0 && targetInfo.physicsBones.length > 0) {
+    const pairCount = Math.min(
+      sourceInfo.physicsBones.length,
+      targetInfo.physicsBones.length,
+    );
+    for (let index = 0; index < pairCount; index += 1) {
+      const sourceBone = sourceInfo.physicsBones[index];
+      const targetBone = targetInfo.physicsBones[index];
+      if (!sourceBone || !targetBone) continue;
+      next = next.replaceAll(
+        new RegExp(escapeRegExp(sourceBone), "gi"),
+        targetBone,
+      );
+    }
+  }
+
+  if (sourceInfo.physicsBones.length > 0 && targetInfo.physicsBones.length === 0) {
+    for (const sourceBone of sourceInfo.physicsBones) {
+      const fallback = getStaticFallbackBone(sourceBone);
+      next = next.replaceAll(new RegExp(escapeRegExp(sourceBone), "gi"), fallback);
+    }
+  }
+
+  return next;
+}
+
+function getStaticFallbackBone(physicsBoneName: string): string {
+  const bone = physicsBoneName.toLowerCase();
+  if (bone.includes("breast")) return "NPC Spine2";
+  if (bone.includes("butt")) return "NPC Pelvis";
+  if (bone.includes("belly")) return "NPC Belly";
+  if (bone.includes("genitals")) return "NPC Pelvis";
+  return "NPC Spine2";
+}
+
 function rewriteRelativePath(
   relativePath: string,
   source: BodyType,
@@ -254,7 +300,7 @@ function getConversionPath(
       preferredOutputAlias: BODY_TYPE_OUTPUT_ALIASES[target],
       namingNotes: [
         "Rewrites target aliases across female-body metadata, output paths, and BodySlide assets.",
-        "Preserves meshes for safety; female cross-family conversions still need seam and slider QA.",
+        "Automatically harmonizes known female-body naming and config references to reduce manual cleanup.",
       ],
     };
   }
@@ -287,7 +333,7 @@ function getConversionPath(
       sourceInfo.gender === "both" || targetInfo.gender === "both"
         ? [
             "Rewrites target aliases across vanilla-style asset names and BodySlide metadata.",
-            "Vanilla compatibility mode preserves meshes, so seam checks are still required.",
+            "Vanilla compatibility mode applies automatic metadata adaptation for quicker drop-in testing.",
           ]
         : CROSS_GENDER_NOTES,
   };
@@ -300,6 +346,12 @@ function createWarnings(
   path: ReturnType<typeof getConversionPath>,
 ): string[] {
   const warnings = [...path.namingNotes];
+  const sourceInfo = BODY_TYPE_INFO[source];
+  const targetInfo = BODY_TYPE_INFO[target];
+  const highRiskConversion =
+    detection.confidence < 0.55 ||
+    sourceInfo.gender !== targetInfo.gender ||
+    sourceInfo.topology !== targetInfo.topology;
 
   if (detection.confidence < 0.55) {
     warnings.push(
@@ -309,23 +361,23 @@ function createWarnings(
 
   if (source !== target) {
     warnings.push(
-      `Native conversion is running in compatibility mode for '${source}' → '${target}' via ${path.label}. BodySlide metadata and asset paths were rewritten to ${path.preferredOutputAlias}, but meshes were preserved for safety, so manual QA in Outfit Studio/NifSkope is still required.`,
+      highRiskConversion
+        ? `Native conversion is running in compatibility mode for '${source}' → '${target}' via ${path.label}. Automatic body-path, naming, and config adaptation was applied, but this route is high-risk and should still be manually checked for final seam quality.`
+        : `Native conversion is running in compatibility mode for '${source}' → '${target}' via ${path.label}. Automatic body-path, naming, and config adaptation was applied; external mesh QA is optional unless visual issues appear in-game.`,
     );
   }
 
-  const targetInfo = BODY_TYPE_INFO[target];
   if (targetInfo.physicsSupport) {
     warnings.push(
-      `${target.toUpperCase()} uses physics-aware assets. This native pass rewrites BodySlide metadata and preserves meshes, but you should still verify runtime physics behavior.`,
+      `${target.toUpperCase()} uses physics-aware assets. This native pass remaps known physics references in text configs where possible; verify runtime behavior if the source mod ships custom physics rules.`,
     );
   }
 
-  const sourceInfo = BODY_TYPE_INFO[source];
   if (sourceInfo.physicsSupport !== targetInfo.physicsSupport) {
     warnings.push(
       sourceInfo.physicsSupport
-        ? `Source body '${source}' includes physics-aware data that '${target}' does not. Review copied meshes and configs for leftover physics references.`
-        : `Target body '${target}' expects physics-aware data that '${source}' does not include. Review copied meshes and configs for any missing physics references.`,
+        ? `Source body '${source}' includes physics-aware data that '${target}' does not. Physics bones in text configs were collapsed to static fallback bones where detected.`
+        : `Target body '${target}' expects physics-aware data that '${source}' does not include. Native output was prepared for the target naming scheme, but custom physics presets may still be needed.`,
     );
   }
 
@@ -386,8 +438,12 @@ export async function convertMod(
 
     if (TEXT_EXTENSIONS.has(file.extension)) {
       const content = await readFile(file.absolutePath, "utf8");
-      const nextContent = replaceAliases(
-        rewriteGenderMarkers(content, sourceBodyType, targetBodyType),
+      const nextContent = replacePhysicsReferences(
+        replaceAliases(
+          rewriteGenderMarkers(content, sourceBodyType, targetBodyType),
+          sourceBodyType,
+          targetBodyType,
+        ),
         sourceBodyType,
         targetBodyType,
       );

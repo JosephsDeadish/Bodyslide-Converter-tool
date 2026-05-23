@@ -62,6 +62,18 @@ describe("detectBodyType", () => {
     expect(detection.bodyType).not.toBe("cbbe");
     expect(detection.bodyType).toBe("bodytalk");
   });
+
+  it("uses gender hints to avoid female-body false positives", () => {
+    const detection = detectBodyType([
+      file(
+        "meshes/actors/character/malebody/himbo_cuirass_0.nif",
+        "cbbe conversion with highpolymalebody markers",
+      ),
+    ]);
+
+    expect(detection.bodyType).toBe("himbo");
+    expect(detection.confidence).toBeGreaterThan(0);
+  });
 });
 
 describe("createConversionPlan", () => {

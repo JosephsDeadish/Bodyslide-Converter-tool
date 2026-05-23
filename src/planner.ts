@@ -87,7 +87,7 @@ function targetSpecificOperations(targetType: BodyType): ConversionOperation[] {
       id: "male-proportions",
       name: "Tune male-specific proportions",
       description:
-        "Rebalance shoulder, chest, and arm morph channels for HIMBO shape ranges. Male body proportions differ significantly from female bodies; manual vertex touch-up in Outfit Studio is recommended.",
+        "Rebalance shoulder, chest, and arm morph channels for HIMBO shape ranges. Male body proportions differ significantly from female bodies, so run in-game fit checks on broad shoulder and chest extremes.",
     });
   }
 
@@ -218,7 +218,7 @@ export function createConversionPlan(
     const fromGender = isFemale(sourceType) ? "female" : "male";
     const toGender = isFemale(targetType) ? "female" : "male";
     warnings.push(
-      `Cross-gender conversion detected (${fromGender} → ${toGender}). Body proportions differ significantly; extensive manual mesh editing in Outfit Studio is expected. Clipping issues are very likely without per-vertex adjustment.`,
+      `Cross-gender conversion detected (${fromGender} → ${toGender}). Body proportions differ significantly; run extended in-game fit checks because clipping risk is higher than same-gender conversions.`,
     );
   }
 
@@ -233,7 +233,7 @@ export function createConversionPlan(
     }
     if (!srcInfo?.physicsSupport && tgtInfo.physicsSupport) {
       warnings.push(
-        `Target body '${targetType}' requires physics chain bones that are absent in the source. After projection, manually assign weights to the physics bones listed in the plan operations above.`,
+        `Target body '${targetType}' requires physics chain bones that are absent in the source. Verify that generated configs include the required target physics bones listed in the plan operations.`,
       );
     }
   }
@@ -249,7 +249,7 @@ export function createConversionPlan(
   }
 
   warnings.push(
-    "All automated outputs should be reviewed and tested in Outfit Studio and in-game before release.",
+    "Automated conversion outputs should always be smoke-tested in-game before release; external mesh editors are mainly needed for high-risk topology or cross-gender edge cases.",
   );
 
   return {

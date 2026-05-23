@@ -52,6 +52,11 @@ describe("convertMod", () => {
     expect(result.conversionMode).toBe("compatibility");
     expect(result.preferredOutputAlias).toBe("3BA");
     expect(
+      result.warnings.some((warning) =>
+        warning.includes("external mesh QA is optional"),
+      ),
+    ).toBe(true);
+    expect(
       result.convertedFiles.some((file) =>
         file.outputPath.endsWith("3BA_armor.xml"),
       ),
@@ -67,6 +72,41 @@ describe("convertMod", () => {
       "utf8",
     );
     expect(rewritten).toContain("3BA");
+  });
+
+  it("remaps known physics bone references in text configs", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "configs"), { recursive: true });
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "configs", "cbpc_3ba.ini"),
+      "NPC L Breast01=0.7\nNPC R Breast01=0.7\nNPC L Butt=0.4\nNPC R Butt=0.4",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_0.nif"),
+      "3bbb amazing body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("3ba");
+    const rewritten = await readFile(
+      join(outputDir, "configs", "cbpc_BHUNP.ini"),
+      "utf8",
+    );
+    expect(rewritten).toContain("BHUNP Breast L01");
+    expect(rewritten).toContain("BHUNP Breast R01");
   });
 
   it("supports additional compatible female-body native paths", async () => {
