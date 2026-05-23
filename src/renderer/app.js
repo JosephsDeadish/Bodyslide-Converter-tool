@@ -11,6 +11,9 @@ const targetSelect = document.getElementById("targetSelect");
 const bodyInfoBox = document.getElementById("bodyInfoBox");
 const convertBtn = document.getElementById("convertBtn");
 const statusBadge = document.getElementById("statusBadge");
+const sourceDetectSection = document.getElementById("sourceDetectSection");
+const sourceDetectLabel = document.getElementById("sourceDetectLabel");
+const sourceOverrideSelect = document.getElementById("sourceOverrideSelect");
 
 const screenWelcome = document.getElementById("screenWelcome");
 const screenLoading = document.getElementById("screenLoading");
@@ -48,12 +51,23 @@ function escapeHtml(value) {
 // ── Init ────────────────────────────────────────────────────────
 (async function init() {
   const types = await api.getBodyTypes();
-  targetSelect.innerHTML = '<option value="">— Select target body —</option>';
+  const defaultOpt = document.createElement("option");
+  defaultOpt.value = "";
+  defaultOpt.textContent = "— Select output body —";
+  targetSelect.innerHTML = "";
+  targetSelect.appendChild(defaultOpt);
+
+  // Populate source-override select with the same list
   for (const t of types) {
     const opt = document.createElement("option");
     opt.value = t.value;
     opt.textContent = t.label;
     targetSelect.appendChild(opt);
+
+    const overrideOpt = document.createElement("option");
+    overrideOpt.value = t.value;
+    overrideOpt.textContent = t.label;
+    sourceOverrideSelect.appendChild(overrideOpt);
   }
   updateConvertBtn();
 })();
@@ -69,6 +83,34 @@ browseInputBtn.addEventListener("click", async () => {
       outputPathEl.value = outputPath;
     }
     updateConvertBtn();
+
+    // Kick off a lightweight detect-only scan so the user can see (and
+    // optionally override) the app's recommendation before converting.
+    sourceDetectSection.classList.remove("hidden");
+    sourceDetectLabel.textContent = "Scanning…";
+    sourceDetectLabel.className = "source-detect-value source-detect-scanning";
+    sourceOverrideSelect.value = "";
+
+    try {
+      const detection = await api.detectSource(path);
+      const bodyType = detection.bodyType;
+      const confPct = Math.round(detection.confidence * 100);
+      if (bodyType === "unknown") {
+        sourceDetectLabel.textContent = "Unknown — no body signals found";
+        sourceDetectLabel.className =
+          "source-detect-value source-detect-unknown";
+      } else {
+        sourceDetectLabel.textContent = `${bodyType.toUpperCase()} — ${confPct}% confidence`;
+        sourceDetectLabel.className = "source-detect-value source-detect-found";
+        // Pre-select the detected value in the override dropdown as a visible hint
+        // without actually setting an override (the empty "Use auto-detected" entry is still default).
+        // We highlight it via a data attribute for CSS, but keep value="" to mean "no override".
+        sourceOverrideSelect.dataset.detected = bodyType;
+      }
+    } catch {
+      sourceDetectLabel.textContent = "Detection failed";
+      sourceDetectLabel.className = "source-detect-value source-detect-unknown";
+    }
   }
 });
 
@@ -116,10 +158,12 @@ convertBtn.addEventListener("click", async () => {
   setStatus("scanning");
 
   try {
+    const sourceOverride = sourceOverrideSelect.value || undefined;
     const result = await api.runScan({
       input: inputPath,
       target,
       output: outputPath,
+      sourceOverride,
     });
     renderResults(result);
     showScreen("results");

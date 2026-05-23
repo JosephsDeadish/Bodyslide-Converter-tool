@@ -517,6 +517,45 @@ body {
   margin-bottom: 20px;
 }
 
+/* ── Field hint ──────────────────────────────────────────────── */
+.field-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+/* ── Detected source body section ────────────────────────────── */
+.source-detect-section {
+  margin-top: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.source-detect-status {
+  margin-bottom: 4px;
+}
+
+.source-detect-value {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.source-detect-scanning {
+  color: var(--text-dim);
+}
+
+.source-detect-found {
+  color: var(--accent-hi);
+}
+
+.source-detect-unknown {
+  color: var(--warn);
+}
+
 /* ── Utilities ───────────────────────────────────────────────── */
 .hidden {
   display: none;

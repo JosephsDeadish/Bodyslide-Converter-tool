@@ -18,14 +18,30 @@
       </div>
 
       <div class="form-section">
-        <label class="field-label">Source Mod Folder</label>
+        <label class="field-label" style="margin-top:1rem;">Source Mod Folder</label>
         <div class="path-row">
           <input id="inputPath" class="path-input" type="text" placeholder="Select folder…" readonly />
           <button type="button" id="browseInput" class="btn btn-secondary" title="Browse">📁</button>
         </div>
 
-        <label class="field-label" style="margin-top:1rem;">Target Body Type</label>
-        <select id="targetSelect" class="select-control">
+        <!-- Detected source body — populated after a folder is chosen -->
+        <div id="sourceDetectSection" class="source-detect-section hidden">
+          <div class="field-label" style="margin-top:1rem;">Detected Source Body</div>
+          <div id="sourceDetectStatus" class="source-detect-status">
+            <span id="sourceDetectLabel" class="source-detect-value">Scanning…</span>
+          </div>
+          <div class="field-label" style="margin-top:0.6rem;">Override Source Body</div>
+          <div class="field-hint">App recommendation is used by default — change only if detection is wrong</div>
+          <select id="sourceOverrideSelect" class="select-control" style="margin-top:4px;">
+            <option value="">Use auto-detected</option>
+          </select>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label class="field-label">Convert To — Output Body Type</label>
+          <div class="field-hint">Select which body type you want the mod converted to</div>
+        </div>
+        <select id="targetSelect" class="select-control" style="margin-top:4px;">
           <option value="">Loading…</option>
         </select>
 

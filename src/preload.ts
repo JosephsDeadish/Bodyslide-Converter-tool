@@ -23,6 +23,9 @@ contextBridge.exposeInMainWorld("bodyslideAPI", {
   getBodyTypes: (): Promise<BodyTypeOption[]> =>
     ipcRenderer.invoke("get:bodyTypes"),
 
+  detectSource: (input: string): Promise<DetectionResult> =>
+    ipcRenderer.invoke("scan:detect", input),
+
   getBodyTypeInfo: (bodyType: BodyType): Promise<BodyTypeInfo | null> =>
     ipcRenderer.invoke("get:bodyTypeInfo", bodyType),
 
@@ -30,5 +33,6 @@ contextBridge.exposeInMainWorld("bodyslideAPI", {
     input: string;
     target: BodyType;
     output: string;
+    sourceOverride?: BodyType;
   }): Promise<ScanResult> => ipcRenderer.invoke("scan:run", args),
 });

@@ -79,6 +79,14 @@ ipcMain.handle("get:bodyTypes", () =>
 );
 
 ipcMain.handle(
+  "scan:detect",
+  async (_event: IpcMainInvokeEvent, input: string) => {
+    const files = await scanModFiles(input);
+    return detectBodyType(files);
+  },
+);
+
+ipcMain.handle(
   "get:bodyTypeInfo",
   (_event: IpcMainInvokeEvent, bodyType: BodyType) => {
     const info = BODY_TYPE_INFO[bodyType];
@@ -90,12 +98,23 @@ ipcMain.handle(
   "scan:run",
   async (
     _event: IpcMainInvokeEvent,
-    args: { input: string; target: BodyType; output: string },
+    args: {
+      input: string;
+      target: BodyType;
+      output: string;
+      sourceOverride?: BodyType;
+    },
   ) => {
-    const { input, target, output } = args;
+    const { input, target, output, sourceOverride } = args;
 
     const files = await scanModFiles(input);
-    const detection = detectBodyType(files);
+    const autoDetection = detectBodyType(files);
+
+    // Allow the user to override the auto-detected source body type.
+    const detection =
+      sourceOverride && sourceOverride !== autoDetection.bodyType
+        ? { ...autoDetection, bodyType: sourceOverride as BodyType | "unknown" }
+        : autoDetection;
     const plan = createConversionPlan(detection, target, files);
     const result = await convertMod(input, output, files, detection, target);
 
