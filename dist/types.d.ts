@@ -36,7 +36,7 @@ export type ConvertedFile = {
     sourcePath: string;
     outputPath: string;
     kind: "mesh" | "text";
-    action: "copied" | "rewritten";
+    action: "copied" | "rewritten" | "synthesized";
 };
 export type SkippedFile = {
     sourcePath: string;

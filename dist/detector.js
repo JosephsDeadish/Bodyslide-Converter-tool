@@ -222,6 +222,20 @@ function scoreKeywordHit(haystack, bodyType) {
     }
     return Math.min(matches, 2) * 0.25;
 }
+function getEvidenceKind(file) {
+    const path = file.relativePath.toLowerCase();
+    if (file.extension === ".nif" || file.extension === ".tri") {
+        return "mesh";
+    }
+    if (file.extension === ".osp" ||
+        (file.extension === ".xml" && path.includes("bodyslide"))) {
+        return "sliders";
+    }
+    if (file.extension === ".ini" || file.extension === ".json") {
+        return "config";
+    }
+    return "metadata";
+}
 function scoreFileForType(file, patterns, bodyType) {
     const haystack = `${file.relativePath.toLowerCase()}\n${file.basename}\n${file.preview}`;
     let score = 0;
@@ -248,6 +262,10 @@ export function detectBodyType(files) {
         acc[bodyType] = 0;
         return acc;
     }, {});
+    const evidenceKinds = BODY_TYPES.reduce((acc, bodyType) => {
+        acc[bodyType] = new Set();
+        return acc;
+    }, {});
     for (const file of files) {
         for (const bodyType of BODY_TYPES) {
             const score = scoreFileForType(file, SIGNALS[bodyType], bodyType);
@@ -255,6 +273,7 @@ export function detectBodyType(files) {
             if (score > 0) {
                 matchedSignals.add(`${bodyType}:${file.relativePath}`);
                 evidenceCount[bodyType] += 1;
+                evidenceKinds[bodyType].add(getEvidenceKind(file));
             }
         }
     }
@@ -293,7 +312,11 @@ export function detectBodyType(files) {
     const scoreShare = bestScore / totalSafe;
     const margin = Math.max(bestScore - secondBest, 0) / Math.max(bestScore, 1);
     const evidenceQuality = Math.min(evidenceCount[bestType] / 4, 1);
-    const confidence = Number(Math.max(0, Math.min(1, scoreShare * 0.4 + margin * 0.4 + evidenceQuality * 0.2)).toFixed(2));
+    const diversityQuality = Math.min(evidenceKinds[bestType].size / 3, 1);
+    const confidence = Number(Math.max(0, Math.min(1, scoreShare * 0.35 +
+        margin * 0.35 +
+        evidenceQuality * 0.15 +
+        diversityQuality * 0.15)).toFixed(2));
     return {
         bodyType: bestType,
         confidence,

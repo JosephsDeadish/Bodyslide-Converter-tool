@@ -267,9 +267,12 @@ async function synthesizeMissingWeightMeshes(
   outputDir: string,
   convertedFiles: ConversionResult["convertedFiles"],
 ): Promise<number> {
-  const knownOutputPaths = new Set(convertedFiles.map((file) => file.outputPath));
+  const knownOutputPaths = new Set(
+    convertedFiles.map((file) => file.outputPath),
+  );
   const synthCandidates = convertedFiles.filter(
-    (file) => file.kind === "mesh" && file.outputPath.toLowerCase().endsWith(".nif"),
+    (file) =>
+      file.kind === "mesh" && file.outputPath.toLowerCase().endsWith(".nif"),
   );
   let synthesizedCount = 0;
 

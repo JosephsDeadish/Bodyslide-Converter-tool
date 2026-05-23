@@ -238,30 +238,30 @@ function scoreKeywordHit(haystack: string, bodyType: BodyType): number {
     if (haystack.includes(keyword)) {
       matches += 1;
     }
-
-    function getEvidenceKind(file: ScannedFile): EvidenceKind {
-      const path = file.relativePath.toLowerCase();
-
-      if (file.extension === ".nif" || file.extension === ".tri") {
-        return "mesh";
-      }
-
-      if (
-        file.extension === ".osp" ||
-        (file.extension === ".xml" && path.includes("bodyslide"))
-      ) {
-        return "sliders";
-      }
-
-      if (file.extension === ".ini" || file.extension === ".json") {
-        return "config";
-      }
-
-      return "metadata";
-    }
   }
 
   return Math.min(matches, 2) * 0.25;
+}
+
+function getEvidenceKind(file: ScannedFile): EvidenceKind {
+  const path = file.relativePath.toLowerCase();
+
+  if (file.extension === ".nif" || file.extension === ".tri") {
+    return "mesh";
+  }
+
+  if (
+    file.extension === ".osp" ||
+    (file.extension === ".xml" && path.includes("bodyslide"))
+  ) {
+    return "sliders";
+  }
+
+  if (file.extension === ".ini" || file.extension === ".json") {
+    return "config";
+  }
+
+  return "metadata";
 }
 
 function scoreFileForType(
