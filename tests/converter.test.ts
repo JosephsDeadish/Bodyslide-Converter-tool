@@ -401,7 +401,10 @@ describe("convertMod", () => {
       ),
     ).toBe(true);
 
-    const rewritten = await readFile(join(outputDir, "3BA_profile.txt"), "utf8");
+    const rewritten = await readFile(
+      join(outputDir, "3BA_profile.txt"),
+      "utf8",
+    );
     expect(rewritten).toContain("3BA");
     expect(rewritten).not.toContain("cbbebody");
     expect(rewritten).not.toContain("calientebody");
