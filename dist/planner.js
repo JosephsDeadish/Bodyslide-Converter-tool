@@ -179,6 +179,15 @@ function relationshipOperations(sourceType, targetType) {
     }
     return ops;
 }
+function getWeightPairCounterpart(relativePath) {
+    if (/_0\.(nif|osd|tri)$/i.test(relativePath)) {
+        return relativePath.replace(/_0\.(nif|osd|tri)$/i, "_1.$1");
+    }
+    if (/_1\.(nif|osd|tri)$/i.test(relativePath)) {
+        return relativePath.replace(/_1\.(nif|osd|tri)$/i, "_0.$1");
+    }
+    return null;
+}
 export function createConversionPlan(detection, targetType, files) {
     const warnings = [];
     const sourceType = detection.bodyType;
@@ -217,6 +226,16 @@ export function createConversionPlan(detection, targetType, files) {
     if ((sourceType === "cbbe" && targetType === "3ba") ||
         (sourceType === "3ba" && targetType === "cbbe")) {
         warnings.push("3BA shares the same base mesh topology as CBBE. Mesh re-projection is not required; only physics bone weighting and CBPC config updates are needed.");
+    }
+    const knownPaths = new Set(files.map((file) => file.relativePath));
+    const missingWeightPairCount = files.reduce((count, file) => {
+        const counterpart = getWeightPairCounterpart(file.relativePath);
+        if (!counterpart)
+            return count;
+        return knownPaths.has(counterpart) ? count : count + 1;
+    }, 0);
+    if (missingWeightPairCount > 0) {
+        warnings.push(`Detected ${missingWeightPairCount} mesh file(s) with only one Skyrim weight variant. Skyrim SE expects paired _0/_1 meshes for weight-slider support; missing counterparts should be generated or manually exported.`);
     }
     warnings.push("Automated conversion outputs should always be smoke-tested in-game before release; external mesh editors are mainly needed for high-risk topology or cross-gender edge cases.");
     return {
