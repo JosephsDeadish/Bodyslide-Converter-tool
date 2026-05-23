@@ -1078,6 +1078,77 @@ describe("convertMod", () => {
     expect(rewritten).not.toContain("NPC L Butt");
   });
 
+  it("semantically remaps 3BA physics bones to UUNP chain names", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_3ba_to_uunp.ini"),
+      [
+        "NPC LBreastRoot=1",
+        "NPC RBreastRoot=1",
+        "NPC L Breast01=0.7",
+        "NPC R Breast01=0.7",
+        "NPC L Breast02=0.6",
+        "NPC R Breast02=0.6",
+        "NPC L Breast03=0.5",
+        "NPC R Breast03=0.5",
+        "NPC L Butt=0.4",
+        "NPC R Butt=0.4",
+        "NPC Belly=0.3",
+        "NPC BellyRoot=0.5",
+      ].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_0.nif"),
+      "3bbb amazing body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "uunp",
+    );
+
+    expect(result.sourceBodyType).toBe("3ba");
+    expect(result.targetBodyType).toBe("uunp");
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Physics remap coverage for '3ba' → 'uunp'"),
+      ),
+    ).toBe(false);
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    expect(rewritten).toContain("NPC L Breast01");
+    expect(rewritten).toContain("NPC R Breast01");
+    expect(rewritten).toContain("NPC L Breast02");
+    expect(rewritten).toContain("NPC R Breast02");
+    expect(rewritten).toContain("NPC L Breast03");
+    expect(rewritten).toContain("NPC R Breast03");
+    expect(rewritten).toContain("NPC L Butt");
+    expect(rewritten).toContain("NPC R Butt");
+    expect(rewritten).toContain("NPC Belly");
+    expect(rewritten).not.toContain("NPC LBreastRoot");
+    expect(rewritten).not.toContain("NPC RBreastRoot");
+    expect(rewritten).not.toContain("NPC BellyRoot");
+    expect(rewritten).not.toContain("NPC Spine2");
+  });
+
   it("collapses cross-family physics references when no safe direct map exists", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -1114,7 +1185,7 @@ describe("convertMod", () => {
     expect(result.targetBodyType).toBe("sos");
     expect(
       result.warnings.some((warning) =>
-        warning.includes("No direct physics-bone map exists"),
+        warning.includes("collapsed to static fallback bones"),
       ),
     ).toBe(true);
 

@@ -369,8 +369,12 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function buildBoundedPattern(value: string): RegExp {
+  return new RegExp(`(?<![a-z0-9])${escapeRegExp(value)}(?![a-z0-9])`, "gi");
+}
+
 function buildAliasPattern(alias: string): RegExp {
-  return new RegExp(`(?<![a-z0-9])${escapeRegExp(alias)}(?![a-z0-9])`, "gi");
+  return buildBoundedPattern(alias);
 }
 
 function replaceAliases(
@@ -461,80 +465,292 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
   },
 };
 
+type PhysicsBoneGroup =
+  | "breast-root"
+  | "breast"
+  | "butt"
+  | "belly"
+  | "genitals"
+  | "scrotum"
+  | "other";
+type PhysicsBoneSide = "left" | "right" | null;
+type PhysicsRemapKind = "explicit" | "semantic" | "indexed" | "fallback";
+
+type PhysicsBoneDescriptor = {
+  name: string;
+  group: PhysicsBoneGroup;
+  side: PhysicsBoneSide;
+  stage: number | null;
+};
+
+type PhysicsRemapStep = {
+  sourceBone: string;
+  targetBone: string;
+  kind: PhysicsRemapKind;
+};
+
+type PhysicsRemapPlan = {
+  steps: PhysicsRemapStep[];
+};
+
+function detectPhysicsBoneSide(lowerBoneName: string): PhysicsBoneSide {
+  if (
+    /\bleft\b/.test(lowerBoneName) ||
+    /\bl\b/.test(lowerBoneName) ||
+    /(^|[^a-z])l(?=breast|butt|genitals|scrotum)/.test(lowerBoneName) ||
+    /\bbreast\s*l/.test(lowerBoneName) ||
+    /\bbutt\s*l/.test(lowerBoneName) ||
+    /\bgenitals\w*\s*l/.test(lowerBoneName) ||
+    /\bscrotum\w*\s*l/.test(lowerBoneName)
+  ) {
+    return "left";
+  }
+  if (
+    /\bright\b/.test(lowerBoneName) ||
+    /\br\b/.test(lowerBoneName) ||
+    /(^|[^a-z])r(?=breast|butt|genitals|scrotum)/.test(lowerBoneName) ||
+    /\bbreast\s*r/.test(lowerBoneName) ||
+    /\bbutt\s*r/.test(lowerBoneName) ||
+    /\bgenitals\w*\s*r/.test(lowerBoneName) ||
+    /\bscrotum\w*\s*r/.test(lowerBoneName)
+  ) {
+    return "right";
+  }
+  return null;
+}
+
+function parsePhysicsBoneDescriptor(boneName: string): PhysicsBoneDescriptor {
+  const lower = boneName.toLowerCase();
+  const side = detectPhysicsBoneSide(lower);
+  let group: PhysicsBoneGroup = "other";
+  if (lower.includes("scrotum")) {
+    group = "scrotum";
+  } else if (lower.includes("genitals")) {
+    group = "genitals";
+  } else if (lower.includes("belly")) {
+    group = "belly";
+  } else if (lower.includes("butt")) {
+    group = "butt";
+  } else if (lower.includes("breastroot")) {
+    group = "breast-root";
+  } else if (lower.includes("breast")) {
+    group = "breast";
+  }
+
+  const stageMatch = lower.match(/\b0?([1-3])\b/);
+  const stage =
+    group === "breast" || group === "breast-root"
+      ? Number(stageMatch?.[1] ?? "1")
+      : null;
+
+  return { name: boneName, group, side, stage };
+}
+
+function pickMatchingBone(
+  descriptors: PhysicsBoneDescriptor[],
+  matcher: (descriptor: PhysicsBoneDescriptor) => boolean,
+): string | null {
+  return descriptors.find(matcher)?.name ?? null;
+}
+
+function findSemanticPhysicsTargetBone(
+  sourceBone: string,
+  targetBones: readonly string[],
+): string | null {
+  const sourceDescriptor = parsePhysicsBoneDescriptor(sourceBone);
+  const targetDescriptors = targetBones.map(parsePhysicsBoneDescriptor);
+  const matchesSide = (descriptor: PhysicsBoneDescriptor) =>
+    sourceDescriptor.side === null || descriptor.side === sourceDescriptor.side;
+  switch (sourceDescriptor.group) {
+    case "breast-root":
+      return (
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) =>
+            descriptor.group === "breast-root" && matchesSide(descriptor),
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) =>
+            descriptor.group === "breast" &&
+            matchesSide(descriptor) &&
+            descriptor.stage === 1,
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "breast" && matchesSide(descriptor),
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "breast" && descriptor.stage === 1,
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "breast",
+        )
+      );
+    case "breast":
+      return (
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) =>
+            descriptor.group === "breast" &&
+            matchesSide(descriptor) &&
+            descriptor.stage === sourceDescriptor.stage,
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "breast" && matchesSide(descriptor),
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) =>
+            descriptor.group === "breast" &&
+            descriptor.stage === sourceDescriptor.stage,
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "breast",
+        )
+      );
+    case "butt":
+      return (
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "butt" && matchesSide(descriptor),
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "butt",
+        )
+      );
+    case "belly":
+      return pickMatchingBone(
+        targetDescriptors,
+        (descriptor) => descriptor.group === "belly",
+      );
+    case "scrotum":
+      return (
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "scrotum" && matchesSide(descriptor),
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "scrotum",
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "genitals",
+        )
+      );
+    case "genitals":
+      return (
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "genitals" && matchesSide(descriptor),
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "genitals",
+        )
+      );
+    default:
+      return null;
+  }
+}
+
+function buildPhysicsRemapPlan(source: BodyType, target: BodyType): PhysicsRemapPlan {
+  const sourceInfo = BODY_TYPE_INFO[source];
+  const targetInfo = BODY_TYPE_INFO[target];
+  if (
+    source === target ||
+    sourceInfo.physicsBones.length === 0 ||
+    targetInfo.physicsBones.length === 0
+  ) {
+    return { steps: [] };
+  }
+
+  const explicitMap = EXPLICIT_PHYSICS_BONE_MAPS[source]?.[target];
+  const explicitMapLookup = new Map(
+    Object.entries(explicitMap ?? {}).map(([sourceBone, targetBone]) => [
+      sourceBone.toLowerCase(),
+      targetBone,
+    ]),
+  );
+  const canUseIndexedPhysicsMapping =
+    sourceInfo.gender === targetInfo.gender &&
+    sourceInfo.family === targetInfo.family &&
+    sourceInfo.topology === targetInfo.topology;
+
+  const steps: PhysicsRemapStep[] = sourceInfo.physicsBones.map(
+    (sourceBone, index) => {
+      const explicitTarget = explicitMapLookup.get(sourceBone.toLowerCase());
+      if (explicitTarget) {
+        return { sourceBone, targetBone: explicitTarget, kind: "explicit" };
+      }
+
+      const semanticTarget = findSemanticPhysicsTargetBone(
+        sourceBone,
+        targetInfo.physicsBones,
+      );
+      if (semanticTarget) {
+        return { sourceBone, targetBone: semanticTarget, kind: "semantic" };
+      }
+
+      if (canUseIndexedPhysicsMapping) {
+        const indexedTarget = targetInfo.physicsBones[index];
+        if (indexedTarget) {
+          return { sourceBone, targetBone: indexedTarget, kind: "indexed" };
+        }
+      }
+
+      return {
+        sourceBone,
+        targetBone: getStaticFallbackBone(sourceBone),
+        kind: "fallback",
+      };
+    },
+  );
+
+  return { steps };
+}
+
+function applyPhysicsRemapPlan(value: string, plan: PhysicsRemapPlan): string {
+  let next = value;
+  const placeholders: string[] = [];
+  for (const [index, step] of plan.steps.entries()) {
+    const placeholder = `__SLIDESMITH_BONE_${index}__`;
+    placeholders.push(placeholder);
+    next = next.replaceAll(buildBoundedPattern(step.sourceBone), placeholder);
+  }
+  for (const [index, step] of plan.steps.entries()) {
+    next = next.replaceAll(placeholders[index] ?? "", step.targetBone);
+  }
+  return next;
+}
+
 function replacePhysicsReferences(
   value: string,
   source: BodyType,
   target: BodyType,
 ): string {
   if (source === target) return value;
-
   const sourceInfo = BODY_TYPE_INFO[source];
   const targetInfo = BODY_TYPE_INFO[target];
-  let next = value;
-
-  if (sourceInfo.physicsBones.length === 0) return next;
-
-  // Use explicit semantic mapping when available — avoids index-alignment errors.
-  const explicitMap = EXPLICIT_PHYSICS_BONE_MAPS[source]?.[target];
-  if (explicitMap !== undefined) {
-    for (const [sourceBone, targetBone] of Object.entries(explicitMap)) {
-      next = next.replaceAll(
-        new RegExp(escapeRegExp(sourceBone), "gi"),
-        targetBone,
-      );
-    }
-    // Any source physics bones not covered by the explicit map: collapse to
-    // static fallbacks when the target has no physics.
-    if (targetInfo.physicsBones.length === 0) {
-      const mappedKeys = new Set(
-        Object.keys(explicitMap).map((k) => k.toLowerCase()),
-      );
-      for (const sourceBone of sourceInfo.physicsBones) {
-        if (!mappedKeys.has(sourceBone.toLowerCase())) {
-          const fallback = getStaticFallbackBone(sourceBone);
-          next = next.replaceAll(
-            new RegExp(escapeRegExp(sourceBone), "gi"),
-            fallback,
-          );
-        }
-      }
-    }
-    return next;
+  if (sourceInfo.physicsBones.length === 0) return value;
+  if (targetInfo.physicsBones.length === 0) {
+    const fallbackPlan: PhysicsRemapPlan = {
+      steps: sourceInfo.physicsBones.map((sourceBone) => ({
+        sourceBone,
+        targetBone: getStaticFallbackBone(sourceBone),
+        kind: "fallback",
+      })),
+    };
+    return applyPhysicsRemapPlan(value, fallbackPlan);
   }
 
-  const canUseIndexedPhysicsMapping =
-    targetInfo.physicsBones.length > 0 &&
-    sourceInfo.gender === targetInfo.gender &&
-    sourceInfo.family === targetInfo.family &&
-    sourceInfo.topology === targetInfo.topology;
-
-  // Index-based fallback for same-family/topology pairs without explicit maps.
-  if (canUseIndexedPhysicsMapping) {
-    const pairCount = Math.min(
-      sourceInfo.physicsBones.length,
-      targetInfo.physicsBones.length,
-    );
-    for (let index = 0; index < pairCount; index += 1) {
-      const sourceBone = sourceInfo.physicsBones[index];
-      const targetBone = targetInfo.physicsBones[index];
-      if (!sourceBone || !targetBone) continue;
-      next = next.replaceAll(
-        new RegExp(escapeRegExp(sourceBone), "gi"),
-        targetBone,
-      );
-    }
-  } else {
-    // No reliable target mapping exists — collapse source physics bones to static fallbacks.
-    for (const sourceBone of sourceInfo.physicsBones) {
-      const fallback = getStaticFallbackBone(sourceBone);
-      next = next.replaceAll(
-        new RegExp(escapeRegExp(sourceBone), "gi"),
-        fallback,
-      );
-    }
-  }
-
-  return next;
+  return applyPhysicsRemapPlan(value, buildPhysicsRemapPlan(source, target));
 }
 
 function getStaticFallbackBone(physicsBoneName: string): string {
@@ -1115,19 +1331,14 @@ function createWarnings(
     );
   }
 
-  const explicitPhysicsMap = EXPLICIT_PHYSICS_BONE_MAPS[source]?.[target];
-  const canUseIndexedPhysicsMapping =
-    sourceInfo.gender === targetInfo.gender &&
-    sourceInfo.family === targetInfo.family &&
-    sourceInfo.topology === targetInfo.topology;
-  if (
-    sourceInfo.physicsSupport &&
-    targetInfo.physicsSupport &&
-    explicitPhysicsMap === undefined &&
-    !canUseIndexedPhysicsMapping
-  ) {
+  const physicsRemapPlan = buildPhysicsRemapPlan(source, target);
+  const fallbackPhysicsSteps = physicsRemapPlan.steps.filter(
+    (step) => step.kind === "fallback",
+  ).length;
+  if (sourceInfo.physicsSupport && targetInfo.physicsSupport && fallbackPhysicsSteps > 0) {
+    const mappedPhysicsSteps = physicsRemapPlan.steps.length - fallbackPhysicsSteps;
     warnings.push(
-      `No direct physics-bone map exists for '${source}' → '${target}'. Native conversion collapsed unmatched source physics references to static fallback bones instead of forcing potentially incorrect target-chain remaps.`,
+      `Physics remap coverage for '${source}' → '${target}' is ${mappedPhysicsSteps}/${physicsRemapPlan.steps.length}. ${fallbackPhysicsSteps} source physics bone reference(s) were collapsed to static fallback bones due to missing safe target-chain equivalents.`,
     );
   }
 
