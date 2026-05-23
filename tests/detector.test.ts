@@ -75,6 +75,35 @@ describe("detectBodyType", () => {
     expect(detection.confidence).toBeGreaterThan(0);
   });
 
+  it("uses canonical CalienteTools BodySlide paths as strong evidence", () => {
+    const detection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/SliderSets/CBBE_Armor.osp",
+        "caliente cbbe curvy",
+      ),
+      file(
+        "CalienteTools/BodySlide/ShapeData/CBBE/CBBE_Body_0.nif",
+        "cbbe body",
+      ),
+    ]);
+
+    expect(detection.bodyType).toBe("cbbe");
+    expect(detection.confidence).toBeGreaterThan(0.65);
+  });
+
+  it("does not misclassify bhunp content as plain unp", () => {
+    const detection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/SliderSets/BHUNP_Armor.osp",
+        "bhunp 3bbb bonehunger unp",
+      ),
+      file("SKSE/plugins/cbpc/bhunp.ini", "bhunp breast l01 bhunp breast r01"),
+    ]);
+
+    expect(detection.bodyType).toBe("bhunp");
+    expect(detection.rankedCandidates.at(0)?.bodyType).toBe("bhunp");
+  });
+
   it("raises confidence when evidence spans mesh, sliders, and config files", () => {
     const detection = detectBodyType([
       file("meshes/actors/character/character assets/femalebody_0.nif", "cbbe"),

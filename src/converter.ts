@@ -19,7 +19,7 @@ const MESH_EXTENSIONS = new Set([".nif", ".tri"]);
 const CANONICAL_DATA_PREFIXES: readonly string[] = [
   "meshes/",
   "textures/",
-  "calienTetools/", // checked case-insensitively
+  "calientetools/",
   "scripts/",
   "skse/",
   "interface/",
@@ -77,7 +77,11 @@ function normalizeToMo2DataPath(
 
   // .xml → only move BodySlide group XMLs; other XMLs (MCM, physics, …) stay put
   if (extension === ".xml") {
-    if (BODYSLIDE_XML_MARKERS.some((marker) => preview.includes(marker))) {
+    const xmlLooksLikeBodySlide =
+      BODYSLIDE_XML_MARKERS.some((marker) => preview.includes(marker)) ||
+      /(^|\/)bodyslide\/(slidersets|slidergroups)\//.test(lower) ||
+      /(^|\/)(slidersets|slidergroups)\//.test(lower);
+    if (xmlLooksLikeBodySlide) {
       return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
     }
     return forward;
