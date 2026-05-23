@@ -778,7 +778,12 @@ export async function convertMod(
     outputFiles,
   );
   const warnings = [
-    ...createWarnings(detection, sourceBodyType, targetBodyType, conversionPath),
+    ...createWarnings(
+      detection,
+      sourceBodyType,
+      targetBodyType,
+      conversionPath,
+    ),
     ...(audit.overallStatus === "attention"
       ? [
           "Conversion audit flagged follow-up items. Review the conversion audit section in the summary/report before shipping the generated output.",

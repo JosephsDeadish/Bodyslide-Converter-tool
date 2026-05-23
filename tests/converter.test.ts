@@ -876,7 +876,13 @@ describe("convertMod", () => {
       all3baBones,
     );
     await writeFile(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "3BA_Armor.osp"),
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "3BA_Armor.osp",
+      ),
       '<SliderSetInfo><SliderSet name="3BA Armor"><Slider name="Breast Size" /></SliderSet></SliderSetInfo>',
       "utf8",
     );
@@ -898,10 +904,12 @@ describe("convertMod", () => {
 
     expect(result.audit.overallStatus).toBe("pass");
     expect(
-      result.audit.checks.find((check) => check.id === "physics-weight")?.status,
+      result.audit.checks.find((check) => check.id === "physics-weight")
+        ?.status,
     ).toBe("pass");
     expect(
-      result.audit.checks.find((check) => check.id === "physics-config")?.status,
+      result.audit.checks.find((check) => check.id === "physics-config")
+        ?.status,
     ).toBe("pass");
     expect(
       result.audit.checks.find((check) => check.id === "3ba-belly")?.status,

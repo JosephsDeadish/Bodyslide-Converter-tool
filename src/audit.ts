@@ -8,7 +8,6 @@ import type {
 } from "./types.js";
 
 const MESH_EXTENSIONS = new Set([".nif", ".tri", ".osd"]);
-const TEXT_EXTENSIONS = new Set([".xml", ".osp", ".txt", ".json", ".ini"]);
 
 function createCheck(
   id: string,
@@ -39,10 +38,6 @@ function findMatches(haystack: string, values: string[]): string[] {
 
 function isMesh(file: ScannedFile): boolean {
   return MESH_EXTENSIONS.has(file.extension);
-}
-
-function isText(file: ScannedFile): boolean {
-  return TEXT_EXTENSIONS.has(file.extension);
 }
 
 function isBodySlideProject(file: ScannedFile): boolean {
@@ -82,7 +77,9 @@ function extractNamedTags(preview: string, tagName: string): string[] {
   const matches = preview.matchAll(
     new RegExp(`<${tagName}\\b[^>]*name=["']([^"']+)["']`, "gi"),
   );
-  return [...matches].map((match) => match[1]?.trim()).filter(Boolean) as string[];
+  return [...matches]
+    .map((match) => match[1]?.trim())
+    .filter(Boolean) as string[];
 }
 
 function getWeightPairCounterpart(relativePath: string): string | null {
@@ -199,10 +196,16 @@ function buildProjectionCheck(
   const sourceInfo = BODY_TYPE_INFO[sourceType];
   const targetInfo = BODY_TYPE_INFO[targetType];
   const sourceSliderAssets = sourceFiles.filter(
-    (file) => isBodySlideProject(file) || file.extension === ".tri" || file.extension === ".osd",
+    (file) =>
+      isBodySlideProject(file) ||
+      file.extension === ".tri" ||
+      file.extension === ".osd",
   );
   const outputSliderAssets = outputFiles.filter(
-    (file) => isBodySlideProject(file) || file.extension === ".tri" || file.extension === ".osd",
+    (file) =>
+      isBodySlideProject(file) ||
+      file.extension === ".tri" ||
+      file.extension === ".osd",
   );
   const sameTopology = sourceInfo.topology === targetInfo.topology;
   const status =
@@ -231,7 +234,9 @@ function buildSliderSetCheck(outputFiles: ScannedFile[]): ConversionAuditCheck {
   const missingWeightPairs = getMissingWeightPairs(outputFiles);
   const sliderNames = collectSliderNames(outputFiles);
   const status =
-    projects.length > 0 && missingWeightPairs.length === 0 ? "pass" : "attention";
+    projects.length > 0 && missingWeightPairs.length === 0
+      ? "pass"
+      : "attention";
 
   return createCheck(
     "generate",
@@ -257,7 +262,8 @@ function buildSeamCheck(
   const targetInfo = BODY_TYPE_INFO[targetType];
   const missingWeightPairs = getMissingWeightPairs(outputFiles);
   const status =
-    sourceInfo.topology === targetInfo.topology && missingWeightPairs.length === 0
+    sourceInfo.topology === targetInfo.topology &&
+    missingWeightPairs.length === 0
       ? "pass"
       : "attention";
 
@@ -275,7 +281,10 @@ function buildSeamCheck(
   );
 }
 
-function buildPhysicsWeightCheck(outputFiles: ScannedFile[], targetType: BodyType) {
+function buildPhysicsWeightCheck(
+  outputFiles: ScannedFile[],
+  targetType: BodyType,
+) {
   if (targetType !== "3ba") {
     return createCheck(
       "physics-weight",
@@ -301,7 +310,9 @@ function buildPhysicsWeightCheck(outputFiles: ScannedFile[], targetType: BodyTyp
     status,
     `Detected ${hits.length}/${BODY_TYPE_INFO["3ba"].physicsBones.length} required 3BA physics bone marker(s) across converted meshes/configs.`,
     hits.length === BODY_TYPE_INFO["3ba"].physicsBones.length
-      ? ["All required 3BA breast, butt, and belly chain names were detected in converted assets."]
+      ? [
+          "All required 3BA breast, butt, and belly chain names were detected in converted assets.",
+        ]
       : [
           `Missing 3BA physics markers: ${BODY_TYPE_INFO["3ba"].physicsBones.filter((bone) => !hits.includes(bone)).join(", ")}.`,
         ],
@@ -375,7 +386,9 @@ function buildBellyCheck(outputFiles: ScannedFile[], targetType: BodyType) {
       : "Could not confirm both NPC Belly and NPC BellyRoot markers in converted assets/configs.",
     hits.length === 2
       ? ["3BA belly chain markers were detected for both the mesh/config pass."]
-      : ["3BA belly support needs both NPC Belly and NPC BellyRoot references for full coverage."],
+      : [
+          "3BA belly support needs both NPC Belly and NPC BellyRoot references for full coverage.",
+        ],
     hits,
   );
 }
