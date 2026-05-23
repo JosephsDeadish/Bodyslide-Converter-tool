@@ -6,11 +6,12 @@
   "main": "dist-main/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build:main": "tsc -p tsconfig.main.json && node scripts/copy-renderer.mjs",
+    "build:main": "tsc -p tsconfig.main.json && node scripts/write-pkg.mjs",
+    "build:renderer": "vite build --config vite.renderer.config.ts",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "electron:dev": "npm run build:main && electron .",
-    "package:win": "npm run build:main && npm exec --yes electron-builder -- --win portable --publish never",
+    "electron:dev": "npm run build:main && npm run build:renderer && electron .",
+    "package:win": "npm run build:main && npm run build:renderer && npm exec --yes electron-builder -- --win portable --publish never",
     "lint": "biome check .",
     "lint:fix": "biome check . --write",
     "test": "vitest run",
@@ -58,10 +59,16 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",
     "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "electron": "42.2.0",
     "electron-builder": "^26.8.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
+    "vite": "^8.0.14",
     "vitest": "^4.1.7"
   }
 }
