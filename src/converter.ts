@@ -300,6 +300,14 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "NPC L Butt": "BHUNP Butt L",
       "NPC R Butt": "BHUNP Butt R",
       // NPC Belly is the same bone in both bodies — no remapping needed
+      // NPC BellyRoot is 3BA-specific — collapse it to NPC Belly for BHUNP
+      "NPC BellyRoot": "NPC Belly",
+    },
+    // TBD shares the 3BA bone names (minus BreastRoot) — same map applies
+    tbd: {
+      "NPC LBreastRoot": "NPC L Breast01",
+      "NPC RBreastRoot": "NPC R Breast01",
+      "NPC BellyRoot": "NPC Belly",
     },
   },
   bhunp: {
@@ -312,6 +320,33 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "BHUNP Breast R03": "NPC R Breast03",
       "BHUNP Butt L": "NPC L Butt",
       "BHUNP Butt R": "NPC R Butt",
+    },
+    // TBD shares the same physics bone names as standard CBBE (no BreastRoot)
+    tbd: {
+      "BHUNP Breast L01": "NPC L Breast01",
+      "BHUNP Breast R01": "NPC R Breast01",
+      "BHUNP Breast L02": "NPC L Breast02",
+      "BHUNP Breast R02": "NPC R Breast02",
+      "BHUNP Breast L03": "NPC L Breast03",
+      "BHUNP Breast R03": "NPC R Breast03",
+      "BHUNP Butt L": "NPC L Butt",
+      "BHUNP Butt R": "NPC R Butt",
+    },
+  },
+  tbd: {
+    bhunp: {
+      "NPC L Breast01": "BHUNP Breast L01",
+      "NPC R Breast01": "BHUNP Breast R01",
+      "NPC L Breast02": "BHUNP Breast L02",
+      "NPC R Breast02": "BHUNP Breast R02",
+      "NPC L Breast03": "BHUNP Breast L03",
+      "NPC R Breast03": "BHUNP Breast R03",
+      "NPC L Butt": "BHUNP Butt L",
+      "NPC R Butt": "BHUNP Butt R",
+    },
+    "3ba": {
+      // TBD bones are subset of 3BA; no remapping of names needed
+      // but NPC Belly stays as NPC Belly in 3BA too
     },
   },
 };
@@ -400,12 +435,12 @@ function getWeightPairSuffixInfo(path: string): {
   counterpart: "_0" | "_1";
   extension: string;
 } | null {
-  if (/_0\.(nif|osd)$/i.test(path)) {
+  if (/_0\.(nif|osd|tri)$/i.test(path)) {
     const ext = path.slice(path.lastIndexOf("."));
     return { matched: "_0", counterpart: "_1", extension: ext };
   }
 
-  if (/_1\.(nif|osd)$/i.test(path)) {
+  if (/_1\.(nif|osd|tri)$/i.test(path)) {
     const ext = path.slice(path.lastIndexOf("."));
     return { matched: "_1", counterpart: "_0", extension: ext };
   }
@@ -432,7 +467,7 @@ async function synthesizeMissingWeightMeshes(
   const synthCandidates = convertedFiles.filter(
     (file) =>
       file.kind === "mesh" &&
-      /\.(nif|osd)$/i.test(file.outputPath.toLowerCase()),
+      /\.(nif|osd|tri)$/i.test(file.outputPath.toLowerCase()),
   );
   let synthesizedCount = 0;
 

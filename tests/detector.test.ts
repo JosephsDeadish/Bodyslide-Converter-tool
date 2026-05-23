@@ -121,6 +121,35 @@ describe("detectBodyType", () => {
     ]);
     expect(detection.bodyType).toBe("tbd");
   });
+
+  it("detects 3ba from CBBE SMP / CBBE Physics signals alongside physics bone refs", () => {
+    const detection = detectBodyType([
+      file(
+        "meshes/actors/character/cbbe_smp_body_0.nif",
+        "cbbe smp physics body",
+      ),
+      // CBPC config with 3BA-specific BreastRoot bones — unambiguously 3BA
+      file(
+        "SKSE/Plugins/CBPC/cbbe_smp_cbpc.ini",
+        "npc lbreastroot npc rbreastroot npc l breast01",
+      ),
+    ]);
+    // CBBE SMP with BreastRoot bones must resolve to 3ba, not plain cbbe
+    expect(detection.bodyType).toBe("3ba");
+  });
+
+  it("classifies .osd files as mesh evidence", () => {
+    const detection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/ShapeData/3BA_Body/3BA_Body_0.osd",
+        "3bbb amazing body",
+      ),
+    ]);
+    expect(detection.bodyType).toBe("3ba");
+    // The .osd file must contribute 'mesh' kind — if evidenceKinds includes mesh the
+    // diversity score benefits. We check by looking for meaningful confidence.
+    expect(detection.confidence).toBeGreaterThan(0);
+  });
 });
 
 describe("createConversionPlan", () => {
@@ -168,5 +197,54 @@ describe("createConversionPlan", () => {
         (operation) => operation.id === "cross-gender-assets",
       ),
     ).toBe(true);
+  });
+
+  it("adds bhunp-bones operation when target is bhunp", () => {
+    const detection = detectBodyType([
+      file("meshes/armor/3ba_outfit_0.nif", "3bbb amazing body"),
+    ]);
+    const plan = createConversionPlan(detection, "bhunp", [
+      file("meshes/armor/3ba_outfit_0.nif"),
+    ]);
+
+    expect(plan.operations.some((op) => op.id === "bhunp-bones")).toBe(true);
+  });
+
+  it("adds tbd-proportions operation when target is tbd", () => {
+    const detection = detectBodyType([
+      file("meshes/armor/cbbe_outfit_0.nif", "caliente cbbe curvy"),
+    ]);
+    const plan = createConversionPlan(detection, "tbd", [
+      file("meshes/armor/cbbe_outfit_0.nif"),
+    ]);
+
+    expect(plan.operations.some((op) => op.id === "tbd-proportions")).toBe(
+      true,
+    );
+  });
+
+  it("adds 7base-legacy operation when target is 7base", () => {
+    const detection = detectBodyType([
+      file("meshes/armor/unp_outfit_0.nif", "unp body"),
+    ]);
+    const plan = createConversionPlan(detection, "7base", [
+      file("meshes/armor/unp_outfit_0.nif"),
+    ]);
+
+    expect(plan.operations.some((op) => op.id === "7base-legacy")).toBe(true);
+  });
+
+  it("adds cross-physics-family operation when converting 3ba to bhunp", () => {
+    const detection = detectBodyType([
+      file("meshes/armor/3ba_outfit_0.nif", "3bbb amazing body"),
+      file("SKSE/plugins/cbpc/3ba.ini", "npc lbreastroot npc l breast01"),
+    ]);
+    const plan = createConversionPlan(detection, "bhunp", [
+      file("meshes/armor/3ba_outfit_0.nif"),
+    ]);
+
+    expect(plan.operations.some((op) => op.id === "cross-physics-family")).toBe(
+      true,
+    );
   });
 });

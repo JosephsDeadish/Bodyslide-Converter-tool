@@ -17,7 +17,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   cbbe: {
     displayName: "CBBE – Caliente's Beautiful Bodies Enhancer",
     description:
-      "Most widely used female body for Skyrim. Provides shape presets (Curvy, Slim, etc.) via BodySlide. Base mesh for the majority of female armor/clothing conversions.",
+      "Most widely used female body for Skyrim SE. Provides shape presets (Curvy, Slim, etc.) via BodySlide. Base static mesh that the majority of female armor/clothing conversions target. Physics variants (CBBE SMP, 3BA) are separate body mods that build on the CBBE skeleton.",
     gender: "female",
     family: "cbbe",
     topology: "cbbe",
@@ -26,12 +26,12 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     physicsBones: [],
     adaptationFocus: ["bust", "waist", "hips", "wrist seams", "ankle seams"],
     conversionNotes:
-      "CBBE is the reference baseline for most conversion workflows. Converting FROM other bodies TO CBBE: project morphs onto the CBBE reference mesh, rebuild OSP slider sets, verify neck/wrist/ankle seams.",
+      "CBBE is the reference baseline for most conversion workflows. Converting FROM other bodies TO CBBE: project morphs onto the CBBE reference mesh, rebuild OSP slider sets, verify neck/wrist/ankle seams. Base CBBE has no physics; physics-enabled variants (3BA/CBBE SMP) require additional physics bone weighting.",
   },
   "3ba": {
     displayName: "3BA – 3BBB Amazing Body",
     description:
-      "CBBE-based female body with physics-enabled breasts, butt, and belly. Requires CBPC or HDT-SMP. Adds physics chain bones on top of the standard CBBE skeleton.",
+      "CBBE-based female body with full physics for breasts, butt, and belly. Requires CBPC or HDT-SMP. Extends the CBBE skeleton with BreastRoot control bones and a belly physics chain on top of the standard NPC breast/butt bones.",
     gender: "female",
     family: "cbbe",
     topology: "cbbe",
@@ -53,17 +53,18 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     ],
     adaptationFocus: [
       "breast volume",
+      "BreastRoot chain",
       "butt volume",
       "belly weighting",
       "physics groups",
     ],
     conversionNotes:
-      "Converting TO 3BA: add physics-chain bone weighting to breast and butt areas; CBPC config must list those bones. Converting FROM 3BA to a non-physics body: collapse all physics-chain bone weights back to NPC Spine2 and NPC Pelvis.",
+      "Converting TO 3BA: add physics-chain bone weighting to breast and butt areas; CBPC config must list those bones. NPC LBreastRoot / NPC RBreastRoot are 3BA-specific root control bones above the standard chain. Converting FROM 3BA to a non-physics body: collapse all physics-chain bone weights back to NPC Spine2 (breast) and NPC Pelvis (butt).",
   },
   himbo: {
     displayName: "HIMBO – Highly Improved Male Body Overhaul",
     description:
-      "Leading male body replacer with extensive BodySlide support and a full slider set. Uses a different bone hierarchy and proportions from all female bodies. HIMBO V5+ supports optional physics via the HIMBO Physics Addon (HDT-SMP).",
+      "Leading male body replacer with extensive BodySlide support and a full slider set. Uses a different bone hierarchy and proportions from all female bodies — wider shoulders, deeper chest, and narrower hips. HIMBO V5+ supports optional physics via the HIMBO Physics Addon (HDT-SMP).",
     gender: "male",
     family: "male",
     topology: "male",
@@ -76,14 +77,16 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "upper arms",
       "waist taper",
       "pelvis width",
+      "glutes",
+      "calves",
     ],
     conversionNotes:
-      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Expect manual cleanup in Outfit Studio. For HIMBO V5+ physics, the optional HIMBO Physics Addon uses HDT-SMP; enable that separately after the BodySlide conversion.",
+      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Expect manual cleanup in Outfit Studio, especially at the chest and shoulder area. For HIMBO V5+ physics, the optional HIMBO Physics Addon uses HDT-SMP; enable that separately after the BodySlide conversion.",
   },
   bodytalk: {
-    displayName: "BodyTalk – Male Body Replacer",
+    displayName: "BodyTalk – High-Poly Male Body Replacer",
     description:
-      "Popular male body replacer family predating HIMBO, often distributed as BodyTalk V2/V3 with high-poly male meshes and slider presets.",
+      "Popular high-poly male body replacer family (BodyTalk V2/V3 / BT3) with BodySlide slider presets. Predates HIMBO. Older in style but widely referenced in legacy male conversions.",
     gender: "male",
     family: "male",
     topology: "male",
@@ -98,21 +101,36 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "thigh mass",
     ],
     conversionNotes:
-      "BodyTalk projects behave similarly to other male slider sets but often keep distinct naming. Converting to or from BodyTalk should preserve male asset paths while retargeting BodySlide metadata to BodyTalk aliases.",
+      "BodyTalk projects behave similarly to other male slider sets but keep distinct naming. Converting to or from BodyTalk should preserve male asset paths while retargeting BodySlide metadata to BodyTalk aliases. BT3 (BodyTalk V3) is the most common modern variant.",
   },
   tbd: {
     displayName: "TBD – Touched by Dibella",
     description:
-      "Alternative female body replacer focused on larger proportions and a different silhouette. Compatible with BodySlide slider sets.",
+      "Alternative female body replacer by Maars focused on larger proportions and a distinct CBBE-compatible silhouette. TBD uses CBBE topology and the same skeleton, so it is directly compatible with standard CBBE/CBPC physics bone configs (NPC breast/butt bones). Requires a physics addon (CBPC or HDT-SMP) to activate breast/butt/belly motion.",
     gender: "female",
     family: "cbbe",
     topology: "cbbe",
-    physicsSupport: false,
+    physicsSupport: true,
     referenceProject: "TBD / Touched by Dibella by Maars",
-    physicsBones: [],
-    adaptationFocus: ["bust projection", "hip volume", "waist curve"],
+    physicsBones: [
+      "NPC L Breast01",
+      "NPC R Breast01",
+      "NPC L Breast02",
+      "NPC R Breast02",
+      "NPC L Breast03",
+      "NPC R Breast03",
+      "NPC L Butt",
+      "NPC R Butt",
+      "NPC Belly",
+    ],
+    adaptationFocus: [
+      "bust projection",
+      "hip volume",
+      "waist curve",
+      "physics groups",
+    ],
     conversionNotes:
-      "TBD proportions differ notably from CBBE. Projection requires a lower weight threshold to avoid clipping at the bust and hip areas.",
+      "TBD proportions differ notably from standard CBBE — larger bust and hip volume. When projecting TO TBD, lower the projection threshold slightly to avoid clipping at bust and hip extremes. TBD uses the same physics bone names as CBBE (NPC L/R Breast01-03, L/R Butt, NPC Belly) without the 3BA-specific BreastRoot bones; physics configs are interchangeable with CBBE-family physics setups.",
   },
   sos: {
     displayName: "SOS – Schlongs of Skyrim",
@@ -139,21 +157,21 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   unp: {
     displayName: "UNP – Dimonized UNP Female Body",
     description:
-      "Classic female body replacer with a slimmer proportioned mesh than CBBE. Many legacy mods still target UNP topology.",
+      "Classic female body replacer with a slimmer, more naturalistic proportioned mesh than CBBE. Many legacy Skyrim LE/SE mods still target UNP topology. Neck, wrist, and ankle seam edge loops differ from CBBE.",
     gender: "female",
     family: "unp",
     topology: "unp",
     physicsSupport: false,
     referenceProject: "Dimonized UNP by dimon99",
     physicsBones: [],
-    adaptationFocus: ["waist", "hips", "thighs", "leg seams"],
+    adaptationFocus: ["waist", "hips", "thighs", "leg seams", "ankle seams"],
     conversionNotes:
-      "UNP has different topology from CBBE; mesh projection is required. Seam edge loops at neck, wrist, and ankle differ from CBBE so pay extra attention to those areas.",
+      "UNP has different topology from CBBE; mesh projection is required. Seam edge loops at neck, wrist, and ankle differ from CBBE — pay extra attention to those areas when converting armors between families.",
   },
   bhunp: {
-    displayName: "BHUNP – BoneHunger UNP",
+    displayName: "BHUNP – BoneHunger UNP 3BBB",
     description:
-      "UNP variant with CBPC/HDT-SMP physics support. Adds breast, butt, and belly physics chains to the UNP skeleton. Compatible with BodySlide.",
+      "UNP variant with full CBPC/HDT-SMP physics support. Adds three-level breast chains (L/R01–03), butt bones, and belly physics to the UNP skeleton using the BHUNP-prefixed bone naming convention. Compatible with BodySlide.",
     gender: "female",
     family: "unp",
     topology: "unp",
@@ -177,12 +195,12 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "waist seams",
     ],
     conversionNotes:
-      "Similar conversion path to 3BA but uses different physics bone names for breast chains (BHUNP Breast L/R01-03 vs NPC L/R Breast01-03). Belly physics uses the shared NPC Belly bone. Confirm CBPC config file references BHUNP bone names specifically, not 3BA bone names.",
+      "Similar conversion path to 3BA but uses different physics bone names for breast chains (BHUNP Breast L/R01-03 vs NPC L/R Breast01-03) and butt bones (BHUNP Butt L/R vs NPC L/R Butt). Belly physics uses the shared NPC Belly bone. BHUNP does NOT use BreastRoot bones — those are 3BA-specific. Confirm CBPC config references BHUNP bone names specifically.",
   },
   uunp: {
     displayName: "UUNP – Unified UNP",
     description:
-      "BodySlide-compatible unified version of UNP supporting multiple shape presets, mirroring CBBE's slider-based workflow.",
+      "BodySlide-compatible unified version of UNP supporting multiple shape presets via a single slider set, mirroring CBBE's workflow. UUNP Special (the most common variant) includes TBBP (Triple BBB Physics) support using standard UNP-family physics bones.",
     gender: "female",
     family: "unp",
     topology: "unp",
@@ -191,26 +209,31 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     physicsBones: [],
     adaptationFocus: ["slider compatibility", "waist", "hip curve"],
     conversionNotes:
-      "Shares topology with UNP but optimised for BodySlide. Project onto UUNP BodySlide reference body and rebuild OSP slider sets.",
+      "Shares topology with UNP but optimised for BodySlide workflows. Project onto the UUNP BodySlide reference body and rebuild OSP slider sets. UUNP Special ships with TBBP physics support — if the source mod includes physics configs, verify they match the UUNP bone naming.",
   },
   "7base": {
     displayName: "7base – SevenBase Female Body",
     description:
-      "Older alternative female body with a heavily stylised silhouette. Mainly found in legacy conversions.",
+      "Older stylised female body with an exaggerated silhouette: very large bust, narrow waist, and wide hips. Mainly found in legacy conversions from early Skyrim LE modding. Uses a non-standard topology that differs from both CBBE and UNP.",
     gender: "female",
     family: "unp",
     topology: "legacy-female",
     physicsSupport: false,
     referenceProject: "SevenBase by Crosscrusade",
     physicsBones: [],
-    adaptationFocus: ["stylised hips", "thigh mass", "legacy seam cleanup"],
+    adaptationFocus: [
+      "stylised hips",
+      "extreme bust",
+      "thigh mass",
+      "legacy seam cleanup",
+    ],
     conversionNotes:
-      "Topology differs from both CBBE and UNP. Manual vertex projection in Outfit Studio is recommended due to significantly different body proportions.",
+      "7Base topology differs from both CBBE and UNP. Manual vertex projection in Outfit Studio is recommended due to significantly different and exaggerated body proportions. Seams at neck, wrist, and ankle all require manual cleanup; do not rely on automated seam stitching. 7Base Bombshell and Oppai are sub-variants with even larger bust proportions.",
   },
   sam: {
     displayName: "SAM – Shape Atlas for Men",
     description:
-      "Advanced male body replacer with BodyMorph support for weight and muscle shape variation. SAM Light adds BodySlide integration.",
+      "Advanced male body replacer with BodyMorph support for per-actor weight and muscle shape variation. SAM Light adds full BodySlide integration. SAM uses the XPMS Extended male skeleton.",
     gender: "male",
     family: "male",
     topology: "male",
@@ -224,7 +247,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "thigh mass",
     ],
     conversionNotes:
-      "Converting female armors to SAM requires full cross-gender mesh projection. Use SAM Light + BodySlide for slider-based output. Chest and waist proportions differ from HIMBO.",
+      "Converting female armors to SAM requires full cross-gender mesh projection. Use SAM Light + BodySlide for slider-based output. After generating BodySlide output, register the outfit in SAMLightBodyConfig.json so SAM can apply per-actor morphs to it. Chest and waist proportions differ from HIMBO.",
   },
   vanilla: {
     displayName: "Vanilla – Default Game Body",

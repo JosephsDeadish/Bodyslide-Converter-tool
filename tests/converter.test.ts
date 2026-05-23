@@ -678,4 +678,133 @@ describe("convertMod", () => {
     expect(rewritten).not.toContain("BHUNP Breast L01");
     expect(rewritten).not.toContain("BHUNP Butt L");
   });
+
+  it("collapses 3BA NPC BellyRoot to NPC Belly when converting to BHUNP", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_3ba_belly.ini"),
+      ["NPC Belly=0.3", "NPC BellyRoot=0.5"].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_outfit_0.nif"),
+      "3bbb amazing body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("3ba");
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    // NPC BellyRoot must be mapped to NPC Belly (BHUNP has no BellyRoot bone)
+    expect(rewritten).not.toContain("NPC BellyRoot");
+    expect(rewritten).toContain("NPC Belly");
+  });
+
+  it("synthesizes missing _1 TRI weight file when only _0 exists", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_cuirass_0.tri"),
+      Buffer.alloc(32),
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.endsWith("3BA_cuirass_1.tri") &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+  });
+
+  it("maps TBD breast physics bones to BHUNP names", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_tbd.ini"),
+      [
+        "NPC L Breast01=0.7",
+        "NPC L Breast02=0.6",
+        "NPC L Breast03=0.5",
+        "NPC R Breast01=0.7",
+        "NPC R Breast02=0.6",
+        "NPC R Breast03=0.5",
+        "NPC L Butt=0.4",
+        "NPC R Butt=0.4",
+        "NPC Belly=0.3",
+      ].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "tbd_outfit_0.nif"),
+      "touched by dibella maars tbd",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("tbd");
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    expect(rewritten).toContain("BHUNP Breast L01");
+    expect(rewritten).toContain("BHUNP Breast R01");
+    expect(rewritten).toContain("BHUNP Butt L");
+    expect(rewritten).toContain("BHUNP Butt R");
+    expect(rewritten).toContain("NPC Belly");
+    expect(rewritten).not.toContain("NPC L Breast01");
+    expect(rewritten).not.toContain("NPC L Butt");
+  });
 });
