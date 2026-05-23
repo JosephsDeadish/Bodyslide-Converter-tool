@@ -68,35 +68,56 @@ function targetSpecificOperations(targetType) {
         ops.push({
             id: "male-proportions",
             name: "Tune male-specific proportions",
-            description: "Rebalance shoulder, chest, and arm morph channels for HIMBO shape ranges. Male body proportions differ significantly from female bodies, so run in-game fit checks on broad shoulder and chest extremes.",
+            description: "Rebalance shoulder, chest, arm, glute, and calf morph channels for HIMBO shape ranges. Male body proportions differ significantly from female bodies, so run in-game fit checks on broad shoulder and chest extremes.",
         });
     }
     if (targetType === "bodytalk") {
         ops.push({
             id: "bodytalk-shape",
             name: "Tune BodyTalk silhouette and slider naming",
-            description: "BodyTalk outputs often keep older male slider naming. Align chest, abdomen, and thigh proportions to the BodyTalk reference and confirm the generated slider-set naming matches BodyTalk conventions.",
+            description: "BodyTalk outputs often keep older male slider naming. Align chest, abdomen, and thigh proportions to the BodyTalk reference and confirm the generated slider-set naming matches BodyTalk conventions (BT3 / BodyTalkV3 prefixes where applicable).",
         });
     }
     if (targetType === "sos") {
         ops.push({
             id: "sos-seam",
             name: "Preserve SOS pelvis seam and partition",
-            description: "Validate pelvis seam edge loops and partition slot SBP_52. SOS injects a genital mesh; any vertex overlap in the partition area will cause visible tearing at runtime.",
+            description: "Validate pelvis seam edge loops and partition slot SBP_52. SOS injects a genital mesh at the waistband; any vertex overlap in the SBP_52 partition area will cause visible tearing at runtime. Confirm HDT-SMP or NiOverride physics XML is present if using SOS Regular.",
         });
     }
     if (targetType === "sam") {
         ops.push({
             id: "sam-morph",
             name: "Map SAM BodyMorph weight/muscle sliders",
-            description: "SAM uses per-morph weight and muscle multipliers. Export morphs as SAM-compatible .tri deltas and confirm the SAMLightBodyConfig.json references the new outfit.",
+            description: "SAM uses per-morph weight and muscle multipliers. Export morphs as SAM-compatible .tri deltas and confirm the SAMLightBodyConfig.json registers the new outfit so SAM can apply per-actor shape morphs.",
         });
     }
     if (targetType === "3ba") {
         ops.push({
             id: "3ba-belly",
             name: "Add 3BA belly physics group",
-            description: "3BA supports a belly physics chain in addition to breast/butt. Confirm belly bone (NPC Belly) is weighted and present in the CBPC config for full 3BA physics support.",
+            description: "3BA supports a belly physics chain in addition to breast/butt. Confirm NPC Belly is weighted in the mesh and that both NPC Belly and NPC BellyRoot are listed in the CBPC config for full 3BA physics support.",
+        });
+    }
+    if (targetType === "bhunp") {
+        ops.push({
+            id: "bhunp-bones",
+            name: "Verify BHUNP-specific bone naming in physics config",
+            description: "BHUNP uses a distinct bone naming convention: BHUNP Breast L/R01–03, BHUNP Butt L, BHUNP Butt R (not NPC L/R Breast01-03 like 3BA). BHUNP does not use BreastRoot bones. Confirm every entry in the CBPC .ini or HDT-SMP XML uses BHUNP-prefixed names.",
+        });
+    }
+    if (targetType === "tbd") {
+        ops.push({
+            id: "tbd-proportions",
+            name: "Adjust for TBD larger proportions",
+            description: "TBD (Touched by Dibella) has noticeably larger bust and hip volume than standard CBBE. Lower the projection weight threshold when building BodySlide output to reduce clipping at bust and hip extremes. Run in-game fit checks at maximum weight slider values.",
+        });
+    }
+    if (targetType === "7base") {
+        ops.push({
+            id: "7base-legacy",
+            name: "Legacy topology cleanup for 7Base",
+            description: "7Base uses a non-standard topology that differs from both CBBE and UNP. Automated projection results are unreliable; plan for manual vertex adjustment in Outfit Studio. Pay special attention to neck, wrist, and ankle seam cleanup — do not rely on automatic seam stitching. 7Base Bombshell/Oppai sub-variants have even more extreme proportions.",
         });
     }
     return ops;
@@ -136,6 +157,24 @@ function relationshipOperations(sourceType, targetType) {
             id: "topology-delta",
             name: "Review topology-driven seam differences",
             description: `Source topology '${sourceInfo.topology}' differs from target topology '${targetInfo.topology}'. Verify neck, wrist, ankle, and weight-slider seam behavior after conversion.`,
+        });
+    }
+    // Cross-physics-family: both bodies have physics but use different bone naming conventions
+    const crossPhysicsFamilyPairs = new Set([
+        "3ba:bhunp",
+        "bhunp:3ba",
+        "3ba:tbd",
+        "tbd:3ba",
+        "bhunp:tbd",
+        "tbd:bhunp",
+    ]);
+    if (sourceInfo.physicsSupport &&
+        targetInfo.physicsSupport &&
+        crossPhysicsFamilyPairs.has(`${sourceType}:${targetType}`)) {
+        ops.push({
+            id: "cross-physics-family",
+            name: "Remap cross-physics-family bone names",
+            description: `Both bodies support physics but use different bone naming conventions (${sourceType.toUpperCase()} vs ${targetType.toUpperCase()}). Physics bone names are automatically remapped during conversion (e.g. BHUNP Breast L01 ↔ NPC L Breast01). Verify the generated physics config (.ini or .xml) uses the correct target-body bone names before testing in-game.`,
         });
     }
     return ops;

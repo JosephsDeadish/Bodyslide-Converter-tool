@@ -215,7 +215,6 @@ function relationshipOperations(
     "tbd:bhunp",
   ]);
   if (
-    sourceType !== "unknown" &&
     sourceInfo.physicsSupport &&
     targetInfo.physicsSupport &&
     crossPhysicsFamilyPairs.has(`${sourceType}:${targetType}`)

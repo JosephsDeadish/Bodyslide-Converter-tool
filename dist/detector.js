@@ -31,6 +31,9 @@ const SIGNALS = {
         [/3bbb amazing/, 2.5],
         [/3ba body/, 2],
         [/acro748/, 1.5],
+        // "CBBE SMP" and "CBBE Physics" are physics-enabled CBBE variants sharing 3BA bones
+        [/cbbe[_ -]?smp/, 1.5],
+        [/cbbe[_ -]?physics/, 1.2],
         // Physics chain bones unique to 3BA (in NIF or CBPC configs)
         [/npc lbreastroot/, 2.5],
         [/npc rbreastroot/, 2.5],
@@ -81,6 +84,9 @@ const SIGNALS = {
         // TBD uses same breast-butt bones as CBBE but project files are named tbd
         [/bodyslide[/\\]slidersets[/\\][^/\\]*tbd/, 2.5],
         [/bodyslide[/\\]shapedata[/\\][^/\\]*tbd/, 2.5],
+        // CBPC/HDT-SMP configs for TBD use standard CBBE bone names
+        [/cbpc.*tbd/, 1.8],
+        [/tbd.*cbpc/, 1.8],
     ],
     sos: [
         [/\bsos\b/, 1.4],
@@ -99,6 +105,7 @@ const SIGNALS = {
         [/genitals/, 1.5],
         // SOS BodySlide project files
         [/bodyslide[/\\]slidersets[/\\][^/\\]*sos/, 2.5],
+        [/bodyslide[/\\]shapedata[/\\][^/\\]*sos/, 2.5],
     ],
     unp: [
         [/\bunp\b/, 2],
@@ -276,7 +283,9 @@ function scoreFalsePositivePenalty(haystack, bodyType) {
 }
 function getEvidenceKind(file) {
     const path = file.relativePath.toLowerCase();
-    if (file.extension === ".nif" || file.extension === ".tri") {
+    if (file.extension === ".nif" ||
+        file.extension === ".tri" ||
+        file.extension === ".osd") {
         return "mesh";
     }
     if (file.extension === ".osp" ||
