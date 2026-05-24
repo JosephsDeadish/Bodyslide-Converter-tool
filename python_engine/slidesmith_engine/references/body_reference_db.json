@@ -521,7 +521,7 @@
       }
     },
     "7base": {
-      "topology": "unp",
+      "topology": "legacy-female",
       "topologyReference": "7Base Bombshell",
       "canonicalVertexMap": "unp-female-canonical",
       "skeletonProfile": "xpmsse-compatible-female",
@@ -780,6 +780,21 @@
       "profile": "male-physics-upgrade"
     },
     {
+      "source": "sam",
+      "target": "bodytalk",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "bodytalk",
+      "target": "sam",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "himbo",
+      "target": "sos",
+      "profile": "male-physics-addon"
+    },
+    {
       "source": "vanilla",
       "target": "cbbe",
       "profile": "female-baseline-upgrade"
@@ -788,6 +803,86 @@
       "source": "vanilla",
       "target": "unp",
       "profile": "female-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "3ba",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "bhunp",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "uunp",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "himbo",
+      "profile": "male-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "sam",
+      "profile": "male-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "bodytalk",
+      "profile": "male-baseline-upgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "bhunp",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "3ba",
+      "target": "cbbe",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "cbbe",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "unp",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "uunp",
+      "target": "unp",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "3ba",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "unp",
+      "profile": "female-cross-family"
+    },
+    {
+      "source": "7base",
+      "target": "cbbe",
+      "profile": "female-legacy-cross-family"
+    },
+    {
+      "source": "7base",
+      "target": "bhunp",
+      "profile": "female-legacy-physics-upgrade"
+    },
+    {
+      "source": "7base",
+      "target": "uunp",
+      "profile": "female-legacy-physics-upgrade"
     }
   ]
 }

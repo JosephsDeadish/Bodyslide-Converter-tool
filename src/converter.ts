@@ -213,6 +213,7 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "cbbe 3ba",
     "cbbe smp body",
     "cbbe smp",
+    "cbbe 3ba physics",
     "cbbe_3ba",
     "cbbe-3ba",
     "cbbe_physics",
@@ -222,6 +223,7 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "3bbbbody",
     "3bbb_body",
     "3ba body",
+    "3ba body amazing",
     "3bbb",
     "3ba",
   ],
@@ -232,6 +234,7 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "highpolymalebody",
     "himbo body",
     "himbo-body",
+    "himbo v5",
     "himbo",
   ],
   bodytalk: [
@@ -244,12 +247,14 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "bodytalk3",
     "bodytalk",
     "bt3",
+    "bt2",
   ],
   tbd: [
     "touched by dibella",
     "touchedbydibella",
     "tbd body",
     "tbd_body",
+    "tbd se",
     "tbd",
   ],
   sos: [
@@ -258,11 +263,13 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "sos regular",
     "sos light",
     "sos body",
+    "sos ae",
     "sos",
   ],
   unp: [
     "dimonized unp female body",
     "unp female body renewed",
+    "unpb renewed",
     "dimonized",
     "unpb body",
     "unpb",
@@ -278,6 +285,7 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "bhunp 3bbb",
     "bhunp body",
     "bhunp_body",
+    "bhunp v3",
     "bhunp",
   ],
   uunp: [
@@ -291,6 +299,7 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
   "7base": [
     "sevenbase bombshell",
     "sevenbase oppai",
+    "7b bombshell",
     "7base body",
     "7base_body",
     "7base",
@@ -304,6 +313,7 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "sam light",
     "samlight",
     "sam body",
+    "sam high poly conversion",
     "sam",
   ],
   vanilla: ["base game body", "default body", "vanilla body", "vanilla"],
@@ -505,6 +515,8 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       // TBD bones are subset of 3BA; no remapping of names needed
       // but NPC Belly stays as NPC Belly in 3BA too
     },
+    // UUNP shares same NPC bone naming as TBD — no name remapping needed
+    uunp: {},
   },
   uunp: {
     // UUNP → BHUNP: rename NPC-prefixed bones to BHUNP-prefixed names
@@ -518,6 +530,10 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "NPC L Butt": "BHUNP Butt L",
       "NPC R Butt": "BHUNP Butt R",
     },
+    // TBD shares same NPC bone naming as UUNP — no name remapping needed
+    tbd: {},
+    // 3BA: UUNP has same NPC Breast01-03/Butt/Belly naming; no rename but no BreastRoot/BellyRoot to generate
+    "3ba": {},
   },
 };
 
