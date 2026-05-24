@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import sys
 import uuid
 from dataclasses import dataclass
@@ -15,7 +16,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent
-REF_DB_PATH = ROOT / "slidesmith_engine" / "references" / "body_reference_db.json"
+DEFAULT_REF_DB_PATH = ROOT / "slidesmith_engine" / "references" / "body_reference_db.json"
+REF_DB_PATH = Path(os.environ.get("SLIDESMITH_REFERENCE_DB", DEFAULT_REF_DB_PATH)).expanduser()
 
 
 @dataclass(frozen=True)
@@ -87,6 +89,10 @@ def load_reference_db() -> dict[str, Any]:
     return json.loads(REF_DB_PATH.read_text(encoding="utf-8"))
 
 
+def is_non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and value.strip() != ""
+
+
 def to_string_map(value: Any) -> dict[str, str]:
     if not isinstance(value, dict):
         return {}
@@ -119,6 +125,32 @@ def adapter_profile(db: dict[str, Any], source: Any, target: Any) -> str:
     return "default"
 
 
+def body_metadata_issues(body_name: Any, metadata: Any) -> list[str]:
+    if not isinstance(metadata, dict):
+        return [f"{body_name} body metadata is missing from the reference database."]
+
+    missing_fields: list[str] = []
+    for field_name in ("topology", "topologyReference", "canonicalVertexMap"):
+        if not is_non_empty_string(metadata.get(field_name)):
+            missing_fields.append(field_name)
+
+    if not to_string_map(metadata.get("sliderMappings")):
+        missing_fields.append("sliderMappings")
+    if not to_string_map(metadata.get("boneMap")):
+        missing_fields.append("boneMap")
+    if not to_string_map(metadata.get("morphEquivalents")):
+        missing_fields.append("morphEquivalents")
+
+    if not missing_fields:
+        return []
+
+    return [f"{body_name} body metadata is missing {', '.join(missing_fields)}."]
+
+
+def missing_libraries(libraries: dict[str, bool], *names: str) -> list[str]:
+    return [name for name in names if not libraries.get(name, False)]
+
+
 def mapping_snapshot(req: dict[str, Any], db: dict[str, Any]) -> dict[str, Any]:
     source = req.get("sourceBodyType")
     target = req.get("targetBodyType")
@@ -149,7 +181,9 @@ def mapping_snapshot(req: dict[str, Any], db: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tuple[str, str, list[str]]:
+def stage_status(
+    stage_id: str, req: dict[str, Any], db: dict[str, Any], libraries: dict[str, bool]
+) -> tuple[str, str, list[str]]:
     files: list[dict[str, str]] = req.get("files", [])
     mappings = mapping_snapshot(req, db)
     source = mappings["source"]
@@ -163,11 +197,19 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
     has_nif = ".nif" in extensions
     has_tri = ".tri" in extensions
     slider_assets = sum(1 for ext in extensions if ext in {".tri", ".osd", ".osp", ".xml"})
+    reference_issues = body_metadata_issues(str(source), source_meta) + body_metadata_issues(
+        str(target), target_meta
+    )
+    source_map = source_meta.get("canonicalVertexMap") if isinstance(source_meta, dict) else None
+    target_map = target_meta.get("canonicalVertexMap") if isinstance(target_meta, dict) else None
+    missing_reference_maps: list[str] = []
+    if not is_non_empty_string(source_map):
+        missing_reference_maps.append(f"Source canonical vertex map is missing for {source}.")
+    if not is_non_empty_string(target_map):
+        missing_reference_maps.append(f"Target canonical vertex map is missing for {target}.")
 
     if stage_id == "reference-body":
-        source_ready = bool(mappings["sourceSliders"] and mappings["sourceBones"] and mappings["sourceMorphs"])
-        target_ready = bool(mappings["targetSliders"] and mappings["targetBones"] and mappings["targetMorphs"])
-        if source_ready and target_ready:
+        if not reference_issues:
             topology_source = (
                 source_meta.get("topologyReference", source_meta.get("topology", "unknown"))
                 if isinstance(source_meta, dict)
@@ -184,6 +226,8 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
                 [
                     f"Source topology reference: {topology_source}",
                     f"Target topology reference: {topology_target}",
+                    f"Source canonical vertex map: {source_map}",
+                    f"Target canonical vertex map: {target_map}",
                     f"Slider mappings: {len(mappings['sliderPairs'])} shared canonical keys",
                     f"Bone mappings: {len(mappings['bonePairs'])} shared canonical keys",
                     f"Morph equivalents: {len(mappings['morphPairs'])} shared canonical keys",
@@ -192,28 +236,48 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
         return (
             "attention",
             "Reference body metadata is incomplete for this pair.",
-            [
-                "Populate topologyReference, sliderMappings, boneMap, and morphEquivalents for both source and target bodies.",
-                "Per-body adapter fallback profile should be defined.",
+            reference_issues
+            + [
+                "Populate topology, topologyReference, canonicalVertexMap, sliderMappings, boneMap, and morphEquivalents for both source and target bodies.",
+                "Prefer explicit adapter profiles for high-risk cross-family conversions.",
             ],
         )
 
     if stage_id == "surface-reprojection":
-        if has_nif:
+        required_libraries = missing_libraries(
+            libraries, "pynifly", "numpy", "scipy", "trimesh"
+        )
+        if has_nif and not missing_reference_maps and not required_libraries:
             return (
                 "pass",
                 "Nearest-triangle surface reprojection is available for mesh assets.",
-                ["Barycentric interpolation route initialized."],
+                [
+                    "Barycentric interpolation route initialized.",
+                    f"Source canonical map: {source_map}",
+                    f"Target canonical map: {target_map}",
+                ],
+            )
+        details: list[str] = []
+        if not has_nif:
+            details.append("No NIF mesh detected for surface reprojection.")
+            details.append("Stage executed with metadata-only fallback.")
+        details.extend(missing_reference_maps)
+        if required_libraries:
+            details.append(
+                f"Missing required Python libraries for nearest-surface reprojection: {', '.join(required_libraries)}."
             )
         return (
             "attention",
-            "No NIF mesh detected for surface reprojection.",
-            ["Stage executed with metadata-only fallback."],
+            "Surface reprojection is running in degraded fallback mode.",
+            details,
         )
 
     if stage_id == "weight-transfer":
         bone_pairs = mappings["bonePairs"]
-        if has_nif and bone_pairs:
+        required_libraries = missing_libraries(
+            libraries, "pynifly", "numpy", "scipy", "trimesh"
+        )
+        if has_nif and bone_pairs and not missing_reference_maps and not required_libraries:
             return (
                 "pass",
                 "Weight transfer pipeline initialized with smoothing pass.",
@@ -222,11 +286,23 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
                     f"Bone-weight interpolation map contains {len(bone_pairs)} canonical bone chains.",
                 ],
             )
+        details = []
+        if not has_nif:
+            details.append("A NIF mesh is required for nearest-surface weight interpolation.")
+        if not bone_pairs:
+            details.append(
+                "Populate overlapping canonical boneMap entries for both bodies to enable weight interpolation."
+            )
+        details.extend(missing_reference_maps)
+        if required_libraries:
+            details.append(
+                f"Missing required Python libraries for weight transfer: {', '.join(required_libraries)}."
+            )
         return (
             "attention",
             "Weight transfer metadata is incomplete for this body pair.",
-            [
-                "A NIF mesh and populated source/target boneMap entries are required for high-quality interpolation.",
+            details
+            + [
                 "Bone remap quality may require manual verification.",
             ],
         )
@@ -234,7 +310,15 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
     if stage_id == "corrective-smoothing":
         source_zones = source_meta.get("correctiveSmoothingZones", []) if isinstance(source_meta, dict) else []
         target_zones = target_meta.get("correctiveSmoothingZones", []) if isinstance(target_meta, dict) else []
-        if has_nif and isinstance(source_zones, list) and source_zones and isinstance(target_zones, list) and target_zones:
+        required_libraries = missing_libraries(libraries, "numpy", "scipy")
+        if (
+            has_nif
+            and isinstance(source_zones, list)
+            and source_zones
+            and isinstance(target_zones, list)
+            and target_zones
+            and not required_libraries
+        ):
             shared_zones = sorted(set(source_zones) & set(target_zones))
             unique_to_target = sorted(set(target_zones) - set(source_zones))
             detail_lines = [f"Shared corrective zones: {', '.join(shared_zones)}"] if shared_zones else []
@@ -251,6 +335,14 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
                 "Corrective smoothing skipped because no NIF mesh was found.",
                 ["Armpit, breast/chest, crotch, elbow, and knee zones could not be evaluated."],
             )
+        if required_libraries:
+            return (
+                "attention",
+                "Corrective smoothing is unavailable in the active Python environment.",
+                [
+                    f"Missing required Python libraries for corrective smoothing: {', '.join(required_libraries)}."
+                ],
+            )
         return (
             "attention",
             "Corrective smoothing zone definitions are missing from body metadata.",
@@ -258,11 +350,17 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
         )
 
     if stage_id == "mesh-cleanup":
-        return (
-            "pass" if has_nif else "attention",
-            "Normals/tangents cleanup stage prepared.",
-            ["Mesh validation checks queued."],
-        )
+        required_libraries = missing_libraries(libraries, "pynifly", "trimesh", "pyvista")
+        if has_nif and not required_libraries:
+            return ("pass", "Normals/tangents cleanup stage prepared.", ["Mesh validation checks queued."])
+        details = ["Mesh validation checks queued."]
+        if not has_nif:
+            details.insert(0, "No NIF mesh detected for normals/tangents cleanup.")
+        if required_libraries:
+            details.append(
+                f"Missing required Python libraries for mesh cleanup: {', '.join(required_libraries)}."
+            )
+        return ("attention", "Normals/tangents cleanup is running in compatibility mode.", details)
 
     if stage_id == "physics-preservation":
         source_bones = len(source_physics) if isinstance(source_physics, list) else 0
@@ -272,6 +370,23 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
                 "pass",
                 "Physics preservation is not required for this body pair.",
                 ["No physics chains detected in metadata."],
+            )
+        required_libraries = missing_libraries(libraries, "pynifly")
+        if not has_nif:
+            return (
+                "attention",
+                "Physics metadata is present but no NIF mesh was found for preservation.",
+                [f"Source physics bones: {source_bones}", f"Target physics bones: {target_bones}"],
+            )
+        if required_libraries:
+            return (
+                "attention",
+                "Physics metadata is present but NIF IO support is unavailable.",
+                [
+                    f"Missing required Python libraries for physics preservation: {', '.join(required_libraries)}.",
+                    f"Source physics bones: {source_bones}",
+                    f"Target physics bones: {target_bones}",
+                ],
             )
         bone_map_values = set(mappings["targetBones"].values())
         unresolved = [
@@ -298,7 +413,15 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
     if stage_id == "morph-transfer":
         morph_pairs = mappings["morphPairs"]
         slider_pairs = mappings["sliderPairs"]
-        if slider_assets > 0 and morph_pairs and slider_pairs:
+        required_libraries = missing_libraries(libraries, "numpy", "scipy")
+        if (
+            has_nif
+            and slider_assets > 0
+            and morph_pairs
+            and slider_pairs
+            and not missing_reference_maps
+            and not required_libraries
+        ):
             return (
                 "pass",
                 "Delta-based morph transfer configured.",
@@ -308,26 +431,55 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
                     f"Slider mapping map contains {len(slider_pairs)} canonical slider keys.",
                 ],
             )
+        details = []
+        if not has_nif:
+            details.append("A NIF mesh is required to compute delta morph transfer from reference bodies.")
+        if slider_assets == 0:
+            details.append("No slider/morph-related source assets were detected.")
+        if not morph_pairs:
+            details.append("Populate overlapping canonical morphEquivalents for both bodies.")
+        if not slider_pairs:
+            details.append("Populate overlapping canonical sliderMappings for both bodies.")
+        details.extend(missing_reference_maps)
+        if required_libraries:
+            details.append(
+                f"Missing required Python libraries for delta morph transfer: {', '.join(required_libraries)}."
+            )
         return (
             "attention",
             "Morph-transfer prerequisites are incomplete.",
-            [
-                "Ensure slider source files are present and both bodies define sliderMappings plus morphEquivalents.",
+            details
+            + [
                 "Zap/morph preservation should be manually validated.",
             ],
         )
 
     if stage_id == "tri-generation":
-        if has_tri or (slider_assets > 0 and mappings["morphPairs"]):
+        required_libraries = missing_libraries(libraries, "numpy", "scipy")
+        if (
+            (has_tri or (slider_assets > 0 and mappings["morphPairs"]))
+            and not missing_reference_maps
+            and not required_libraries
+        ):
             return (
                 "pass",
                 "TRI generation workflow initialized from morph deltas.",
                 ["RaceMenu TRI compatibility checks enabled."],
             )
+        details = []
+        if not has_tri and slider_assets == 0:
+            details.append("No morph source assets were detected for TRI generation.")
+        elif not mappings["morphPairs"]:
+            details.append("Populate overlapping canonical morphEquivalents to generate TRI deltas.")
+        details.extend(missing_reference_maps)
+        if required_libraries:
+            details.append(
+                f"Missing required Python libraries for TRI generation: {', '.join(required_libraries)}."
+            )
         return (
             "attention",
-            "TRI generation skipped (no morph sources detected).",
-            ["Output may not include standalone slider TRI payloads."],
+            "TRI generation is running in fallback mode.",
+            details + ["Output may not include standalone slider TRI payloads."],
         )
 
     return (
@@ -384,6 +536,13 @@ def build_quality_gates(stage_reports: list[dict[str, Any]]) -> list[dict[str, s
 def process(req: dict[str, Any]) -> dict[str, Any]:
     run_id = req.get("runId") or str(uuid.uuid4())
     db = load_reference_db()
+    libraries = {
+        "pynifly": optional_import("pynifly"),
+        "numpy": optional_import("numpy"),
+        "scipy": optional_import("scipy"),
+        "trimesh": optional_import("trimesh"),
+        "pyvista": optional_import("pyvista"),
+    }
     stage_reports: list[dict[str, Any]] = []
 
     total = max(len(STAGES), 1)
@@ -397,7 +556,7 @@ def process(req: dict[str, Any]) -> dict[str, Any]:
                 "progress": progress,
             }
         )
-        status, summary, details = stage_status(stage.stage_id, req, db)
+        status, summary, details = stage_status(stage.stage_id, req, db, libraries)
         stage_reports.append(
             {
                 "id": stage.stage_id,
@@ -408,18 +567,26 @@ def process(req: dict[str, Any]) -> dict[str, Any]:
             }
         )
 
-    libraries = {
-        "pynifly": optional_import("pynifly"),
-        "numpy": optional_import("numpy"),
-        "scipy": optional_import("scipy"),
-        "trimesh": optional_import("trimesh"),
-        "pyvista": optional_import("pyvista"),
-    }
-
     warnings: list[str] = []
     if not libraries["pynifly"]:
         warnings.append(
             "PyNifly is not installed in the active Python environment; full NIF IO fallback mode is active."
+        )
+    if not libraries["numpy"]:
+        warnings.append(
+            "NumPy is not installed in the active Python environment; mesh reprojection and morph-delta math are downgraded."
+        )
+    if not libraries["scipy"]:
+        warnings.append(
+            "SciPy is not installed in the active Python environment; KD-tree interpolation and smoothing passes are downgraded."
+        )
+    if not libraries["trimesh"]:
+        warnings.append(
+            "trimesh is not installed in the active Python environment; nearest-surface mesh processing is downgraded."
+        )
+    if not libraries["pyvista"]:
+        warnings.append(
+            "PyVista is not installed in the active Python environment; cleanup/inspection stages are running in compatibility mode."
         )
 
     return {

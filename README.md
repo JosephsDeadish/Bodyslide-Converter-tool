@@ -75,12 +75,15 @@ Each body entry must define:
 - `morphEquivalents` (canonical morph key -> body-specific morph/zap name)
 
 The Python engine actively consumes these mappings for reference-body validation, weight-transfer readiness, morph/zap transfer readiness, TRI gating, and physics-bone coverage checks.
+High-quality stages now require both `topologyReference` and `canonicalVertexMap` in addition to the mapping dictionaries; if either body is missing them, the Python runner downgrades surface reprojection, weight transfer, morph transfer, and TRI generation to fallback mode.
 
 ### Install Python dependencies (recommended)
 
 ```bash
 python -m pip install -r python_engine/requirements.txt
 ```
+
+`PyNifly`, `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
 
 If Python is not on `PATH`, set:
 
