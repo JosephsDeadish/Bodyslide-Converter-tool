@@ -56,7 +56,20 @@
       "canonicalVertexMap": "cbbe-female-canonical",
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
-      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC LBreastRoot",
+        "NPC RBreastRoot",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly",
+        "NPC BellyRoot"
+      ],
       "correctiveSmoothingZones": [
         "armpit-left",
         "armpit-right",
@@ -86,8 +99,17 @@
         "leftCalf": "NPC L Calf",
         "rightCalf": "NPC R Calf",
         "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
+        "leftBreastRoot": "NPC LBreastRoot",
         "rightBreast": "NPC R Breast01",
-        "belly": "NPC Belly"
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "rightBreastRoot": "NPC RBreastRoot",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
+        "belly": "NPC Belly",
+        "bellyRoot": "NPC BellyRoot"
       },
       "morphEquivalents": {
         "heavy": "3BA Curvy",
@@ -104,7 +126,7 @@
       "canonicalVertexMap": "male-himbo-canonical",
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
-      "physicsBones": ["NPC L Breast", "NPC R Breast"],
+      "physicsBones": [],
       "correctiveSmoothingZones": [
         "armpit-left",
         "armpit-right",
@@ -133,8 +155,8 @@
         "rightThigh": "NPC R Thigh",
         "leftCalf": "NPC L Calf",
         "rightCalf": "NPC R Calf",
-        "leftBreast": "NPC L Breast",
-        "rightBreast": "NPC R Breast",
+        "leftBreast": "NPC L Pectoral",
+        "rightBreast": "NPC R Pectoral",
         "belly": "NPC Belly"
       },
       "morphEquivalents": {
@@ -152,7 +174,7 @@
       "canonicalVertexMap": "male-bodytalk-canonical",
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
-      "physicsBones": ["NPC L Breast", "NPC R Breast"],
+      "physicsBones": [],
       "correctiveSmoothingZones": [
         "armpit-left",
         "armpit-right",
@@ -200,7 +222,17 @@
       "canonicalVertexMap": "cbbe-female-canonical",
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
-      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly"
+      ],
       "correctiveSmoothingZones": [
         "armpit-left",
         "armpit-right",
@@ -230,7 +262,13 @@
         "leftCalf": "NPC L Calf",
         "rightCalf": "NPC R Calf",
         "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
         "rightBreast": "NPC R Breast01",
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
         "belly": "NPC Belly"
       },
       "morphEquivalents": {
@@ -248,7 +286,15 @@
       "canonicalVertexMap": "male-sos-canonical",
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-physics",
-      "physicsBones": ["NPC GenitalsBase"],
+      "physicsBones": [
+        "NPC GenitalsBase01",
+        "NPC GenitalsBase02",
+        "NPC GenitalsBase03",
+        "NPC GenitalsBase04",
+        "NPC GenitalsBase05",
+        "NPC L GenitalsScrotum01",
+        "NPC R GenitalsScrotum01"
+      ],
       "correctiveSmoothingZones": [
         "armpit-left",
         "armpit-right",
@@ -280,7 +326,14 @@
         "leftBreast": "NPC L Breast",
         "rightBreast": "NPC R Breast",
         "belly": "NPC Belly",
-        "genitalsBase": "NPC GenitalsBase"
+        "genitalsBase": "NPC GenitalsBase",
+        "genitalsBase01": "NPC GenitalsBase01",
+        "genitalsBase02": "NPC GenitalsBase02",
+        "genitalsBase03": "NPC GenitalsBase03",
+        "genitalsBase04": "NPC GenitalsBase04",
+        "genitalsBase05": "NPC GenitalsBase05",
+        "leftGenitalsScrotum01": "NPC L GenitalsScrotum01",
+        "rightGenitalsScrotum01": "NPC R GenitalsScrotum01"
       },
       "morphEquivalents": {
         "heavy": "SOS Bulk",
@@ -345,7 +398,17 @@
       "canonicalVertexMap": "unp-female-canonical",
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
-      "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "physicsBones": [
+        "BHUNP Breast L01",
+        "BHUNP Breast R01",
+        "BHUNP Breast L02",
+        "BHUNP Breast R02",
+        "BHUNP Breast L03",
+        "BHUNP Breast R03",
+        "BHUNP Butt L",
+        "BHUNP Butt R",
+        "NPC Belly"
+      ],
       "correctiveSmoothingZones": [
         "armpit-left",
         "armpit-right",
@@ -374,8 +437,14 @@
         "rightThigh": "NPC R Thigh",
         "leftCalf": "NPC L Calf",
         "rightCalf": "NPC R Calf",
-        "leftBreast": "NPC L Breast01",
-        "rightBreast": "NPC R Breast01",
+        "leftBreast": "BHUNP Breast L01",
+        "leftBreast02": "BHUNP Breast L02",
+        "leftBreast03": "BHUNP Breast L03",
+        "rightBreast": "BHUNP Breast R01",
+        "rightBreast02": "BHUNP Breast R02",
+        "rightBreast03": "BHUNP Breast R03",
+        "leftButt": "BHUNP Butt L",
+        "rightButt": "BHUNP Butt R",
         "belly": "NPC Belly"
       },
       "morphEquivalents": {
@@ -601,8 +670,63 @@
       "profile": "female-physics-cross-family"
     },
     {
+      "source": "3ba",
+      "target": "tbd",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "3ba",
+      "target": "bhunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "tbd",
+      "target": "3ba",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "tbd",
+      "target": "uunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "tbd",
+      "target": "bhunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "uunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "3ba",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "uunp",
+      "target": "bhunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "uunp",
+      "target": "3ba",
+      "profile": "female-physics-cross-family"
+    },
+    {
       "source": "himbo",
       "target": "sam",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "himbo",
+      "target": "bodytalk",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sam",
+      "target": "himbo",
       "profile": "male-cross-family"
     },
     {
@@ -611,14 +735,59 @@
       "profile": "female-physics-upgrade"
     },
     {
+      "source": "cbbe",
+      "target": "tbd",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "uunp",
+      "profile": "female-cross-family"
+    },
+    {
       "source": "unp",
       "target": "bhunp",
       "profile": "female-physics-upgrade"
     },
     {
+      "source": "unp",
+      "target": "uunp",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "unp",
+      "target": "cbbe",
+      "profile": "female-cross-family"
+    },
+    {
       "source": "bodytalk",
       "target": "sos",
       "profile": "male-physics-upgrade"
+    },
+    {
+      "source": "bodytalk",
+      "target": "himbo",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sos",
+      "target": "bodytalk",
+      "profile": "male-physics-downgrade"
+    },
+    {
+      "source": "sam",
+      "target": "sos",
+      "profile": "male-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "cbbe",
+      "profile": "female-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "unp",
+      "profile": "female-baseline-upgrade"
     }
   ]
 }

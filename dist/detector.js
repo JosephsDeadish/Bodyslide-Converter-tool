@@ -39,6 +39,7 @@ const SIGNALS = {
         [/npc rbreastroot/, 2.5],
         [/npc l breast0[123]/, 2],
         [/npc r breast0[123]/, 2],
+        [/npc bellyroot/, 2],
         [/npc belly/, 1.8],
         // HDT-SMP or CBPC config referencing 3BA
         [/hdtphysicsextensions.*3b/, 2],
@@ -52,9 +53,12 @@ const SIGNALS = {
         [/\bhimbo\b/, 2.5],
         [/highly improved male body/, 2.5],
         [/himbo body/, 2.2],
+        [/himbo v[45]/, 2.2],
         [/high poly male body/, 1.8],
         [/highpolymalebody/, 1.8],
         [/tiktak/, 1.4],
+        // HIMBO Physics Addon bones (NPC L/R Pectoral)
+        [/npc [lr] pectoral/, 2],
         // Male-only skeleton signals
         [/malebody/, 0.6],
         [/male_body/, 0.6],
@@ -64,8 +68,8 @@ const SIGNALS = {
     ],
     bodytalk: [
         [/\bbodytalk\b/, 2.8],
-        [/bodytalk[_ -]?v?[23]?/, 2.8],
-        [/bt3\b/, 2.2],
+        [/bodytalk[_ -]?v?[23]/, 2.8],
+        [/\bbt[23]\b/, 2.2],
         [/bodytalk body/, 2.2],
         [/bodytalk[_ -]?body/, 2.4],
         [/bad dog/, 1.4],
@@ -95,7 +99,9 @@ const SIGNALS = {
         [/sos body/, 2.2],
         [/sos[-_ ]regular/, 2.4],
         [/sos[-_ ]light/, 2.4],
+        [/sos[-_ ]?[as]e/, 2],
         [/b3lisario/, 1.4],
+        [/\bschlong\b/, 1.8],
         // SOS genital bone names (in NIF binary previews)
         [/npc genitalsbase/, 3],
         [/npc l genitalsscrotum/, 2.5],
@@ -154,6 +160,11 @@ const SIGNALS = {
         [/vectorplexus/, 2],
         [/koulei.*sam/, 2],
         [/samlight/, 2.4],
+        // SAM BodyMorph and RaceMenu morph signals
+        [/sam_volume/, 2.5],
+        [/sam_genital/, 2.5],
+        [/samlightbodyconfig/, 2.2],
+        [/bodymorph.*sam/, 1.8],
         // SAM BodySlide project files
         [/bodyslide[/\\]slidersets[/\\][^/\\]*sam/, 2.5],
         [/bodyslide[/\\]shapedata[/\\][^/\\]*sam/, 2.5],
@@ -175,14 +186,14 @@ const BODY_KEYWORDS = {
     cbbe: ["cbbe", "caliente"],
     "3ba": ["3ba", "3bbb", "amazing body"],
     himbo: ["himbo", "highly improved male body", "highpolymalebody"],
-    bodytalk: ["bodytalk", "bt3"],
+    bodytalk: ["bodytalk", "bt2", "bt3"],
     tbd: ["tbd", "touched by dibella"],
-    sos: ["sos", "schlongs of skyrim"],
+    sos: ["sos", "schlongs of skyrim", "schlong"],
     unp: ["unp", "unpb", "dimonized"],
     bhunp: ["bhunp", "bonehunger unp"],
     uunp: ["uunp", "unified unp"],
     "7base": ["7base", "sevenbase"],
-    sam: ["sam light", "shape atlas for men", "samlight"],
+    sam: ["sam light", "shape atlas for men", "samlight", "sam_volume"],
     vanilla: ["vanilla", "default body", "base game body"],
 };
 const FALSE_POSITIVE_PENALTIES = {

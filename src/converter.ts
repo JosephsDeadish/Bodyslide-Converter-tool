@@ -423,6 +423,12 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "NPC RBreastRoot": "NPC R Breast01",
       "NPC BellyRoot": "NPC Belly",
     },
+    // UUNP uses standard NPC naming; collapse 3BA-specific BreastRoot/BellyRoot
+    uunp: {
+      "NPC LBreastRoot": "NPC L Breast01",
+      "NPC RBreastRoot": "NPC R Breast01",
+      "NPC BellyRoot": "NPC Belly",
+    },
   },
   bhunp: {
     "3ba": {
@@ -437,6 +443,17 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
     },
     // TBD shares the same physics bone names as standard CBBE (no BreastRoot)
     tbd: {
+      "BHUNP Breast L01": "NPC L Breast01",
+      "BHUNP Breast R01": "NPC R Breast01",
+      "BHUNP Breast L02": "NPC L Breast02",
+      "BHUNP Breast R02": "NPC R Breast02",
+      "BHUNP Breast L03": "NPC L Breast03",
+      "BHUNP Breast R03": "NPC R Breast03",
+      "BHUNP Butt L": "NPC L Butt",
+      "BHUNP Butt R": "NPC R Butt",
+    },
+    // UUNP uses the same NPC naming convention as 3BA/TBD
+    uunp: {
       "BHUNP Breast L01": "NPC L Breast01",
       "BHUNP Breast R01": "NPC R Breast01",
       "BHUNP Breast L02": "NPC L Breast02",
@@ -461,6 +478,19 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
     "3ba": {
       // TBD bones are subset of 3BA; no remapping of names needed
       // but NPC Belly stays as NPC Belly in 3BA too
+    },
+  },
+  uunp: {
+    // UUNP → BHUNP: rename NPC-prefixed bones to BHUNP-prefixed names
+    bhunp: {
+      "NPC L Breast01": "BHUNP Breast L01",
+      "NPC R Breast01": "BHUNP Breast R01",
+      "NPC L Breast02": "BHUNP Breast L02",
+      "NPC R Breast02": "BHUNP Breast R02",
+      "NPC L Breast03": "BHUNP Breast L03",
+      "NPC R Breast03": "BHUNP Breast R03",
+      "NPC L Butt": "BHUNP Butt L",
+      "NPC R Butt": "BHUNP Butt R",
     },
   },
 };
