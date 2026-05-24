@@ -159,6 +159,7 @@ const SIGNALS: Record<BodyType, WeightedSignal[]> = {
     [/\bbhunp\b/, 3],
     [/bhunp[_ -]?(se|sse)/, 2.5],
     [/bonehunger unp/, 2.5],
+    [/baka[_ ./\\-]?haeun[_ ./\\-]?unp/, 2.8],
     [/bodyslide and hdt unp/, 2.8],
     [/unp 3bbb/, 2.5],
     [/bhunp 3bbb/, 2.8],
@@ -251,9 +252,7 @@ function hasNormalizedKeyword(
     return false;
   }
 
-  const pattern = new RegExp(
-    `(^| )${escapeRegExp(normalizedKeyword)}(?= |$)`,
-  );
+  const pattern = new RegExp(`(^| )${escapeRegExp(normalizedKeyword)}(?= |$)`);
   return pattern.test(normalizedHaystack);
 }
 
@@ -288,7 +287,7 @@ const FALSE_POSITIVE_PENALTIES: Record<BodyType, Array<[RegExp, number]>> = {
   ],
   tbd: [[/\bcbbe\b|caliente/, 0.35]],
   sos: [[/\bhimbo\b|bodytalk/, 0.45]],
-  unp: [[/\bbhunp\b|\buunp\b|\b7base\b/, 0.85]],
+  unp: [[/\bbhunp\b|\buunp\b|\b7base\b|baka[_ ./\\-]?haeun[_ ./\\-]?unp/, 0.85]],
   bhunp: [[/\buunp\b|\b7base\b/, 0.35]],
   uunp: [[/\bbhunp\b|\b7base\b/, 0.35]],
   "7base": [[/\bbhunp\b|\buunp\b/, 0.35]],

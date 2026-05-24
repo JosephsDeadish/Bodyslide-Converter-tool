@@ -424,14 +424,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "Most Skyrim SE 7Base ports are paired with XPMSSE-compatible skeleton stacks even when the conversion itself is non-physics.",
     referenceProject: "SevenBase by Crosscrusade",
-    aliases: [
-      "7Base",
-      "7B",
-      "7BO",
-      "SevenBase",
-      "Seven Base",
-      "7B Bombshell",
-    ],
+    aliases: ["7Base", "7B", "7BO", "SevenBase", "Seven Base", "7B Bombshell"],
     commonVariants: [
       "7Base Bombshell",
       "7Base Natural",
