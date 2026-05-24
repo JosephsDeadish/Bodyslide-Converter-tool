@@ -10,6 +10,8 @@ export type BodyTypeInfo = {
   skeletonProfile: string;
   skeletonNotes: string;
   referenceProject: string;
+  aliases: string[];
+  commonVariants: string[];
   physicsBones: string[];
   adaptationFocus: string[];
   conversionNotes: string;
@@ -28,6 +30,18 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "Base CBBE can run on the vanilla female skeleton, but XPMSSE (XP32 Maximum Skeleton Special Extended) is the Skyrim SE compatibility standard for mixed BodySlide setups.",
     referenceProject: "CalienteTools / BodySlide by Caliente & ousnius",
+    aliases: [
+      "CBBE",
+      "CBBE SE",
+      "Caliente's Beautiful Bodies Enhancer",
+      "Caliente's Beautiful Bodies",
+    ],
+    commonVariants: [
+      "CBBE Curvy",
+      "CBBE Slim",
+      "CBBE Vanilla",
+      "CBBE NeverNude",
+    ],
     physicsBones: [],
     adaptationFocus: ["bust", "waist", "hips", "wrist seams", "ankle seams"],
     conversionNotes:
@@ -45,6 +59,13 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "3BA expects XPMSSE-style extended breast/butt/belly chains (including L/R BreastRoot). Using a non-XP32 skeleton usually breaks runtime physics behavior.",
     referenceProject: "3BA / 3BBB Amazing Body by acro748",
+    aliases: ["3BA", "3BBB", "CBBE 3BA", "CBBE 3BBB", "Acro's 3BA"],
+    commonVariants: [
+      "3BBB Amazing",
+      "CBBE SMP",
+      "3BBB Physics",
+      "CBBE Physics",
+    ],
     physicsBones: [
       "NPC L Breast01",
       "NPC R Breast01",
@@ -81,6 +102,18 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "HIMBO armor conversion is most reliable with XPMSSE-compatible male skeleton paths and modern animation behavior packs.",
     referenceProject: "HIMBO by Tiktak123",
+    aliases: [
+      "HIMBO",
+      "HIMBO SE",
+      "Highly Improved Male Body Overhaul",
+      "High Poly Male Body",
+    ],
+    commonVariants: [
+      "HIMBO Beefy",
+      "HIMBO Slim",
+      "HIMBO Average",
+      "HIMBO Physics Addon",
+    ],
     physicsBones: [],
     adaptationFocus: [
       "shoulders",
@@ -107,6 +140,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "BodyTalk packs generally assume XP32/XPMSSE-era skeleton layouts in Skyrim SE ports, especially when mixed with modern animation and physics mods.",
     referenceProject:
       "BodyTalk by Haeun / Bad Dog / assorted community maintainers",
+    aliases: ["BodyTalk", "BodyTalk 3", "BodyTalk V3", "BodyTalk SE", "BT3"],
+    commonVariants: ["BT2", "BT3 Muscle Solution", "BodyTalk Physics"],
     physicsBones: [],
     adaptationFocus: [
       "shoulders",
@@ -129,6 +164,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "TBD uses CBBE-family physics naming and is typically deployed on XPMSSE in Skyrim SE modlists to keep CBPC/HDT-SMP behavior consistent.",
     referenceProject: "TBD / Touched by Dibella by Maars",
+    aliases: ["TBD", "TBD Body", "Touched by Dibella", "Touched by Dibella SE"],
+    commonVariants: ["TBD 3BBB", "TBD SMP", "TBD Special"],
     physicsBones: [
       "NPC L Breast01",
       "NPC R Breast01",
@@ -161,6 +198,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "SOS Regular relies on extended genital/scrotum nodes provided by XPMSSE-compatible skeleton setups; missing nodes prevent expected runtime motion.",
     referenceProject: "Schlongs of Skyrim by b3lisario",
+    aliases: ["SOS", "SOS SE", "SOS Full", "SOS Light", "Schlongs of Skyrim"],
+    commonVariants: ["SOS Regular", "SOS Full", "SOS Light", "SOS AE"],
     physicsBones: [
       "NPC GenitalsBase01",
       "NPC GenitalsBase02",
@@ -186,6 +225,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "Legacy UNP conversions can run on vanilla-compatible female skeletons, but XPMSSE remains the common Skyrim SE baseline for mixed BodySlide ecosystems.",
     referenceProject: "Dimonized UNP by dimon99",
+    aliases: ["UNP", "UNP Body", "Dimonized UNP", "UNP Blessed"],
+    commonVariants: ["UNPB", "UNPC", "UNPS", "UNP Skinny"],
     physicsBones: [],
     adaptationFocus: ["waist", "hips", "thighs", "leg seams", "ankle seams"],
     conversionNotes:
@@ -203,6 +244,14 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "BHUNP physics chains are usually deployed through XPMSSE-compatible setups; confirm BHUNP-prefixed breast/butt node support before shipping.",
     referenceProject: "BHUNP by BoneHunger",
+    aliases: [
+      "BHUNP",
+      "BHUNP SE",
+      "BHUNP SSE",
+      "BoneHunger UNP",
+      "Bodyslide and HDT UNP",
+    ],
+    commonVariants: ["BHUNP 3BBB", "BHUNP Vanilla", "BHUNP Physics"],
     physicsBones: [
       "BHUNP Breast L01",
       "BHUNP Breast R01",
@@ -235,6 +284,13 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "UUNP Special physics deployments in Skyrim SE usually rely on XPMSSE-compatible bone layouts for breast/butt/belly runtime motion.",
     referenceProject: "UUNP by ousnius",
+    aliases: ["UUNP", "Unified UNP", "UUNP SE", "UUNP Bodyslide"],
+    commonVariants: [
+      "UUNP Special",
+      "UUNP HDT",
+      "UUNP Special HDT",
+      "UUNP Special Physics",
+    ],
     physicsBones: [
       "NPC L Breast01",
       "NPC R Breast01",
@@ -267,6 +323,13 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "Most Skyrim SE 7Base ports are paired with XPMSSE-compatible skeleton stacks even when the conversion itself is non-physics.",
     referenceProject: "SevenBase by Crosscrusade",
+    aliases: ["7Base", "7B", "SevenBase", "Seven Base"],
+    commonVariants: [
+      "7Base Bombshell",
+      "7Base Natural",
+      "7Base Oppai",
+      "SevenBase Bombshell",
+    ],
     physicsBones: [],
     adaptationFocus: [
       "stylised hips",
@@ -289,6 +352,13 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "SAM and SAM Light typically expect XP32/XPMSSE-style male skeleton extensions and bodymorph-compatible setup in Skyrim SE.",
     referenceProject: "SAM by Vector / SAM Light by KouLeifoh",
+    aliases: [
+      "SAM Light",
+      "Shape Atlas for Men",
+      "Shape Atlas for Men Light",
+      "SAM Morphs",
+    ],
+    commonVariants: ["SAM", "SAM Light", "SAM Morphs", "SAM Light Body"],
     physicsBones: [],
     adaptationFocus: [
       "muscle sliders",
@@ -311,6 +381,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "Vanilla targets should stay compatible with Bethesda's default skeleton paths; XPMSSE is optional unless physics-heavy body mods are mixed in.",
     referenceProject: "Bethesda Softworks",
+    aliases: ["Vanilla", "Default Game Body", "Base Game Body", "Skyrim Vanilla"],
+    commonVariants: ["Vanilla Female", "Vanilla Male", "Bethesda Default"],
     physicsBones: [],
     adaptationFocus: [
       "base-game seams",

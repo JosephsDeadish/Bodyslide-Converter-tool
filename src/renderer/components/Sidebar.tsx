@@ -218,6 +218,12 @@ function BodyInfoBox({ info }: { info: BodyTypeInfo }) {
       </div>
       <div>{info.description}</div>
       <div className="info-notes">
+        <strong>Aliases:</strong> {info.aliases.join(", ")}
+      </div>
+      <div className="info-notes">
+        <strong>Common variants:</strong> {info.commonVariants.join(", ")}
+      </div>
+      <div className="info-notes">
         <strong>Skeleton profile:</strong> {info.skeletonProfile} —{" "}
         {info.skeletonNotes}
       </div>

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { detectBodyType } from "../src/detector.js";
 import { createConversionPlan } from "../src/planner.js";
 import { scanModFiles } from "../src/scanner.js";
-import type { ScannedFile } from "../src/types.js";
+import type { BodyType, ScannedFile } from "../src/types.js";
 
 const tempDirs: string[] = [];
 
@@ -35,6 +35,104 @@ function file(relativePath: string, preview = ""): ScannedFile {
     preview,
   };
 }
+
+const alternateNameCases = [
+  {
+    bodyType: "cbbe",
+    files: [
+      file(
+        "CalienteTools/BodySlide/ShapeData/CBBE_SE/CBBE_Vanilla_Body_0.nif",
+        "caliente's beautiful bodies enhancer",
+      ),
+    ],
+  },
+  {
+    bodyType: "3ba",
+    files: [
+      file(
+        "CalienteTools/BodySlide/ShapeData/CBBE-3BBB/3BBB_Physics_Body_0.nif",
+        "cbbe 3bbb physics",
+      ),
+    ],
+  },
+  {
+    bodyType: "himbo",
+    files: [
+      file(
+        "meshes/actors/character/malebody/himbo_beefy_body_0.nif",
+        "highly improved male body overhaul",
+      ),
+    ],
+  },
+  {
+    bodyType: "bodytalk",
+    files: [
+      file("bodyslide/slidersets/bodytalk_se_bt3.osp", "bodytalk se bt3"),
+    ],
+  },
+  {
+    bodyType: "tbd",
+    files: [
+      file(
+        "CalienteTools/BodySlide/ShapeData/TBD_Body/Touched_by_Dibella_3BBB_0.nif",
+        "touched by dibella se",
+      ),
+    ],
+  },
+  {
+    bodyType: "sos",
+    files: [
+      file(
+        "SKSE/Plugins/SOS_Full.ini",
+        "schlongs of skyrim sos full npc genitalsbase",
+      ),
+    ],
+  },
+  {
+    bodyType: "unp",
+    files: [file("CalienteTools/BodySlide/SliderSets/UNPB_Armor.osp", "unp blessed")],
+  },
+  {
+    bodyType: "bhunp",
+    files: [
+      file(
+        "bodyslide/shapedata/BHUNP_SSE/BHUNP_3BBB_0.nif",
+        "bodyslide and hdt unp",
+      ),
+    ],
+  },
+  {
+    bodyType: "uunp",
+    files: [file("bodyslide/slidersets/UUNP_HDT_Special.osp", "unified unp")],
+  },
+  {
+    bodyType: "7base",
+    files: [
+      file(
+        "bodyslide/shapedata/7B_Bombshell/SevenBase_Bombshell_0.nif",
+        "seven base bombshell",
+      ),
+    ],
+  },
+  {
+    bodyType: "sam",
+    files: [
+      file(
+        "meshes/actors/character/sam_morphs_body_0.nif",
+        "shape atlas for men light",
+      ),
+    ],
+  },
+  {
+    bodyType: "vanilla",
+    files: [
+      file(
+        "meshes/actors/character/character assets/femalebody_0.nif",
+        "skyrim vanilla default body",
+      ),
+    ],
+  },
+] satisfies Array<{ bodyType: BodyType; files: ScannedFile[] }>;
 
 describe("detectBodyType", () => {
   it("detects cbbe from filename and preview signals", () => {
@@ -168,6 +266,16 @@ describe("detectBodyType", () => {
     // diversity score benefits. We check by looking for meaningful confidence.
     expect(detection.confidence).toBeGreaterThan(0);
   });
+
+  it.each(alternateNameCases)(
+    "recognizes alternate aliases for $bodyType",
+    ({ bodyType, files }) => {
+      const detection = detectBodyType(files);
+      expect(detection.bodyType).toBe(bodyType);
+      expect(detection.rankedCandidates.at(0)?.bodyType).toBe(bodyType);
+      expect(detection.confidence).toBeGreaterThan(0);
+    },
+  );
 });
 
 describe("createConversionPlan", () => {
