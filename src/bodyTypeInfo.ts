@@ -70,6 +70,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "CBBE 3BA",
       "CBBE 3BBB",
       "Acro's 3BA",
+      "Acro's 3BBB",
       "3BA AE",
       "CBBE 3BA AE",
     ],
@@ -81,6 +82,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "CBBE Physics",
       "CBBE 3BA Physics",
       "3BA Body Amazing",
+      "3BBB Advanced",
+      "3BA Advanced",
     ],
     physicsBones: [
       "NPC L Breast01",
@@ -209,8 +212,10 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     commonVariants: [
       "TBD 3BBB",
       "TBD SMP",
+      "TBD HDT",
       "TBD Special",
       "TBD Physics",
+      "Touched by Dibella Physics",
       "TBD CBBE Physics",
     ],
     physicsBones: [
@@ -326,6 +331,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "BHUNP SE",
       "BHUNP SSE",
       "BoneHunger UNP",
+      "Baka Haeun UNP",
       "Bodyslide and HDT UNP",
       "BHUNP UNP Next Generation",
     ],
@@ -334,6 +340,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "BHUNP Vanilla",
       "BHUNP Physics",
       "BHUNP V3",
+      "BHUNP 3BBB Advanced",
       "BHUNP Special Edition",
     ],
     physicsBones: [
@@ -371,6 +378,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     aliases: [
       "UUNP",
       "Unified UNP",
+      "Unified UNP Special",
       "UUNP SE",
       "UUNP Bodyslide",
       "UUNP Special",
@@ -380,6 +388,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "UUNP HDT",
       "UUNP Special HDT",
       "UUNP Special Physics",
+      "UUNP Special TBBP",
       "UUNP BBP",
       "UUNP TBBP",
     ],
@@ -415,12 +424,21 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "Most Skyrim SE 7Base ports are paired with XPMSSE-compatible skeleton stacks even when the conversion itself is non-physics.",
     referenceProject: "SevenBase by Crosscrusade",
-    aliases: ["7Base", "7B", "SevenBase", "Seven Base", "7B Bombshell"],
+    aliases: [
+      "7Base",
+      "7B",
+      "7BO",
+      "SevenBase",
+      "Seven Base",
+      "7B Bombshell",
+    ],
     commonVariants: [
       "7Base Bombshell",
       "7Base Natural",
       "7Base Oppai",
       "SevenBase Bombshell",
+      "7B Natural",
+      "7B Oppai",
       "7Base Curvy",
     ],
     physicsBones: [],
@@ -446,7 +464,11 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "SAM and SAM Light typically expect XP32/XPMSSE-style male skeleton extensions and bodymorph-compatible setup in Skyrim SE. SAM Light is the version with active SE/AE support.",
     referenceProject: "SAM by VectorPlexus / SAM Light by KouLeifoh",
     aliases: [
+      "SAM",
       "SAM Light",
+      "SAM SE",
+      "SAM SSE",
+      "SAM AE",
       "Shape Atlas for Men",
       "Shape Atlas for Men Light",
       "SAM Morphs",
@@ -455,6 +477,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     commonVariants: [
       "SAM",
       "SAM Light",
+      "SAM Light SE",
+      "SAM Light SSE",
       "SAM Morphs",
       "SAM Light Body",
       "SAM High Poly Conversion",

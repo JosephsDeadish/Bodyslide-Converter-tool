@@ -239,6 +239,24 @@ function normalizeKeywordText(value: string): string {
     .trim();
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasNormalizedKeyword(
+  normalizedHaystack: string,
+  normalizedKeyword: string,
+): boolean {
+  if (normalizedKeyword.length === 0) {
+    return false;
+  }
+
+  const pattern = new RegExp(
+    `(^| )${escapeRegExp(normalizedKeyword)}(?= |$)`,
+  );
+  return pattern.test(normalizedHaystack);
+}
+
 function getBodyKeywords(bodyType: BodyType): string[] {
   const info = BODY_TYPE_INFO[bodyType];
   return [
@@ -310,10 +328,14 @@ function scoreGenderHint(file: ScannedFile, bodyType: BodyType): number {
 }
 
 function detectGenderHint(haystack: string): GenderHint {
-  const hasFemale = /(femalebody|femalehands|femalefeet|1stpersonfemale)/.test(
-    haystack,
-  );
-  const hasMale = /(malebody|malehands|malefeet|1stpersonmale)/.test(haystack);
+  const hasFemale =
+    /((^|[^a-z])female([ _./\\-]+)?(body|hands|feet|head)\b|1stpersonfemale)/.test(
+      haystack,
+    );
+  const hasMale =
+    /((^|[^a-z])male([ _./\\-]+)?(body|hands|feet|head)\b|1stpersonmale)/.test(
+      haystack,
+    );
 
   if (hasFemale && !hasMale) return "female";
   if (hasMale && !hasFemale) return "male";
@@ -326,7 +348,7 @@ function scoreKeywordHit(haystack: string, bodyType: BodyType): number {
   let matches = 0;
 
   for (const keyword of keywords) {
-    if (normalizedHaystack.includes(keyword)) {
+    if (hasNormalizedKeyword(normalizedHaystack, keyword)) {
       matches += 1;
     }
   }
@@ -348,7 +370,7 @@ function scoreStructureHint(file: ScannedFile, bodyType: BodyType): number {
   }
 
   const keywordInPath = getBodyKeywords(bodyType).some((keyword) =>
-    normalizedPath.includes(keyword),
+    hasNormalizedKeyword(normalizedPath, keyword),
   );
   if (keywordInPath && path.includes("bodyslide/")) {
     bonus += 0.4;

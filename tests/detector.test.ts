@@ -256,6 +256,40 @@ describe("detectBodyType", () => {
     expect(detection.bodyType).toBe("3ba");
   });
 
+  it("does not treat short alias substrings as body-type matches", () => {
+    const sampleDetection = detectBodyType([
+      file("meshes/armor/sample_armor.nif", "sample armor"),
+    ]);
+    const sameDetection = detectBodyType([
+      file("meshes/armor/same_armor.nif", "same armor"),
+    ]);
+    const sosumiDetection = detectBodyType([
+      file("meshes/armor/sosumi_armor.nif", "sosumi armor"),
+    ]);
+
+    expect(sampleDetection.bodyType).toBe("unknown");
+    expect(sameDetection.bodyType).toBe("unknown");
+    expect(sosumiDetection.bodyType).toBe("unknown");
+  });
+
+  it("recognizes newer alias variants from metadata keywords", () => {
+    const samDetection = detectBodyType([
+      file(
+        "meshes/actors/character/sam_light_se_body_0.nif",
+        "sam se shape atlas for men light",
+      ),
+    ]);
+    const bhunpDetection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/SliderSets/Baka_Haeun_UNP_Armor.osp",
+        "baka haeun unp",
+      ),
+    ]);
+
+    expect(samDetection.bodyType).toBe("sam");
+    expect(bhunpDetection.bodyType).toBe("bhunp");
+  });
+
   it("classifies .osd files as mesh evidence", () => {
     const detection = detectBodyType([
       file(
