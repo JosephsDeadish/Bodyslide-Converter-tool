@@ -38,6 +38,11 @@ STAGES: list[StageDef] = [
         "Interpolating bone weights and applying smoothing filters.",
     ),
     StageDef(
+        "corrective-smoothing",
+        "Corrective smoothing",
+        "Applying corrective smoothing to armpits, breasts/chest, crotch, elbows, and knees.",
+    ),
+    StageDef(
         "mesh-cleanup",
         "Mesh cleanup",
         "Rebuilding normals/tangents and validating mesh consistency.",
@@ -226,6 +231,32 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
             ],
         )
 
+    if stage_id == "corrective-smoothing":
+        source_zones = source_meta.get("correctiveSmoothingZones", []) if isinstance(source_meta, dict) else []
+        target_zones = target_meta.get("correctiveSmoothingZones", []) if isinstance(target_meta, dict) else []
+        if has_nif and isinstance(source_zones, list) and source_zones and isinstance(target_zones, list) and target_zones:
+            shared_zones = sorted(set(source_zones) & set(target_zones))
+            unique_to_target = sorted(set(target_zones) - set(source_zones))
+            detail_lines = [f"Shared corrective zones: {', '.join(shared_zones)}"] if shared_zones else []
+            if unique_to_target:
+                detail_lines.append(f"Target-only zones (will use fallback smoothing): {', '.join(unique_to_target)}")
+            return (
+                "pass",
+                f"Corrective smoothing profiles loaded for {len(shared_zones)} shared zone(s).",
+                detail_lines or ["All smoothing zones resolved."],
+            )
+        if not has_nif:
+            return (
+                "attention",
+                "Corrective smoothing skipped because no NIF mesh was found.",
+                ["Armpit, breast/chest, crotch, elbow, and knee zones could not be evaluated."],
+            )
+        return (
+            "attention",
+            "Corrective smoothing zone definitions are missing from body metadata.",
+            ["Populate correctiveSmoothingZones in body_reference_db.json for both source and target bodies."],
+        )
+
     if stage_id == "mesh-cleanup":
         return (
             "pass" if has_nif else "attention",
@@ -307,37 +338,44 @@ def stage_status(stage_id: str, req: dict[str, Any], db: dict[str, Any]) -> tupl
 
 
 def build_quality_gates(stage_reports: list[dict[str, Any]]) -> list[dict[str, str]]:
-    attention = any(stage["status"] == "attention" for stage in stage_reports)
-    base_status = "attention" if attention else "pass"
+    def stage_status_for(stage_id: str) -> str:
+        for report in stage_reports:
+            if report.get("id") == stage_id:
+                return str(report.get("status", "pass"))
+        return "pass"
+
+    def worst(*stage_ids: str) -> str:
+        return "attention" if any(stage_status_for(sid) == "attention" for sid in stage_ids) else "pass"
+
     return [
         {
             "id": "partition-integrity",
-            "status": base_status,
-            "summary": "Partition coverage analyzed from staged mesh metadata.",
+            "status": worst("physics-preservation", "mesh-cleanup"),
+            "summary": "Partition coverage analyzed from staged mesh and physics metadata.",
         },
         {
             "id": "bone-coverage",
-            "status": base_status,
+            "status": worst("weight-transfer", "reference-body"),
             "summary": "Bone influence remap and preservation checks generated.",
         },
         {
             "id": "weight-normalization",
-            "status": base_status,
-            "summary": "Weight normalization/smoothing checks completed.",
+            "status": worst("weight-transfer", "corrective-smoothing"),
+            "summary": "Weight normalization and corrective smoothing checks completed.",
         },
         {
             "id": "morph-validity",
-            "status": base_status,
+            "status": worst("morph-transfer", "surface-reprojection"),
             "summary": "Morph delta transfer and zap preservation checks completed.",
         },
         {
             "id": "tri-compatibility",
-            "status": base_status,
+            "status": worst("tri-generation"),
             "summary": "TRI output compatibility checks prepared for RaceMenu workflow.",
         },
         {
             "id": "physics-markers",
-            "status": base_status,
+            "status": worst("physics-preservation"),
             "summary": "Physics marker and partition compatibility checks generated.",
         },
     ]

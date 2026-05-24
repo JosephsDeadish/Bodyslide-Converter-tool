@@ -59,6 +59,7 @@ export type EngineStageId =
   | "reference-body"
   | "surface-reprojection"
   | "weight-transfer"
+  | "corrective-smoothing"
   | "mesh-cleanup"
   | "physics-preservation"
   | "morph-transfer"

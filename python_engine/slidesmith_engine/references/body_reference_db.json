@@ -9,6 +9,17 @@
       "skeletonProfile": "xpmsse-compatible-female",
       "partitionProfile": "female-default",
       "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -46,6 +57,17 @@
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
       "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -83,6 +105,17 @@
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
       "physicsBones": ["NPC L Breast", "NPC R Breast"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -120,6 +153,17 @@
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
       "physicsBones": ["NPC L Breast", "NPC R Breast"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -157,6 +201,17 @@
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
       "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -194,6 +249,17 @@
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-physics",
       "physicsBones": ["NPC GenitalsBase"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -232,6 +298,17 @@
       "skeletonProfile": "xpmsse-compatible-female",
       "partitionProfile": "female-default",
       "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -269,6 +346,17 @@
       "skeletonProfile": "xpmsse-extended-female",
       "partitionProfile": "female-physics",
       "physicsBones": ["NPC L Breast01", "NPC R Breast01", "NPC Belly"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -316,6 +404,17 @@
         "NPC R Butt",
         "NPC Belly"
       ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -359,6 +458,17 @@
       "skeletonProfile": "xpmsse-compatible-female",
       "partitionProfile": "female-default",
       "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -396,6 +506,17 @@
       "skeletonProfile": "xpmsse-compatible-male",
       "partitionProfile": "male-default",
       "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",
@@ -433,6 +554,15 @@
       "skeletonProfile": "vanilla",
       "partitionProfile": "vanilla",
       "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
       "sliderMappings": {
         "waist": "Waist",
         "belly": "Belly",

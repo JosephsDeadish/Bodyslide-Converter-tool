@@ -35,7 +35,7 @@ export type ConversionAudit = {
     overallStatus: "pass" | "attention";
     checks: ConversionAuditCheck[];
 };
-export type EngineStageId = "reference-body" | "surface-reprojection" | "weight-transfer" | "mesh-cleanup" | "physics-preservation" | "morph-transfer" | "tri-generation" | "quality-gates";
+export type EngineStageId = "reference-body" | "surface-reprojection" | "weight-transfer" | "corrective-smoothing" | "mesh-cleanup" | "physics-preservation" | "morph-transfer" | "tri-generation" | "quality-gates";
 export type EngineStageStatus = "pass" | "attention";
 export type EngineStageReport = {
     id: EngineStageId;

@@ -10,6 +10,7 @@ type ReferenceBody = {
   boneMap: Record<string, string>;
   morphEquivalents: Record<string, string>;
   physicsBones: string[];
+  correctiveSmoothingZones: string[];
 };
 
 type ReferenceDb = {
@@ -47,6 +48,11 @@ describe("body reference database", () => {
       expect(Object.keys(body.sliderMappings).length).toBeGreaterThan(0);
       expect(Object.keys(body.boneMap).length).toBeGreaterThan(0);
       expect(Object.keys(body.morphEquivalents).length).toBeGreaterThan(0);
+      expect(
+        Array.isArray(body.correctiveSmoothingZones) &&
+          body.correctiveSmoothingZones.length > 0,
+        `${bodyType} is missing correctiveSmoothingZones`,
+      ).toBe(true);
     }
   });
 
@@ -103,6 +109,30 @@ describe("body reference database", () => {
         expect(
           mappedBones.has(physicsBone),
           `${bodyType} physics bone '${physicsBone}' is not mapped in boneMap`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("corrective smoothing zones contain the critical joint regions", async () => {
+    const db = await loadReferenceDb();
+
+    const requiredZones = [
+      "armpit-left",
+      "armpit-right",
+      "crotch",
+      "elbow-left",
+      "elbow-right",
+      "knee-left",
+      "knee-right",
+    ];
+    for (const bodyType of BODY_TYPES) {
+      const body = db.bodies[bodyType];
+      const zones = new Set(body.correctiveSmoothingZones);
+      for (const zone of requiredZones) {
+        expect(
+          zones.has(zone),
+          `${bodyType} is missing corrective smoothing zone '${zone}'`,
         ).toBe(true);
       }
     }
