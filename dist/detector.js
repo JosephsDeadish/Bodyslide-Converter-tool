@@ -6,12 +6,10 @@ import { BODY_TYPES } from "./types.js";
 const SIGNALS = {
     cbbe: [
         [/\bcbbe\b/, 2],
-        [/cbbe[_ -]?se/, 1.8],
         [/caliente/, 2],
         [/calientetools/, 2],
         [/cbbe curvy/, 1.8],
         [/cbbe slim/, 1.8],
-        [/cbbe vanilla/, 1.5],
         [/cbbe[_ -]?body/, 1.5],
         // BodySlide folder structure
         [/bodyslide[/\\]slidersets[/\\][^/\\]*cbbe/, 2.5],
@@ -31,7 +29,6 @@ const SIGNALS = {
         [/\b3ba\b/, 2.2],
         [/\b3bbb\b/, 2.2],
         [/3bbb amazing/, 2.5],
-        [/3bbb physics/, 2.3],
         [/3ba body/, 2],
         [/acro748/, 1.5],
         // "CBBE SMP" and "CBBE Physics" are physics-enabled CBBE variants sharing 3BA bones
@@ -54,11 +51,9 @@ const SIGNALS = {
     ],
     himbo: [
         [/\bhimbo\b/, 2.5],
-        [/himbo[_ -]?se/, 2.2],
         [/highly improved male body/, 2.5],
         [/himbo body/, 2.2],
         [/himbo v[45]/, 2.2],
-        [/himbo[_ -]?(beefy|average|slim)/, 2],
         [/high poly male body/, 1.8],
         [/highpolymalebody/, 1.8],
         [/tiktak/, 1.4],
@@ -74,7 +69,6 @@ const SIGNALS = {
     bodytalk: [
         [/\bbodytalk\b/, 2.8],
         [/bodytalk[_ -]?v?[23]/, 2.8],
-        [/bodytalk[_ -]?se/, 2.4],
         [/\bbt[23]\b/, 2.2],
         [/bodytalk body/, 2.2],
         [/bodytalk[_ -]?body/, 2.4],
@@ -89,7 +83,6 @@ const SIGNALS = {
         [/\btbd\b/, 2.5],
         [/touched by dibella/, 2.5],
         [/touchedbydibella/, 2.5],
-        [/tbd[_ -]?3bbb/, 2.3],
         [/tbd body/, 2],
         [/maars/, 1.5],
         // TBD uses same breast-butt bones as CBBE but project files are named tbd
@@ -104,7 +97,6 @@ const SIGNALS = {
         [/schlongs of skyrim/, 3],
         [/schlongsofskyrim/, 3],
         [/sos body/, 2.2],
-        [/sos[-_ ]full/, 2.4],
         [/sos[-_ ]regular/, 2.4],
         [/sos[-_ ]light/, 2.4],
         [/sos[-_ ]?[as]e/, 2],
@@ -125,19 +117,14 @@ const SIGNALS = {
         [/\bunp\b/, 2],
         [/dimonized/, 2],
         [/dimon99/, 2],
-        [/unp blessed/, 2],
         [/\bunpb\b/, 1.5],
-        [/\bunpc\b/, 1.5],
-        [/\bunps\b/, 1.5],
         // UNP BodySlide folder entries
         [/bodyslide[/\\]slidersets[/\\][^/\\]*unp/, 2.5],
         [/bodyslide[/\\]shapedata[/\\][^/\\]*unp/, 2.5],
     ],
     bhunp: [
         [/\bbhunp\b/, 3],
-        [/bhunp[_ -]?(se|sse)/, 2.5],
         [/bonehunger unp/, 2.5],
-        [/bodyslide and hdt unp/, 2.8],
         [/unp 3bbb/, 2.5],
         [/bhunp 3bbb/, 2.8],
         [/unp next generation/, 2.2],
@@ -153,8 +140,6 @@ const SIGNALS = {
         [/\buunp\b/, 2.6],
         [/unified unp/, 2.6],
         [/uunp special/, 2.8],
-        [/uunp[_ -]?hdt/, 2.4],
-        [/uunp[_ -]?bodyslide/, 2.3],
         [/ousnius.*unp/, 1.5],
         [/bodyslide[/\\]slidersets[/\\][^/\\]*uunp/, 2.8],
         [/bodyslide[/\\]shapedata[/\\][^/\\]*uunp/, 2.8],
@@ -163,7 +148,6 @@ const SIGNALS = {
         [/\b7base\b/, 2.6],
         [/sevenbase/, 2.6],
         [/seven base/, 2.6],
-        [/(7base|sevenbase)[_ -]?(bombshell|natural|oppai)/, 2.4],
         [/crosscrusade/, 1.5],
         [/7b body/, 2],
         [/bodyslide[/\\]slidersets[/\\][^/\\]*7base/, 2.8],
@@ -172,12 +156,10 @@ const SIGNALS = {
     sam: [
         // Avoid broad /\bsam\b/ to prevent false positives on random filenames
         [/shape atlas for men/, 3],
-        [/shape atlas for men light/, 3],
         [/sam light/, 2.8],
         [/vectorplexus/, 2],
         [/koulei.*sam/, 2],
         [/samlight/, 2.4],
-        [/sam morphs?/, 2.4],
         // SAM BodyMorph and RaceMenu morph signals
         [/sam_volume/, 2.5],
         [/sam_genital/, 2.5],
@@ -200,18 +182,20 @@ const SIGNALS = {
         [/meshes[/\\]actors[/\\]character[/\\]character assets[/\\]malebody/, 2.2],
     ],
 };
-function normalizeKeywordText(value) {
-    return value
-        .toLowerCase()
-        .replaceAll(/[’']/g, "")
-        .replaceAll(/[_./\\-]+/g, " ")
-        .replaceAll(/\s+/g, " ")
-        .trim();
-}
-function getBodyKeywords(bodyType) {
-    const info = BODY_TYPE_INFO[bodyType];
-    return [...new Set([...info.aliases, ...info.commonVariants].map(normalizeKeywordText))];
-}
+const BODY_KEYWORDS = {
+    cbbe: ["cbbe", "caliente"],
+    "3ba": ["3ba", "3bbb", "amazing body"],
+    himbo: ["himbo", "highly improved male body", "highpolymalebody"],
+    bodytalk: ["bodytalk", "bt2", "bt3"],
+    tbd: ["tbd", "touched by dibella"],
+    sos: ["sos", "schlongs of skyrim", "schlong"],
+    unp: ["unp", "unpb", "dimonized"],
+    bhunp: ["bhunp", "bonehunger unp"],
+    uunp: ["uunp", "unified unp"],
+    "7base": ["7base", "sevenbase"],
+    sam: ["sam light", "shape atlas for men", "samlight", "sam_volume"],
+    vanilla: ["vanilla", "default body", "base game body"],
+};
 const FALSE_POSITIVE_PENALTIES = {
     cbbe: [
         [/\b3ba\b|\b3bbb\b/, 0.9],
@@ -268,11 +252,10 @@ function detectGenderHint(haystack) {
     return "neutral";
 }
 function scoreKeywordHit(haystack, bodyType) {
-    const keywords = getBodyKeywords(bodyType);
-    const normalizedHaystack = normalizeKeywordText(haystack);
+    const keywords = BODY_KEYWORDS[bodyType];
     let matches = 0;
     for (const keyword of keywords) {
-        if (normalizedHaystack.includes(keyword)) {
+        if (haystack.includes(keyword)) {
             matches += 1;
         }
     }
@@ -280,14 +263,13 @@ function scoreKeywordHit(haystack, bodyType) {
 }
 function scoreStructureHint(file, bodyType) {
     const path = file.relativePath.toLowerCase().replace(/\\/g, "/");
-    const normalizedPath = normalizeKeywordText(path);
     let bonus = 0;
     if (path.includes("calientetools/bodyslide/slidersets/") ||
         path.includes("calientetools/bodyslide/shapedata/") ||
         path.includes("calientetools/bodyslide/slidergroups/")) {
         bonus += 0.35;
     }
-    const keywordInPath = getBodyKeywords(bodyType).some((keyword) => normalizedPath.includes(keyword));
+    const keywordInPath = BODY_KEYWORDS[bodyType].some((keyword) => path.includes(keyword));
     if (keywordInPath && path.includes("bodyslide/")) {
         bonus += 0.4;
     }
