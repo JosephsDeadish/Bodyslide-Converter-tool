@@ -218,7 +218,11 @@ function normalizeKeywordText(value: string): string {
 
 function getBodyKeywords(bodyType: BodyType): string[] {
   const info = BODY_TYPE_INFO[bodyType];
-  return [...new Set([...info.aliases, ...info.commonVariants].map(normalizeKeywordText))];
+  return [
+    ...new Set(
+      [...info.aliases, ...info.commonVariants].map(normalizeKeywordText),
+    ),
+  ];
 }
 
 const FALSE_POSITIVE_PENALTIES: Record<BodyType, Array<[RegExp, number]>> = {

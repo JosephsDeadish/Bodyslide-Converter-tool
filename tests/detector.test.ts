@@ -90,7 +90,9 @@ const alternateNameCases = [
   },
   {
     bodyType: "unp",
-    files: [file("CalienteTools/BodySlide/SliderSets/UNPB_Armor.osp", "unp blessed")],
+    files: [
+      file("CalienteTools/BodySlide/SliderSets/UNPB_Armor.osp", "unp blessed"),
+    ],
   },
   {
     bodyType: "bhunp",
@@ -267,15 +269,15 @@ describe("detectBodyType", () => {
     expect(detection.confidence).toBeGreaterThan(0);
   });
 
-  it.each(alternateNameCases)(
-    "recognizes alternate aliases for $bodyType",
-    ({ bodyType, files }) => {
-      const detection = detectBodyType(files);
-      expect(detection.bodyType).toBe(bodyType);
-      expect(detection.rankedCandidates.at(0)?.bodyType).toBe(bodyType);
-      expect(detection.confidence).toBeGreaterThan(0);
-    },
-  );
+  it.each(alternateNameCases)("recognizes alternate aliases for $bodyType", ({
+    bodyType,
+    files,
+  }) => {
+    const detection = detectBodyType(files);
+    expect(detection.bodyType).toBe(bodyType);
+    expect(detection.rankedCandidates.at(0)?.bodyType).toBe(bodyType);
+    expect(detection.confidence).toBeGreaterThan(0);
+  });
 });
 
 describe("createConversionPlan", () => {

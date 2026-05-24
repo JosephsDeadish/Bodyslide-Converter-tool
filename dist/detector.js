@@ -210,7 +210,9 @@ function normalizeKeywordText(value) {
 }
 function getBodyKeywords(bodyType) {
     const info = BODY_TYPE_INFO[bodyType];
-    return [...new Set([...info.aliases, ...info.commonVariants].map(normalizeKeywordText))];
+    return [
+        ...new Set([...info.aliases, ...info.commonVariants].map(normalizeKeywordText)),
+    ];
 }
 const FALSE_POSITIVE_PENALTIES = {
     cbbe: [

@@ -381,7 +381,12 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     skeletonNotes:
       "Vanilla targets should stay compatible with Bethesda's default skeleton paths; XPMSSE is optional unless physics-heavy body mods are mixed in.",
     referenceProject: "Bethesda Softworks",
-    aliases: ["Vanilla", "Default Game Body", "Base Game Body", "Skyrim Vanilla"],
+    aliases: [
+      "Vanilla",
+      "Default Game Body",
+      "Base Game Body",
+      "Skyrim Vanilla",
+    ],
     commonVariants: ["Vanilla Female", "Vanilla Male", "Bethesda Default"],
     physicsBones: [],
     adaptationFocus: [
