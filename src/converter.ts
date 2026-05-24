@@ -189,7 +189,7 @@ const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
   vanilla: "Vanilla",
 };
 
-const BODY_TYPE_ALIASES: Record<BodyType, string[]> = {
+const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
   cbbe: [
     "cbbe body special",
     "cbbe body",
@@ -377,15 +377,41 @@ function buildAliasPattern(alias: string): RegExp {
   return buildBoundedPattern(alias);
 }
 
+function expandAliasForms(alias: string): string[] {
+  const normalized = alias.trim().toLowerCase();
+  if (normalized === "") {
+    return [];
+  }
+
+  const compact = normalized.replaceAll(/[ _-]+/g, "");
+  const dashed = normalized.replaceAll(/[ _]+/g, "-");
+  const underscored = normalized.replaceAll(/[ -]+/g, "_");
+  return [...new Set([normalized, compact, dashed, underscored])];
+}
+
+function getBodyTypeAliases(bodyType: BodyType): string[] {
+  const info = BODY_TYPE_INFO[bodyType];
+  const aliasSeeds = [
+    bodyType,
+    BODY_TYPE_OUTPUT_ALIASES[bodyType],
+    ...info.aliases,
+    ...info.commonVariants,
+    ...BODY_TYPE_LEGACY_ALIASES[bodyType],
+  ];
+  return [
+    ...new Set(
+      aliasSeeds.flatMap(expandAliasForms).filter((value) => value.length > 0),
+    ),
+  ].sort((left, right) => right.length - left.length);
+}
+
 function replaceAliases(
   value: string,
   source: BodyType,
   target: BodyType,
 ): string {
   let next = value;
-  const aliases = [...new Set(BODY_TYPE_ALIASES[source])].sort(
-    (left, right) => right.length - left.length,
-  );
+  const aliases = getBodyTypeAliases(source);
 
   for (const alias of aliases) {
     const pattern = buildAliasPattern(alias);

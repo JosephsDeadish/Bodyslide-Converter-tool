@@ -451,6 +451,47 @@ describe("convertMod", () => {
     expect(rewritten).not.toContain("cbbe smp");
   });
 
+  it("rewrites BodyTypeInfo common variant aliases during conversion", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_nevernude_outfit_0.nif"),
+      "CBBE NeverNude",
+    );
+    await writeFile(
+      join(inputDir, "cbbe_nevernude_profile.txt"),
+      "CBBE NeverNude body profile",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("cbbe");
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.endsWith("BHUNP_outfit_0.nif"),
+      ),
+    ).toBe(true);
+
+    const rewritten = await readFile(
+      join(outputDir, "BHUNP_profile.txt"),
+      "utf8",
+    );
+    expect(rewritten).toContain("BHUNP");
+    expect(rewritten).not.toContain("NeverNude");
+    expect(rewritten).not.toContain("CBBE");
+  });
+
   it("supports BodyTalk as a male-family target", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
