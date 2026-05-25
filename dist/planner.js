@@ -253,7 +253,7 @@ export function createConversionPlan(detection, targetType, files) {
         return knownPaths.has(counterpart) ? count : count + 1;
     }, 0);
     if (missingWeightPairCount > 0) {
-        warnings.push(`Detected ${missingWeightPairCount} mesh file(s) with only one Skyrim weight variant. Skyrim SE expects paired _0/_1 meshes for weight-slider support; missing counterparts should be generated or manually exported.`);
+        warnings.push(`Detected ${missingWeightPairCount} mesh file(s) with only one Skyrim weight variant. Skyrim SE expects paired _0/_1 meshes for weight-slider support; missing counterparts will be auto-synthesized during conversion. For best morph-slider quality, re-export both weights from the source tool.`);
     }
     warnings.push("Automated conversion outputs should always be smoke-tested in-game before release; prioritize BodySlide preview and in-game seam checks for high-risk topology or cross-gender edge cases.");
     return {
