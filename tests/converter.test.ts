@@ -2851,7 +2851,10 @@ describe("convertMod", () => {
             `SKSE/Plugins/CBPC/${targetAlias}_PhysicsStub.ini` &&
           file.action === "synthesized",
       );
-      expect(synthStub, `expected placeholder-safe stub for ${target}`).toBeDefined();
+      expect(
+        synthStub,
+        `expected placeholder-safe stub for ${target}`,
+      ).toBeDefined();
 
       const stubContent = await readFile(
         join(outputDir, synthStub?.outputPath ?? ""),
@@ -3552,13 +3555,19 @@ describe("convertMod", () => {
     const outputDir = await makeTempDir();
 
     await mkdir(
-      join(inputDir, "CalienteTools", "BodySlide", "ShapeData", "CBBE", "Armor"),
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+      ),
       { recursive: true },
     );
-    await mkdir(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
-      { recursive: true },
-    );
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
     await writeFile(
       join(
         inputDir,
@@ -3603,8 +3612,8 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    const ospEntry = result.convertedFiles.find((f) =>
-      f.outputPath.endsWith(".osp") && f.action === "rewritten",
+    const ospEntry = result.convertedFiles.find(
+      (f) => f.outputPath.endsWith(".osp") && f.action === "rewritten",
     );
     expect(ospEntry).toBeDefined();
 
@@ -3618,7 +3627,9 @@ describe("convertMod", () => {
     expect(ospContent).not.toContain("<SourceFile>3BA/Armor/");
     expect(ospContent).not.toContain("<SourceFile>CBBE/Armor/");
     // The remaining relative path segment must still be present.
-    expect(ospContent).toMatch(/<SourceFile>Armor\/3BA_cuirass_0\.nif<\/SourceFile>/i);
+    expect(ospContent).toMatch(
+      /<SourceFile>Armor\/3BA_cuirass_0\.nif<\/SourceFile>/i,
+    );
   });
 
   it("converts CBBE mods to COCO and rewrites body aliases correctly", async () => {
@@ -3626,10 +3637,9 @@ describe("convertMod", () => {
     const outputDir = await makeTempDir();
 
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
-    await mkdir(
-      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
-      { recursive: true },
-    );
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
     await writeFile(
       join(inputDir, "meshes", "armor", "cbbe_gown_0.nif"),
       "caliente cbbe",
