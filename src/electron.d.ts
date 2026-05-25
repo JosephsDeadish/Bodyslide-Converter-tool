@@ -38,6 +38,7 @@ declare module "electron" {
 
   export const shell: {
     openExternal(url: string): Promise<void>;
+    openPath(fullPath: string): Promise<string>;
   };
 
   export const ipcMain: {

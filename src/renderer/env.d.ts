@@ -21,6 +21,7 @@ declare global {
       startScanJob(args: ConversionRunArgs): Promise<{ jobId: string }>;
       onScanJobEvent(listener: (event: ConversionJobEvent) => void): () => void;
       openPatreonSupport(): Promise<boolean>;
+      openOutputFolder(folderPath: string): Promise<boolean>;
     };
   }
 }

@@ -178,6 +178,14 @@ ipcMain.handle("open:patreonSupport", async () => {
   return true;
 });
 
+ipcMain.handle(
+  "open:outputFolder",
+  async (_event: IpcMainInvokeEvent, folderPath: string) => {
+    await shell.openPath(folderPath);
+    return true;
+  },
+);
+
 function sendJobEvent(
   contents: IpcMainInvokeEvent["sender"],
   event: ConversionJobEvent,

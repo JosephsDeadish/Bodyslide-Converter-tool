@@ -53,4 +53,7 @@ contextBridge.exposeInMainWorld("bodyslideAPI", {
 
   openPatreonSupport: (): Promise<boolean> =>
     ipcRenderer.invoke("open:patreonSupport"),
+
+  openOutputFolder: (folderPath: string): Promise<boolean> =>
+    ipcRenderer.invoke("open:outputFolder", folderPath),
 });

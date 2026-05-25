@@ -21,6 +21,7 @@ type Status = "idle" | "scanning" | "success" | "error";
 export function App() {
   const [inputPath, setInputPath] = useState("");
   const [outputPath, setOutputPath] = useState("");
+  const [outputPathAuto, setOutputPathAuto] = useState(false);
   const [bodyTypes, setBodyTypes] = useState<BodyTypeOption[]>([]);
   const [targetBodyType, setTargetBodyType] = useState("");
   const [bodyTypeInfo, setBodyTypeInfo] = useState<BodyTypeInfo | null>(null);
@@ -38,6 +39,7 @@ export function App() {
     "Converting mod assets…",
   );
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
+  const [loadingStage, setLoadingStage] = useState<string>("");
 
   useEffect(() => {
     void api.getBodyTypes().then(setBodyTypes);
@@ -49,6 +51,7 @@ export function App() {
       if (event.type === "status") {
         setLoadingMessage(`${event.message} (${event.progress}%)`);
         setLoadingProgress(event.progress);
+        setLoadingStage(event.stage);
         return;
       }
       if (event.type === "complete") {
@@ -75,7 +78,11 @@ export function App() {
     const path = await api.openDirectory();
     if (!path) return;
     setInputPath(path);
-    if (!outputPath) setOutputPath(`${path}-bodyslide-output`);
+    const autoOut = `${path}-bodyslide-output`;
+    if (!outputPath || outputPathAuto) {
+      setOutputPath(autoOut);
+      setOutputPathAuto(true);
+    }
     setDetectResult(null);
     setSourceOverride("");
     setDetecting(true);
@@ -89,7 +96,25 @@ export function App() {
 
   async function handleBrowseOutput() {
     const path = await api.openDirectory();
-    if (path) setOutputPath(path);
+    if (path) {
+      setOutputPath(path);
+      setOutputPathAuto(false);
+    }
+  }
+
+  function handleClearInput() {
+    setInputPath("");
+    setDetectResult(null);
+    setSourceOverride("");
+    if (outputPathAuto) {
+      setOutputPath("");
+      setOutputPathAuto(false);
+    }
+  }
+
+  function handleClearOutput() {
+    setOutputPath("");
+    setOutputPathAuto(false);
   }
 
   async function handleTargetChange(value: string) {
@@ -108,6 +133,7 @@ export function App() {
     setStatus("scanning");
     setLoadingMessage("Starting conversion job…");
     setLoadingProgress(0);
+    setLoadingStage("queued");
     try {
       const { jobId } = await api.startScanJob({
         input: inputPath,
@@ -135,6 +161,15 @@ export function App() {
     }
   }
 
+  async function handleOpenOutputFolder() {
+    if (!outputPath) return;
+    try {
+      await api.openOutputFolder(outputPath);
+    } catch {
+      // Best-effort: silently ignore if the folder doesn't exist yet
+    }
+  }
+
   function handleBack() {
     setScreen("welcome");
     setStatus("idle");
@@ -145,6 +180,7 @@ export function App() {
       <Sidebar
         inputPath={inputPath}
         outputPath={outputPath}
+        outputPathAuto={outputPathAuto}
         bodyTypes={bodyTypes}
         targetBodyType={targetBodyType}
         bodyTypeInfo={bodyTypeInfo}
@@ -159,6 +195,8 @@ export function App() {
         onBrowseOutput={() => {
           void handleBrowseOutput();
         }}
+        onClearInput={handleClearInput}
+        onClearOutput={handleClearOutput}
         onTargetChange={(v) => {
           void handleTargetChange(v);
         }}
@@ -173,10 +211,21 @@ export function App() {
       <main className="content">
         {screen === "welcome" && <WelcomeScreen />}
         {screen === "loading" && (
-          <LoadingScreen message={loadingMessage} progress={loadingProgress} />
+          <LoadingScreen
+            message={loadingMessage}
+            progress={loadingProgress}
+            stage={loadingStage}
+          />
         )}
         {screen === "results" && scanResult !== null && (
-          <ResultsScreen result={scanResult} onNewConversion={handleBack} />
+          <ResultsScreen
+            result={scanResult}
+            outputPath={outputPath}
+            onNewConversion={handleBack}
+            onOpenOutputFolder={() => {
+              void handleOpenOutputFolder();
+            }}
+          />
         )}
         {screen === "error" && (
           <ErrorScreen message={errorMsg} onBack={handleBack} />

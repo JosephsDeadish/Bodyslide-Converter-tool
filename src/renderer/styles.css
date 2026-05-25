@@ -175,6 +175,16 @@ body {
   font-size: 12px;
   color: #7a7aaa;
 }
+.body-info-box .info-humor {
+  margin: 6px 0;
+  font-size: 11px;
+  color: var(--accent-hi);
+  font-style: italic;
+  background: rgba(123, 94, 167, 0.08);
+  border-left: 2px solid var(--accent);
+  padding: 3px 7px;
+  border-radius: 0 3px 3px 0;
+}
 
 /* ── Buttons ─────────────────────────────────────────────────── */
 .btn {
@@ -591,4 +601,207 @@ body {
 /* ── Utilities ───────────────────────────────────────────────── */
 .hidden {
   display: none;
+}
+
+/* ── Tooltips ────────────────────────────────────────────────── */
+.tip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.tip-wrap.tip-block {
+  display: block;
+}
+
+/* Shared bubble styles */
+.tip-wrap::after {
+  content: attr(data-tip);
+  position: absolute;
+  background: #0a0a18;
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 7px 11px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: normal;
+  max-width: 240px;
+  min-width: 100px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+  text-align: left;
+  font-weight: 400;
+}
+.tip-wrap:hover::after {
+  opacity: 1;
+}
+
+/* top (default) */
+.tip-top::after {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* right — extends into content area; safe inside the sidebar */
+.tip-right::after {
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%);
+  bottom: auto;
+}
+
+/* bottom */
+.tip-bottom::after {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: auto;
+}
+
+/* ── Clear path button ───────────────────────────────────────── */
+.btn-clear {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.btn-clear:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+/* ── Open Folder button ──────────────────────────────────────── */
+.btn-open-folder {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.btn-open-folder:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+/* ── Progress bar ────────────────────────────────────────────── */
+.progress-bar-outer {
+  width: 220px;
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hi));
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.loading-stage {
+  font-size: 11px;
+  color: var(--accent-hi);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.loading-funfact {
+  font-size: 11px;
+  color: var(--text-dim);
+  max-width: 380px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* ── Python engine summary ───────────────────────────────────── */
+.engine-summary {
+  margin-top: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 12px;
+}
+.engine-summary-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.engine-lib-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.engine-lib {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.engine-lib.ok {
+  border-color: var(--success);
+  color: #4eca8a;
+}
+.engine-lib.missing {
+  border-color: var(--warn);
+  color: #e0c070;
+}
+.engine-stage-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+  font-size: 11px;
+}
+.stage-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.stage-dot.pass {
+  background: var(--success);
+}
+.stage-dot.attention {
+  background: var(--warn);
+}
+
+/* ── Path basename display ───────────────────────────────────── */
+.path-basename {
+  font-size: 11px;
+  color: var(--accent-hi);
+  margin-top: 2px;
+  margin-bottom: 1px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Results footer improvements ────────────────────────────── */
+.results-footer-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
