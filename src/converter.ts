@@ -1855,7 +1855,11 @@ const CBPC_BREASTROOT_DEFAULT = "1.000";
 const CBPC_GENITALS_DEFAULT = "0.350";
 const CBPC_SCROTUM_DEFAULT = "0.250";
 const CBPC_ASSIGNMENT_LINE_RE =
-  /^\s*([A-Za-z][^\n=;#]*?)\s*=\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?:\s*[;#].*)?$/;
+  /^\s*([A-Za-z][^\n=:;#]*?)\s*[:=]\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?:\s*[;#].*)?$/;
+const CBPC_XML_BONE_WEIGHT_PATTERNS = [
+  /<(?:bone|node|entry|weight|physics)[^>]*\b(?:name|bone)\s*=\s*["']([^"']+)["'][^>]*\b(?:value|weight)\s*=\s*["']([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)["'][^>]*>/gi,
+  /<(?:bone|node|entry|weight|physics)[^>]*\b(?:value|weight)\s*=\s*["']([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)["'][^>]*\b(?:name|bone)\s*=\s*["']([^"']+)["'][^>]*>/gi,
+] as const;
 
 function cbpcDefaultWeight(boneName: string): string {
   const lower = boneName.toLowerCase();
@@ -1869,7 +1873,31 @@ function cbpcDefaultWeight(boneName: string): string {
 }
 
 function normalizeBoneNameForLookup(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, " ").trim();
+  return name
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/[^a-z0-9 ]+/g, " ")
+    .replace(/\bbrest\b/g, "breast")
+    .replace(/\bbely\b/g, "belly")
+    .replace(/\bgentials\b/g, "genitals")
+    .replace(/\bscrotom\b/g, "scrotum")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function compactBoneNameForLookup(name: string): string {
+  return normalizeBoneNameForLookup(name).replace(/[^a-z0-9]+/g, "");
+}
+
+function buildBoneLookupKeys(name: string): readonly string[] {
+  const normalized = normalizeBoneNameForLookup(name);
+  if (normalized.length === 0) {
+    return [];
+  }
+  const compact = compactBoneNameForLookup(name);
+  return compact.length > 0
+    ? [...new Set([normalized, compact])]
+    : [normalized];
 }
 
 function collectCbpcAssignedBones(content: string): Set<string> {
@@ -1878,9 +1906,37 @@ function collectCbpcAssignedBones(content: string): Set<string> {
     const match = line.match(CBPC_ASSIGNMENT_LINE_RE);
     const boneName = match?.[1]?.trim();
     if (!boneName) continue;
-    assignedBones.add(normalizeBoneNameForLookup(boneName));
+    for (const key of buildBoneLookupKeys(boneName)) {
+      assignedBones.add(key);
+    }
+  }
+  for (const pattern of CBPC_XML_BONE_WEIGHT_PATTERNS) {
+    pattern.lastIndex = 0;
+    for (const match of content.matchAll(pattern)) {
+      const first = (match[1] ?? "").trim();
+      const second = (match[2] ?? "").trim();
+      const boneName = /[a-z]/i.test(first) ? first : second;
+      if (!boneName) continue;
+      for (const key of buildBoneLookupKeys(boneName)) {
+        assignedBones.add(key);
+      }
+    }
   }
   return assignedBones;
+}
+
+function getTargetBoneLookupKeys(
+  target: BodyType,
+  targetBone: string,
+): Set<string> {
+  const aliases = PHYSICS_BONE_SOURCE_ALIASES[target]?.[targetBone] ?? [];
+  const keys = new Set<string>();
+  for (const name of [targetBone, ...aliases]) {
+    for (const key of buildBoneLookupKeys(name)) {
+      keys.add(key);
+    }
+  }
+  return keys;
 }
 
 /**
@@ -1927,7 +1983,15 @@ function ensureTargetPhysicsBonesPresent(
   }
   const assignedBones = collectCbpcAssignedBones(content);
   const missingBones = targetInfo.physicsBones.filter(
-    (bone) => !assignedBones.has(normalizeBoneNameForLookup(bone)),
+    (bone) => {
+      const lookupKeys = getTargetBoneLookupKeys(target, bone);
+      for (const key of lookupKeys) {
+        if (assignedBones.has(key)) {
+          return false;
+        }
+      }
+      return true;
+    },
   );
   if (missingBones.length === 0) return content;
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[target];

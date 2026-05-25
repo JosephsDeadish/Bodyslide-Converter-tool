@@ -3021,6 +3021,62 @@ describe("convertMod", () => {
     expect(convertedConfig).toContain("NPC R Breast03=0.600");
   });
 
+  it("handles duplicate and legacy-style physics entries without appending duplicate target bones", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe mesh",
+    );
+
+    const mixedConfig = [
+      "NPC L Brest01=0.250",
+      "NPC L Breast01=0.700",
+      "NPC L Butt:0.300",
+      "<bone name=\"NPC R Breast01\" weight=\"0.550\"/>",
+      "; NPC R Breast01=0.100",
+    ].join("\n");
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbbe_legacy.ini"),
+      mixedConfig,
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const convertedConfigEntry = result.convertedFiles.find(
+      (file) =>
+        file.kind === "text" &&
+        file.outputPath.toLowerCase().includes("cbpc/") &&
+        file.outputPath.toLowerCase().endsWith("_legacy.ini"),
+    );
+    expect(convertedConfigEntry).toBeDefined();
+
+    const convertedConfig = await readFile(
+      join(outputDir, convertedConfigEntry?.outputPath ?? ""),
+      "utf8",
+    );
+
+    // Existing bones (including typo/legacy formats) should not get duplicate
+    // appended target entries.
+    expect(convertedConfig).not.toContain("NPC R Breast01=0.600");
+    expect(convertedConfig).not.toContain("NPC L Butt=0.450");
+    // Missing bones should still be synthesized.
+    expect(convertedConfig).toContain("NPC R Butt=0.450");
+    expect(convertedConfig).toContain("NPC Belly=0.300");
+  });
+
   it("preserves non-armor/non-clothing NIFs without body alias rewriting", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
