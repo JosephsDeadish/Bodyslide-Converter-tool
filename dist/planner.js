@@ -6,6 +6,7 @@ const FEMALE_BODIES = new Set([
     "unp",
     "bhunp",
     "uunp",
+    "ube",
     "7base",
 ]);
 const MALE_BODIES = new Set([

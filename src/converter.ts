@@ -206,6 +206,7 @@ const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
   unp: "UNP",
   bhunp: "BHUNP",
   uunp: "UUNP",
+  ube: "UBE",
   "7base": "7Base",
   sam: "SAM",
   vanilla: "Vanilla",
@@ -320,12 +321,19 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "unified unp",
     "uunp special",
     "uunp softbody",
-    "ube body",
-    "ube 2.0",
-    "unified body enhancer",
     "uunp body",
     "uunp_body",
     "uunp",
+  ],
+  ube: [
+    "unified body enhancer",
+    "ube body",
+    "ube 2.0",
+    "ube softbody",
+    "ube physics",
+    "uunp ube",
+    "ube_body",
+    "ube",
   ],
   "7base": [
     "sevenbase bombshell",
@@ -496,6 +504,12 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "NPC RBreastRoot": "NPC R Breast01",
       "NPC BellyRoot": "NPC Belly",
     },
+    // UBE uses same NPC naming as UUNP
+    ube: {
+      "NPC LBreastRoot": "NPC L Breast01",
+      "NPC RBreastRoot": "NPC R Breast01",
+      "NPC BellyRoot": "NPC Belly",
+    },
   },
   bhunp: {
     "3ba": {
@@ -530,6 +544,17 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "BHUNP Butt L": "NPC L Butt",
       "BHUNP Butt R": "NPC R Butt",
     },
+    // UBE uses the same NPC naming convention as UUNP
+    ube: {
+      "BHUNP Breast L01": "NPC L Breast01",
+      "BHUNP Breast R01": "NPC R Breast01",
+      "BHUNP Breast L02": "NPC L Breast02",
+      "BHUNP Breast R02": "NPC R Breast02",
+      "BHUNP Breast L03": "NPC L Breast03",
+      "BHUNP Breast R03": "NPC R Breast03",
+      "BHUNP Butt L": "NPC L Butt",
+      "BHUNP Butt R": "NPC R Butt",
+    },
   },
   tbd: {
     bhunp: {
@@ -548,6 +573,8 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
     },
     // UUNP shares same NPC bone naming as TBD — no name remapping needed
     uunp: {},
+    // UBE shares same NPC bone naming as TBD
+    ube: {},
   },
   uunp: {
     // UUNP → BHUNP: rename NPC-prefixed bones to BHUNP-prefixed names
@@ -565,6 +592,25 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
     tbd: {},
     // 3BA: UUNP has same NPC Breast01-03/Butt/Belly naming; no rename but no BreastRoot/BellyRoot to generate
     "3ba": {},
+    // UBE: identical bone names to UUNP — no remapping needed
+    ube: {},
+  },
+  ube: {
+    // UBE → BHUNP: same remapping as UUNP (identical bone naming)
+    bhunp: {
+      "NPC L Breast01": "BHUNP Breast L01",
+      "NPC R Breast01": "BHUNP Breast R01",
+      "NPC L Breast02": "BHUNP Breast L02",
+      "NPC R Breast02": "BHUNP Breast R02",
+      "NPC L Breast03": "BHUNP Breast L03",
+      "NPC R Breast03": "BHUNP Breast R03",
+      "NPC L Butt": "BHUNP Butt L",
+      "NPC R Butt": "BHUNP Butt R",
+    },
+    // TBD, 3BA, UUNP all share the same NPC bone naming as UBE
+    tbd: {},
+    "3ba": {},
+    uunp: {},
   },
 };
 
@@ -708,6 +754,67 @@ const PHYSICS_BONE_SOURCE_ALIASES: Partial<
       "NPC RUUNPBreast03",
       "NPC R UBE Breast 03",
       "NPC RUBEBreast03",
+    ],
+    "NPC L Butt": [
+      "NPC LButt",
+      "NPC L Butt01",
+      "NPC LButt01",
+      "NPC L UUNP Glute 01",
+      "NPC LUUNPGlute01",
+    ],
+    "NPC R Butt": [
+      "NPC RButt",
+      "NPC R Butt01",
+      "NPC RButt01",
+      "NPC R UUNP Glute 01",
+      "NPC RUUNPGlute01",
+    ],
+    "NPC Belly": ["NPC Belly01", "NPC Belly 01"],
+  },
+  ube: {
+    "NPC L Breast01": [
+      "NPC L Breast",
+      "NPC LBreast01",
+      "NPC L UBE Breast 01",
+      "NPC LUBEBreast01",
+      "NPC L UUNP Breast 01",
+      "NPC LUUNPBreast01",
+    ],
+    "NPC R Breast01": [
+      "NPC R Breast",
+      "NPC RBreast01",
+      "NPC R UBE Breast 01",
+      "NPC RUBEBreast01",
+      "NPC R UUNP Breast 01",
+      "NPC RUUNPBreast01",
+    ],
+    "NPC L Breast02": [
+      "NPC LBreast02",
+      "NPC L UBE Breast 02",
+      "NPC LUBEBreast02",
+      "NPC L UUNP Breast 02",
+      "NPC LUUNPBreast02",
+    ],
+    "NPC R Breast02": [
+      "NPC RBreast02",
+      "NPC R UBE Breast 02",
+      "NPC RUBEBreast02",
+      "NPC R UUNP Breast 02",
+      "NPC RUUNPBreast02",
+    ],
+    "NPC L Breast03": [
+      "NPC LBreast03",
+      "NPC L UBE Breast 03",
+      "NPC LUBEBreast03",
+      "NPC L UUNP Breast 03",
+      "NPC LUUNPBreast03",
+    ],
+    "NPC R Breast03": [
+      "NPC RBreast03",
+      "NPC R UBE Breast 03",
+      "NPC RUBEBreast03",
+      "NPC R UUNP Breast 03",
+      "NPC RUUNPBreast03",
     ],
     "NPC L Butt": [
       "NPC LButt",

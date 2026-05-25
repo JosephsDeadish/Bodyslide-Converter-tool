@@ -14,6 +14,7 @@ const FEMALE_BODIES: ReadonlySet<BodyType> = new Set([
   "unp",
   "bhunp",
   "uunp",
+  "ube",
   "7base",
 ]);
 const MALE_BODIES: ReadonlySet<BodyType> = new Set([

@@ -846,6 +846,97 @@
         "natural": "SAM Body"
       }
     },
+    "ube": {
+      "topology": "unp",
+      "topologyReference": "UBE 2.0 Body",
+      "canonicalVertexMap": "unp-female-canonical",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve",
+        "hipProtrusion": "Hip Protrusion",
+        "thighSize": "Thigh Size",
+        "backWidth": "Back Width"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
+        "rightBreast": "NPC R Breast01",
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "belly": "NPC Belly",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "UBE Curvy",
+        "thin": "UBE Slim",
+        "muscle": "UBE Athletic",
+        "pregnancy": "UBE Pregnant",
+        "zapCleavage": "UBE Zap Cleavage",
+        "zapBelly": "UBE Zap Belly",
+        "natural": "UBE Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": true,
+        "hdtSmpCompatible": true,
+        "softbodySupported": true,
+        "physicsLevel": "tbbp",
+        "boneNamingConvention": "cbbe-standard",
+        "notes": "UBE uses the same NPC L/R Breast01-03, L/R Butt, NPC Belly bone names as UUNP Special. UBE physics configs are interchangeable with UUNP Special physics configs. UBE Softbody enables per-vertex HDT-SMP deformation via NiSkinData partitions."
+      }
+    },
     "vanilla": {
       "topology": "vanilla",
       "topologyReference": "Vanilla Skyrim",
@@ -954,6 +1045,56 @@
       "source": "uunp",
       "target": "3ba",
       "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "ube",
+      "target": "uunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "ube",
+      "target": "bhunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "ube",
+      "target": "3ba",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "ube",
+      "target": "tbd",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "uunp",
+      "target": "ube",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "ube",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "3ba",
+      "target": "ube",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "tbd",
+      "target": "ube",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "unp",
+      "target": "ube",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "ube",
+      "profile": "female-cross-family"
     },
     {
       "source": "himbo",

@@ -53,7 +53,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "CBBE is the reference baseline for most conversion workflows. Converting FROM other bodies TO CBBE: project morphs onto the CBBE reference mesh, rebuild OSP slider sets, verify neck/wrist/ankle seams. Base CBBE has no physics; physics-enabled variants (3BA/CBBE SMP) require additional physics bone weighting.",
   },
   "3ba": {
-    displayName: "3BA – 3BBB Amazing Body",
+    displayName: "3BA – 3BBB Amazing / CBBE SMP / Soft Body",
     description:
       "CBBE-based female body with full physics for breasts, butt, and belly. Supports both CBPC (CPU physics) and HDT-SMP (GPU softbody). The '3BA Softbody' variant enables per-vertex HDT-SMP deformation via NiSkinData partitions for the most realistic cloth/body simulation available in SE/AE. Extends the CBBE skeleton with NPC LBreastRoot / NPC RBreastRoot control bones and a NPC BellyRoot chain. The most widely used physics body for Skyrim SE/AE.",
     gender: "female",
@@ -330,7 +330,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "UNP has different topology from CBBE; mesh projection is required. Seam edge loops at neck, wrist, and ankle differ from CBBE — pay extra attention to those areas when converting armors between families. UNP Female Body Renewed (UNPB) uses improved UV mapping and should be preferred over the original for new conversions.",
   },
   bhunp: {
-    displayName: "BHUNP – BoneHunger UNP 3BBB",
+    displayName: "BHUNP – BoneHunger UNP 3BBB / Soft Body",
     description:
       "UNP variant with full CBPC and HDT-SMP physics support. Adds three-level breast chains (L/R01–03), butt bones, and belly physics to the UNP skeleton using the BHUNP-prefixed bone naming convention — distinct from the NPC L/R Breast naming used by CBBE-family bodies. BHUNP Softbody enables per-vertex HDT-SMP deformation via NiSkinData partitions. Compatible with BodySlide. BHUNP V3 introduced improved topology and additional sliders.",
     gender: "female",
@@ -386,7 +386,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   uunp: {
     displayName: "UUNP – Unified UNP",
     description:
-      "BodySlide-compatible unified version of UNP supporting multiple shape presets via a single slider set, mirroring CBBE's workflow. UUNP Special (the most common variant) includes TBBP physics support using standard NPC L/R Breast01-03, NPC L/R Butt, and NPC Belly bone names — the same convention as CBBE-family physics bodies. UBE (Unified Body Enhancer) is a UUNP alias. UUNP Special Softbody enables per-vertex HDT-SMP deformation. Maintained by ousnius as part of the BodySlide and Outfit Studio project.",
+      "BodySlide-compatible unified version of UNP supporting multiple shape presets via a single slider set, mirroring CBBE's workflow. UUNP Special (the most common variant) includes TBBP physics support using standard NPC L/R Breast01-03, NPC L/R Butt, and NPC Belly bone names — the same convention as CBBE-family physics bodies. UUNP Special Softbody enables per-vertex HDT-SMP deformation. Maintained by ousnius as part of the BodySlide and Outfit Studio project.",
     gender: "female",
     family: "unp",
     topology: "unp",
@@ -402,10 +402,6 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "UUNP SE",
       "UUNP Bodyslide",
       "UUNP Special",
-      "UBE",
-      "UBE Body",
-      "UBE 2.0",
-      "Unified Body Enhancer",
     ],
     commonVariants: [
       "UUNP Special",
@@ -414,10 +410,6 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "UUNP Softbody",
       "UUNP Special Softbody",
       "UUNP Special Physics",
-      "UUNP UBE",
-      "UBE Physics",
-      "UBE Softbody",
-      "UBE 2.0 Physics",
       "UUNP Special TBBP",
       "UUNP BBP",
       "UUNP TBBP",
@@ -442,10 +434,64 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "hip curve",
       "TBBP weighting",
       "softbody partitions",
-      "UBE compatibility",
     ],
     conversionNotes:
-      "Shares topology with UNP but optimised for BodySlide workflows. Project onto the UUNP BodySlide reference body and rebuild OSP slider sets. UUNP Special ships with TBBP physics support — if the source mod includes physics configs, verify they match the UUNP bone naming (NPC L/R Breast01-03, L/R Butt, NPC Belly). UBE (Unified Body Enhancer) uses the same bone names and physics pipeline as UUNP Special; UBE configs are interchangeable with UUNP Special physics configs. For UUNP Softbody, include the HDT-SMP XML config alongside the NIF.",
+      "Shares topology with UNP but optimised for BodySlide workflows. Project onto the UUNP BodySlide reference body and rebuild OSP slider sets. UUNP Special ships with TBBP physics support — if the source mod includes physics configs, verify they match the UUNP bone naming (NPC L/R Breast01-03, L/R Butt, NPC Belly). For UUNP Softbody, include the HDT-SMP XML config alongside the NIF.",
+  },
+  ube: {
+    displayName: "UBE – Unified Body Enhancer",
+    description:
+      "Extension of UUNP Special by kofman77 that adds a rich set of unique custom sliders (hip protrusion, thigh size, back width, and more) while retaining the UUNP topology and skeleton. UBE 2.0 introduces additional shape-sculpting sliders. Physics support uses the same NPC L/R Breast01-03, NPC L/R Butt, and NPC Belly bones as UUNP Special — UBE CBPC/HDT-SMP configs are interchangeable with UUNP Special physics configs. UBE Softbody enables per-vertex HDT-SMP deformation. A popular target for outfit authors who want extra shape customisation beyond what standard UUNP offers.",
+    gender: "female",
+    family: "unp",
+    topology: "unp",
+    physicsSupport: true,
+    skeletonProfile:
+      "XPMSSE / XP32-compatible skeleton required (same as UUNP Special)",
+    skeletonNotes:
+      "UBE builds on the UUNP Special skeleton setup; XPMSSE-compatible bone layouts are required for breast/butt/belly runtime motion. UBE Softbody requires a matching HDT-SMP XML alongside the NIF.",
+    referenceProject: "UBE – Unified Body Enhancer by kofman77",
+    aliases: [
+      "UBE",
+      "UBE Body",
+      "UBE 2.0",
+      "Unified Body Enhancer",
+      "UUNP UBE",
+    ],
+    commonVariants: [
+      "UBE Physics",
+      "UBE Softbody",
+      "UBE 2.0 Physics",
+      "UBE 2.0 Softbody",
+      "UBE HDT",
+      "UBE CBPC",
+      "UBE HDT-SMP",
+      "UBE SMP",
+      "UBE Special",
+      "UBE TBBP",
+      "UBE BBP",
+    ],
+    physicsBones: [
+      "NPC L Breast01",
+      "NPC R Breast01",
+      "NPC L Breast02",
+      "NPC R Breast02",
+      "NPC L Breast03",
+      "NPC R Breast03",
+      "NPC L Butt",
+      "NPC R Butt",
+      "NPC Belly",
+    ],
+    adaptationFocus: [
+      "slider compatibility",
+      "waist",
+      "hip curve",
+      "TBBP weighting",
+      "softbody partitions",
+      "UBE custom sliders",
+    ],
+    conversionNotes:
+      "UBE shares the same topology and physics pipeline as UUNP Special. When converting TO UBE, project onto the UUNP/UBE BodySlide reference body and rebuild OSP slider sets. Physics bone names are identical to UUNP (NPC L/R Breast01-03, L/R Butt, NPC Belly); existing UUNP physics configs are directly compatible. UBE custom sliders (hip protrusion, thigh size, etc.) may not have equivalents in the source body — generate them at their neutral (0%) position and note them in conversion warnings. For UBE Softbody, include the HDT-SMP XML config alongside the NIF.",
   },
   "7base": {
     displayName: "7base – SevenBase Female Body",

@@ -290,7 +290,7 @@ describe("detectBodyType", () => {
     expect(bhunpDetection.bodyType).toBe("bhunp");
   });
 
-  it("detects UBE aliases as UUNP-family data", () => {
+  it("detects UBE as its own body type", () => {
     const detection = detectBodyType([
       file(
         "CalienteTools/BodySlide/SliderSets/UBE_2.0_Softbody.osp",
@@ -298,7 +298,7 @@ describe("detectBodyType", () => {
       ),
     ]);
 
-    expect(detection.bodyType).toBe("uunp");
+    expect(detection.bodyType).toBe("ube");
   });
 
   it("detects softbody variants for 3BA and BHUNP", () => {

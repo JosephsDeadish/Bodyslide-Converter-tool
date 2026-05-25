@@ -8,6 +8,7 @@ export const BODY_TYPES = [
     "unp",
     "bhunp",
     "uunp",
+    "ube",
     "7base",
     "sam",
     "vanilla",

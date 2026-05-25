@@ -451,7 +451,7 @@ describe("convertMod", () => {
     expect(rewritten).not.toContain("cbbe smp");
   });
 
-  it("rewrites UBE and softbody aliases when converting UUNP-family data", async () => {
+  it("rewrites UBE aliases when converting UBE body type data", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -462,7 +462,7 @@ describe("convertMod", () => {
     );
     await writeFile(
       join(inputDir, "ube_softbody_profile.txt"),
-      "Unified Body Enhancer\nUUNP Softbody\nUBE Body",
+      "Unified Body Enhancer\nUBE Softbody\nUBE Body",
       "utf8",
     );
 
@@ -476,7 +476,7 @@ describe("convertMod", () => {
       "bhunp",
     );
 
-    expect(result.sourceBodyType).toBe("uunp");
+    expect(result.sourceBodyType).toBe("ube");
     expect(
       result.convertedFiles.some(
         (file) =>
@@ -491,7 +491,6 @@ describe("convertMod", () => {
     );
     expect(rewritten).toContain("BHUNP");
     expect(rewritten).not.toContain("Unified Body Enhancer");
-    expect(rewritten).not.toContain("UUNP");
     expect(rewritten).not.toContain("UBE");
   });
 
@@ -1388,7 +1387,7 @@ describe("convertMod", () => {
       "bhunp",
     );
 
-    expect(result.sourceBodyType).toBe("uunp");
+    expect(result.sourceBodyType).toBe("ube");
 
     const iniFile = result.convertedFiles.find(
       (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
@@ -1492,7 +1491,7 @@ describe("convertMod", () => {
       "bhunp",
     );
 
-    expect(result.sourceBodyType).toBe("uunp");
+    expect(result.sourceBodyType).toBe("ube");
 
     const iniFile = result.convertedFiles.find(
       (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
