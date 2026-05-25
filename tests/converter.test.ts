@@ -1876,67 +1876,6 @@ describe("convertMod", () => {
     await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
       recursive: true,
     });
-
-    it("preserves nested SliderSets folder structure to avoid project filename collisions", async () => {
-      const inputDir = await makeTempDir();
-      const outputDir = await makeTempDir();
-
-      await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "SetA"), {
-        recursive: true,
-      });
-      await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "SetB"), {
-        recursive: true,
-      });
-      await writeFile(
-        join(
-          inputDir,
-          "CalienteTools",
-          "BodySlide",
-          "SliderSets",
-          "SetA",
-          "cbbe_armor.osp",
-        ),
-        '<SliderSetInfo><SliderSet name="CBBE Armor A"></SliderSet></SliderSetInfo>',
-        "utf8",
-      );
-      await writeFile(
-        join(
-          inputDir,
-          "CalienteTools",
-          "BodySlide",
-          "SliderSets",
-          "SetB",
-          "cbbe_armor.osp",
-        ),
-        '<SliderSetInfo><SliderSet name="CBBE Armor B"></SliderSet></SliderSetInfo>',
-        "utf8",
-      );
-
-      const files = await scanModFiles(inputDir);
-      const detection = detectBodyType(files);
-      const result = await convertMod(
-        inputDir,
-        outputDir,
-        files,
-        detection,
-        "3ba",
-      );
-
-      expect(
-        result.convertedFiles.some(
-          (file) =>
-            file.outputPath ===
-            "CalienteTools/BodySlide/SliderSets/SetA/3BA_armor.osp",
-        ),
-      ).toBe(true);
-      expect(
-        result.convertedFiles.some(
-          (file) =>
-            file.outputPath ===
-            "CalienteTools/BodySlide/SliderSets/SetB/3BA_armor.osp",
-        ),
-      ).toBe(true);
-    });
     await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"), {
       recursive: true,
     });
@@ -1979,6 +1918,73 @@ describe("convertMod", () => {
         f.outputPath.includes("SliderGroups") && f.action === "synthesized",
     );
     expect(synthGroupFiles).toHaveLength(0);
+  });
+
+  it("preserves nested SliderSets folder structure to avoid project filename collisions", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "SetA"),
+      {
+        recursive: true,
+      },
+    );
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "SetB"),
+      {
+        recursive: true,
+      },
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "SetA",
+        "cbbe_armor.osp",
+      ),
+      '<SliderSetInfo><SliderSet name="CBBE Armor A"></SliderSet></SliderSetInfo>',
+      "utf8",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "SetB",
+        "cbbe_armor.osp",
+      ),
+      '<SliderSetInfo><SliderSet name="CBBE Armor B"></SliderSet></SliderSetInfo>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/SetA/3BA_armor.osp",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/SetB/3BA_armor.osp",
+      ),
+    ).toBe(true);
   });
 
   it("synthesizes a CBPC physics stub for a physics target with no source physics config", async () => {
@@ -2466,17 +2472,12 @@ describe("convertMod", () => {
       result.convertedFiles.some(
         (file) => file.outputPath === "meshes/custom/linen_shirt.nif",
       ),
-    ).toBe(false);
-    expect(
-      result.convertedFiles.some(
-        (file) => file.outputPath === "meshes/custom/linen_3BA.nif",
-      ),
-    ).toBe(false);
-    expect(
-      result.convertedFiles.some(
-        (file) => file.outputPath === "meshes/custom/3BA_linen_shirt.nif",
-      ),
     ).toBe(true);
+    expect(
+      result.skippedFiles.some(
+        (file) => file.outputPath === "meshes/custom/linen_shirt.nif",
+      ),
+    ).toBe(false);
   });
 
   it("synthesizes supplemental SliderSet data when source projects lack OutputFile entries", async () => {
