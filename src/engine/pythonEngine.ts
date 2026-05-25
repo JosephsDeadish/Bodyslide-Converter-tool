@@ -171,7 +171,6 @@ function createFallbackRun(
     ],
     warnings: [warning],
     libraries: {
-      pynifly: false,
       pyffi: false,
       numpy: false,
       scipy: false,
@@ -348,6 +347,8 @@ export function getRunnerPathCandidates(
 
   candidates.push(
     join(dirnameValue, "..", "python_engine", "runner.py"),
+    join(dirnameValue, "..", "..", "dist-main", "python_engine", "runner.py"),
+    join(dirnameValue, "..", "..", "python_engine", "runner.py"),
     join(cwdValue, "dist-main", "python_engine", "runner.py"),
     join(cwdValue, "python_engine", "runner.py"),
     join(dirnameValue, "python_engine", "runner.py"),

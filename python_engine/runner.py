@@ -211,11 +211,11 @@ def missing_libraries(libraries: dict[str, bool], *names: str) -> list[str]:
 
 
 def has_nif_io_support(libraries: dict[str, bool]) -> bool:
-    return libraries.get("pynifly", False) or libraries.get("pyffi", False)
+    return libraries.get("pyffi", False)
 
 
 def missing_nif_io_support(libraries: dict[str, bool]) -> list[str]:
-    return [] if has_nif_io_support(libraries) else ["pynifly-or-pyffi"]
+    return [] if has_nif_io_support(libraries) else ["pyffi"]
 
 
 def mapping_snapshot(req: dict[str, Any], db: dict[str, Any]) -> dict[str, Any]:
@@ -681,7 +681,6 @@ def process(req: dict[str, Any]) -> dict[str, Any]:
     run_id = req.get("runId") or str(uuid.uuid4())
     db = load_reference_db()
     libraries = {
-        "pynifly": optional_import("pynifly"),
         "pyffi": optional_import("pyffi"),
         "numpy": optional_import("numpy"),
         "scipy": optional_import("scipy"),
@@ -715,7 +714,7 @@ def process(req: dict[str, Any]) -> dict[str, Any]:
     warnings: list[str] = []
     if not has_nif_io_support(libraries):
         warnings.append(
-            "Neither PyNifly nor PyFFI is installed in the active Python environment; full NIF IO fallback mode is active."
+            "PyFFI is not installed in the active Python environment; full NIF IO fallback mode is active."
         )
     if not libraries["numpy"]:
         warnings.append(

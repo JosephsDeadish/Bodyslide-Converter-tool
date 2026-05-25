@@ -277,7 +277,6 @@ describe("python engine runner", () => {
 
     expect(referenceStage?.status).toBe("pass");
     expect(run.libraries).toEqual({
-      pynifly: false,
       pyffi: false,
       numpy: false,
       scipy: false,
@@ -285,7 +284,7 @@ describe("python engine runner", () => {
       pyvista: false,
     });
     expect(run.warnings).toContain(
-      "Neither PyNifly nor PyFFI is installed in the active Python environment; full NIF IO fallback mode is active.",
+      "PyFFI is not installed in the active Python environment; full NIF IO fallback mode is active.",
     );
     expect(
       surfaceStage?.details.some((detail) =>

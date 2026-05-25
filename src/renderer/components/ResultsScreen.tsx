@@ -378,7 +378,7 @@ function SkippedFileItem({ file }: { file: SkippedFile }) {
 function PythonEngineCard({ engine }: { engine: PythonEngineRunSummary }) {
   const libs = engine.libraries;
   const libEntries = [
-    { name: "pynifly", ok: libs.pynifly },
+    { name: "pyffi", ok: libs.pyffi },
     { name: "numpy", ok: libs.numpy },
     { name: "scipy", ok: libs.scipy },
     { name: "trimesh", ok: libs.trimesh },

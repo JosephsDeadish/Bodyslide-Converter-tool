@@ -101,7 +101,6 @@ export type PythonEngineRunSummary = {
   qualityGates: EngineQualityGate[];
   warnings: string[];
   libraries: {
-    pynifly: boolean;
     pyffi: boolean;
     numpy: boolean;
     scipy: boolean;

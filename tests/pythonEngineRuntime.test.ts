@@ -23,6 +23,15 @@ describe("python engine runtime paths", () => {
     );
   });
 
+  it("includes repo-root python_engine lookup for dist CLI runtime", () => {
+    const candidates = getRunnerPathCandidates({
+      dirname: "/app/dist/engine",
+      cwd: "/tmp",
+    });
+
+    expect(candidates).toContain("/app/python_engine/runner.py");
+  });
+
   it("includes app.asar.unpacked path when resourcesPath is provided", () => {
     const candidates = getRunnerPathCandidates({
       dirname: "/tmp/resources/app.asar/dist-main/engine",
@@ -113,7 +122,6 @@ describe("python engine run scoring", () => {
       ],
       warnings: [],
       libraries: {
-        pynifly: true,
         pyffi: true,
         numpy: true,
         scipy: true,
@@ -145,7 +153,6 @@ describe("python engine run scoring", () => {
         },
       ],
       libraries: {
-        pynifly: false,
         pyffi: false,
         numpy: false,
         scipy: false,

@@ -84,7 +84,7 @@ High-risk pairs (cross-topology/physics-partition mismatches) should also define
 python -m pip install -r python_engine/requirements.txt
 ```
 
-`PyNifly`/`PyFFI` (NIF IO), `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
+`PyFFI` (NIF IO), `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
 
 ### Bundle Python dependencies inside the EXE build
 
