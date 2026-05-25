@@ -6,7 +6,8 @@
   "main": "dist-main/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "build:main": "tsc -p tsconfig.main.json && node scripts/write-pkg.mjs",
+    "bundle:python-deps": "node scripts/bundle-python-deps.mjs",
+    "build:main": "tsc -p tsconfig.main.json && node scripts/bundle-python-deps.mjs && node scripts/write-pkg.mjs",
     "build:renderer": "vite build --config vite.renderer.config.ts",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
@@ -22,7 +23,8 @@
     "productName": "SlideSmith",
     "artifactName": "SlideSmith-${version}.${ext}",
     "asarUnpack": [
-      "dist-main/python_engine/**"
+      "dist-main/python_engine/**",
+      "dist-main/python_deps/**"
     ],
     "directories": {
       "output": "release"
