@@ -619,10 +619,11 @@ body {
   display: block;
 }
 
-/* Shared bubble styles */
-.tip-wrap::after {
-  content: attr(data-tip);
-  position: absolute;
+/* Portal tooltip bubble — rendered at document.body, always above scrollbars */
+.tip-bubble {
+  position: fixed;
+  width: 260px;
+  max-width: 260px;
   background: #0a0a18;
   border: 1px solid var(--accent);
   color: var(--text);
@@ -631,41 +632,12 @@ body {
   font-size: 11px;
   line-height: 1.5;
   white-space: normal;
-  max-width: 240px;
-  min-width: 100px;
-  z-index: 9999;
-  opacity: 0;
+  z-index: 99999;
   pointer-events: none;
-  transition: opacity 0.18s;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
   text-align: left;
   font-weight: 400;
-}
-.tip-wrap:hover::after {
-  opacity: 1;
-}
-
-/* top (default) */
-.tip-top::after {
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* right — extends into content area; safe inside the sidebar */
-.tip-right::after {
-  top: 50%;
-  left: calc(100% + 8px);
-  transform: translateY(-50%);
-  bottom: auto;
-}
-
-/* bottom */
-.tip-bottom::after {
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: auto;
+  transition: opacity 0.12s;
 }
 
 /* ── Clear path button ───────────────────────────────────────── */

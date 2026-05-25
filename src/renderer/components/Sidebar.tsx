@@ -42,7 +42,14 @@ const STATUS_LABELS: Record<Status, string> = {
   error: "Error",
 };
 
-/** Body types split by gender family for optgroup rendering */
+/** Tooltip text keyed by packaging tag name */
+const PACKAGING_TOOLTIP: Record<string, string> = {
+  FOMOD:
+    "FOMOD installer detected! SlideSmith preserves the entire FOMOD tree so your mod manager still shows the step-by-step install wizard. No wizards were harmed in this conversion.",
+  MO2: "Mod Organizer 2 metadata found. The converted output keeps a tidy MO2-friendly folder structure. Basically SlideSmith is fluent in MO2 and won't mess up your carefully curated profile.",
+  Vortex:
+    "Vortex packaging signals detected. SlideSmith respects your Vortex lifestyle — the output stays installable via drag-and-drop or the Vortex UI. (MO2 is still better. 🤫 Don't tell anyone.)",
+};
 const FEMALE_BODY_TYPES = [
   "cbbe",
   "3ba",
@@ -225,7 +232,10 @@ export function Sidebar({
             </button>
           </Tooltip>
           {inputPath && (
-            <Tooltip dir="right" text="Clear the selected source folder.">
+            <Tooltip
+              dir="right"
+              text="Nuke it. Pretend this folder never existed. A fresh start — like deleting your browser history, but with fewer regrets."
+            >
               <button
                 type="button"
                 className="btn-clear"
@@ -281,7 +291,10 @@ export function Sidebar({
             </button>
           </Tooltip>
           {outputPath && (
-            <Tooltip dir="right" text="Clear the output folder path.">
+            <Tooltip
+              dir="right"
+              text="Wipe the output path. It auto-fills again the moment you pick a new source, so you can't really mess this up. Probably."
+            >
               <button
                 type="button"
                 className="btn-clear"
@@ -301,7 +314,7 @@ export function Sidebar({
         <div style={{ marginTop: "1rem" }}>
           <Tooltip
             dir="right"
-            text="Select the body type this mod was built for. This is the body you are converting FROM. Always required — auto-detection is shown as a hint only."
+            text="Tell SlideSmith which body this mod was originally built for — the one you're converting FROM. Always required. Auto-detection above is a hint, not gospel. You know what you installed."
           >
             <div className="field-label">
               ♀ Source Body Type{" "}
@@ -314,22 +327,32 @@ export function Sidebar({
           {inputPath && (
             <div className="source-detect-status" style={{ marginTop: "4px" }}>
               {detecting ? (
-                <span className="source-detect-value source-detect-scanning">
-                  Detecting…
-                </span>
+                <Tooltip
+                  dir="right"
+                  text="Scanning your mod folder like a caffeinated archaeologist. Won't take long — probably."
+                >
+                  <span className="source-detect-value source-detect-scanning">
+                    Detecting…
+                  </span>
+                </Tooltip>
               ) : detectedType && detectedType !== "unknown" ? (
                 <Tooltip
                   dir="right"
-                  text={`Hint: auto-detected as ${detectedType.toUpperCase()} with ${confPct}% confidence. Confirm by selecting it below.`}
+                  text={`Hint: auto-detected as ${detectedType.toUpperCase()} with ${confPct}% confidence. Confirm by selecting it below — or override if you know better. (You probably do.)`}
                 >
                   <span className="source-detect-value source-detect-found">
                     Hint: {detectedType.toUpperCase()} — {confPct}% confidence
                   </span>
                 </Tooltip>
               ) : detectedType === "unknown" ? (
-                <span className="source-detect-value source-detect-unknown">
-                  Hint: no body signals detected — select manually
-                </span>
+                <Tooltip
+                  dir="right"
+                  text="SlideSmith couldn't confidently identify a known body type in this folder. No file paths, slider names, or mesh signals matched any supported body. Select the source body manually — you know what you installed. Probably."
+                >
+                  <span className="source-detect-value source-detect-unknown">
+                    Hint: no body signals detected — select manually
+                  </span>
+                </Tooltip>
               ) : null}
             </div>
           )}
@@ -337,9 +360,15 @@ export function Sidebar({
             <div className="detected-packaging-row">
               <div className="detected-packaging-tags">
                 {packagingTags.map((tag) => (
-                  <span key={tag} className="packaging-tag">
-                    {tag}
-                  </span>
+                  <Tooltip
+                    key={tag}
+                    text={
+                      PACKAGING_TOOLTIP[tag] ??
+                      `${tag} packaging detected and preserved in the converted output.`
+                    }
+                  >
+                    <span className="packaging-tag">{tag}</span>
+                  </Tooltip>
                 ))}
               </div>
             </div>
@@ -358,7 +387,7 @@ export function Sidebar({
         <div style={{ marginTop: "1rem" }}>
           <Tooltip
             dir="right"
-            text="The body type you want the converted output to target. Pick wisely — re-converting is totally fine, but why do it twice?"
+            text="The female body type you want the output to target — the one you're converting TO. Pick wisely. Re-converting is totally fine, but why make more work for yourself? (No judgment if you do it anyway.)"
           >
             <div className="field-label">
               ♀ Convert To — Female Target Body{" "}
@@ -415,7 +444,7 @@ export function Sidebar({
             <div style={{ marginTop: "1rem" }}>
               <Tooltip
                 dir="right"
-                text="The body type the male outfits in this mod were built for. This is the male body you are converting FROM."
+                text="Which male body was this mod sculpted for? HIMBO? BodyTalk? SOS? This is the body you're converting FROM — get it wrong and those big himbo shoulders will end up on a SAM rig looking very confused."
               >
                 <div className="field-label">
                   ♂ Male Source Body{" "}
@@ -438,7 +467,7 @@ export function Sidebar({
             <div style={{ marginTop: "1rem" }}>
               <Tooltip
                 dir="right"
-                text="The male body type you want the converted output to target."
+                text="Where do you want those abs to end up? Pick the male body type you're converting TO. SAM for per-actor bodymorph glory, HIMBO for maximum shoulder wingspan, BodyTalk if you want gains — it's your call."
               >
                 <div className="field-label">
                   ♂ Convert To — Male Target Body{" "}
