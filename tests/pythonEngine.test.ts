@@ -391,4 +391,110 @@ describe("python engine runner", () => {
       "Missing explicit adapter profile for high-risk conversion pair cbbe -> uunp.",
     );
   });
+
+  it("resolves reverse adapter profiles when explicit source->target profile is absent", async () => {
+    const tempDir = await makeTempDir();
+    const dbPath = join(tempDir, "body_reference_db.json");
+
+    await writeFile(
+      dbPath,
+      JSON.stringify(
+        {
+          schemaVersion: 3,
+          bodies: {
+            cbbe: {
+              topology: "cbbe",
+              topologyReference: "CBBE SE Curvy",
+              canonicalVertexMap: "cbbe-female-canonical",
+              partitionProfile: "female-default",
+              sliderMappings: { waist: "Waist" },
+              boneMap: { spine: "NPC Spine2", pelvis: "NPC Pelvis" },
+              morphEquivalents: { heavy: "CBBE Curvy" },
+              physicsBones: [],
+              correctiveSmoothingZones: [
+                "armpit-left",
+                "armpit-right",
+                "crotch",
+                "elbow-left",
+                "elbow-right",
+                "knee-left",
+                "knee-right",
+              ],
+            },
+            uunp: {
+              topology: "unp",
+              topologyReference: "UUNP Special",
+              canonicalVertexMap: "unp-female-canonical",
+              partitionProfile: "female-physics",
+              sliderMappings: { waist: "Waist" },
+              boneMap: { spine: "NPC Spine2", pelvis: "NPC Pelvis" },
+              morphEquivalents: { heavy: "UUNP Curvy" },
+              physicsBones: ["NPC L Breast01", "NPC R Breast01"],
+              correctiveSmoothingZones: [
+                "armpit-left",
+                "armpit-right",
+                "crotch",
+                "elbow-left",
+                "elbow-right",
+                "knee-left",
+                "knee-right",
+              ],
+              physicsConfig: {
+                cbpcCompatible: true,
+                hdtSmpCompatible: true,
+                softbodySupported: true,
+                physicsLevel: "tbbp",
+                boneNamingConvention: "cbbe-standard",
+              },
+            },
+          },
+          adapters: [
+            {
+              source: "uunp",
+              target: "cbbe",
+              profile: "female-physics-upgrade",
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+
+    const run = await runRunner(
+      {
+        runId: "adapter-reverse-test",
+        inputPath: tempDir,
+        outputPath: tempDir,
+        sourceBodyType: "cbbe",
+        targetBodyType: "uunp",
+        files: [
+          {
+            relativePath: "meshes/armor/test_1.nif",
+            extension: ".nif",
+            preview: "mesh payload",
+          },
+          {
+            relativePath: "CalienteTools/BodySlide/SliderSets/test.osp",
+            extension: ".osp",
+            preview: "<SliderSet></SliderSet>",
+          },
+        ],
+      },
+      { dbPath, isolateSitePackages: true },
+    );
+
+    const referenceStage = run.stages.find(
+      (stage) => stage.id === "reference-body",
+    );
+
+    expect(referenceStage?.status).toBe("pass");
+    expect(referenceStage?.summary).toContain(
+      "using adapter profile 'female-physics-downgrade'",
+    );
+    expect(referenceStage?.details).toContain(
+      "Adapter profile source: reverse-explicit",
+    );
+  });
 });

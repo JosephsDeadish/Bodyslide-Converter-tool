@@ -114,15 +114,66 @@ def paired_mappings(
     return pairs
 
 
-def adapter_profile(db: dict[str, Any], source: Any, target: Any) -> str:
-    for adapter in db.get("adapters", []):
-        if not isinstance(adapter, dict):
-            continue
-        if adapter.get("source") == source and adapter.get("target") == target:
+def normalize_body_key(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip().lower()
+
+
+def invert_adapter_profile_direction(profile: str) -> str:
+    normalized = profile.strip()
+    if "upgrade" in normalized and "downgrade" not in normalized:
+        return normalized.replace("upgrade", "downgrade")
+    if "downgrade" in normalized and "upgrade" not in normalized:
+        return normalized.replace("downgrade", "upgrade")
+    return normalized
+
+
+def adapter_profile(db: dict[str, Any], source: Any, target: Any) -> tuple[str, str]:
+    adapters = db.get("adapters", [])
+    if not isinstance(adapters, list):
+        return ("default", "default")
+
+    source_key = normalize_body_key(source)
+    target_key = normalize_body_key(target)
+    if not source_key or not target_key:
+        return ("default", "default")
+
+    def find_profile(
+        expected_source: str, expected_target: str, reverse: bool, source_label: str
+    ) -> tuple[str, str] | None:
+        for adapter in adapters:
+            if not isinstance(adapter, dict):
+                continue
+            adapter_source = normalize_body_key(adapter.get("source"))
+            adapter_target = normalize_body_key(adapter.get("target"))
             profile = adapter.get("profile")
-            if isinstance(profile, str):
-                return profile
-    return "default"
+            if (
+                adapter_source != expected_source
+                or adapter_target != expected_target
+                or not is_non_empty_string(profile)
+            ):
+                continue
+            resolved_profile = str(profile).strip()
+            if reverse:
+                resolved_profile = invert_adapter_profile_direction(resolved_profile)
+            return (resolved_profile, source_label)
+        return None
+
+    resolution_order = [
+        (source_key, target_key, False, "explicit"),
+        (source_key, "*", False, "source-wildcard"),
+        ("*", target_key, False, "target-wildcard"),
+        ("*", "*", False, "global-wildcard"),
+        (target_key, source_key, True, "reverse-explicit"),
+        (target_key, "*", True, "reverse-source-wildcard"),
+        ("*", source_key, True, "reverse-target-wildcard"),
+    ]
+    for expected_source, expected_target, reverse, source_label in resolution_order:
+        found = find_profile(expected_source, expected_target, reverse, source_label)
+        if found is not None:
+            return found
+    return ("default", "default")
 
 
 def physics_enabled(metadata: Any) -> bool:
@@ -230,6 +281,7 @@ def mapping_snapshot(req: dict[str, Any], db: dict[str, Any]) -> dict[str, Any]:
     target_bones = to_string_map(target_meta.get("boneMap"))
     source_morphs = to_string_map(source_meta.get("morphEquivalents"))
     target_morphs = to_string_map(target_meta.get("morphEquivalents"))
+    resolved_adapter_profile, adapter_profile_source = adapter_profile(db, source, target)
     return {
         "source": source,
         "target": target,
@@ -244,7 +296,8 @@ def mapping_snapshot(req: dict[str, Any], db: dict[str, Any]) -> dict[str, Any]:
         "sliderPairs": paired_mappings(source_sliders, target_sliders),
         "bonePairs": paired_mappings(source_bones, target_bones),
         "morphPairs": paired_mappings(source_morphs, target_morphs),
-        "adapterProfile": adapter_profile(db, source, target),
+        "adapterProfile": resolved_adapter_profile,
+        "adapterProfileSource": adapter_profile_source,
     }
 
 
@@ -304,6 +357,7 @@ def stage_status(
                 [
                     f"Source topology reference: {topology_source}",
                     f"Target topology reference: {topology_target}",
+                    f"Adapter profile source: {mappings.get('adapterProfileSource', 'default')}",
                     f"Source canonical vertex map: {source_map}",
                     f"Target canonical vertex map: {target_map}",
                     f"Slider mappings: {len(mappings['sliderPairs'])} shared canonical keys",

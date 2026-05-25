@@ -2372,22 +2372,26 @@ async function synthesizeMissingOutfitSliderDataMeshes(
   const knownOutputPaths = new Set(
     convertedFiles.map((file) => file.outputPath.toLowerCase()),
   );
-  const runtimeNifGroups = new Set(
-    convertedFiles
-      .filter(
-        (file) =>
-          file.kind === "mesh" &&
-          file.outputPath.toLowerCase().endsWith(".nif") &&
-          isArmorOrClothingNif(file.outputPath),
-      )
-      .map((file) =>
-        file.outputPath
-          .replace(/\\/g, "/")
-          .replace(/_0\.nif$/i, "")
-          .replace(/_1\.nif$/i, "")
-          .toLowerCase(),
-      ),
-  );
+  const runtimeNifGroups = new Map<string, Set<"_0" | "_1">>();
+  for (const file of convertedFiles) {
+    if (
+      file.kind !== "mesh" ||
+      !file.outputPath.toLowerCase().endsWith(".nif") ||
+      !isArmorOrClothingNif(file.outputPath)
+    ) {
+      continue;
+    }
+    const normalized = file.outputPath.replace(/\\/g, "/");
+    const match = normalized.match(/^(.*?)(?:(_0|_1))?\.nif$/i);
+    if (!match) continue;
+    const basePath = (match[1] ?? normalized.replace(/\.nif$/i, "")).toLowerCase();
+    const weightToken = (match[2]?.toLowerCase() ?? "") as "_0" | "_1" | "";
+    const weights = runtimeNifGroups.get(basePath) ?? new Set<"_0" | "_1">();
+    if (weightToken === "_0" || weightToken === "_1") {
+      weights.add(weightToken);
+    }
+    runtimeNifGroups.set(basePath, weights);
+  }
   const byLowerPath = new Map(
     convertedFiles.map(
       (file) => [file.outputPath.toLowerCase(), file] as const,
@@ -2395,7 +2399,10 @@ async function synthesizeMissingOutfitSliderDataMeshes(
   );
   let synthesizedCount = 0;
 
-  for (const groupBasePath of runtimeNifGroups) {
+  for (const [groupBasePath, availableWeights] of runtimeNifGroups) {
+    if (availableWeights.size === 0) {
+      continue;
+    }
     for (const weight of ["_0", "_1"] as const) {
       const otherWeight = weight === "_0" ? "_1" : "_0";
       for (const extension of [".tri", ".osd"] as const) {
@@ -2407,7 +2414,12 @@ async function synthesizeMissingOutfitSliderDataMeshes(
         // Only copy TRI→TRI or OSD→OSD from the other weight variant.
         // NIF files must never be used as sources for TRI/OSD synthesis
         // because they use incompatible binary formats.
-        const sourceCandidates = [`${groupBasePath}${otherWeight}${extension}`];
+        const sourceCandidates = [
+          `${groupBasePath}${otherWeight}${extension}`,
+          ...(availableWeights.has(weight)
+            ? [`${groupBasePath}${weight}${extension}`]
+            : []),
+        ];
         const sourcePath =
           sourceCandidates.find((candidate) =>
             knownOutputPaths.has(candidate),
@@ -2492,19 +2504,31 @@ function rewriteRelativePath(
  * SourceFile always matches the stripped ShapeData location.
  */
 function normalizeBodySlideSourceFileRoots(content: string): string {
+  function normalizeSourceFileValue(value: string): string {
+    const normalized = value
+      .replace(/\\/g, "/")
+      .replace(/^\.?\//, "")
+      .replace(/\/{2,}/g, "/");
+    const strippedShapeDataPrefix = normalized.replace(
+      /^(?:(?:calientetools\/)?bodyslide\/)?shapedata\//i,
+      "",
+    );
+    const segments = strippedShapeDataPrefix.split("/").filter(Boolean);
+    if (
+      segments.length > 1 &&
+      KNOWN_OUTPUT_ALIASES.has((segments[0] ?? "").toLowerCase())
+    ) {
+      return segments.slice(1).join("/");
+    }
+    return segments.join("/") || strippedShapeDataPrefix;
+  }
+
   return content.replace(
     /<SourceFile>\s*([^<]*?)\s*<\/SourceFile>/gi,
     (_match, rawValue: string) => {
       const value = rawValue.trim();
       if (!value) return _match;
-      const segments = value.replace(/\\/g, "/").split("/").filter(Boolean);
-      if (
-        segments.length > 1 &&
-        KNOWN_OUTPUT_ALIASES.has((segments[0] ?? "").toLowerCase())
-      ) {
-        return `<SourceFile>${segments.slice(1).join("/")}</SourceFile>`;
-      }
-      return `<SourceFile>${value}</SourceFile>`;
+      return `<SourceFile>${normalizeSourceFileValue(value)}</SourceFile>`;
     },
   );
 }

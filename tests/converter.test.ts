@@ -2423,6 +2423,49 @@ describe("convertMod", () => {
     expect(triOsdFiles).toHaveLength(0);
   });
 
+  it("avoids malformed TRI/OSD naming for non-weighted outfit meshes", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_vanilla.nif"),
+      "mesh payload",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_vanilla.tri"),
+      "tri morph payload",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some((file) => file.outputPath.endsWith(".tri")),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some((file) => file.outputPath.includes(".nif_0.tri")),
+    ).toBe(false);
+    expect(
+      result.convertedFiles.some((file) => file.outputPath.includes(".nif_1.tri")),
+    ).toBe(false);
+    expect(
+      result.convertedFiles.some((file) => file.outputPath.includes(".nif_0.osd")),
+    ).toBe(false);
+    expect(
+      result.convertedFiles.some((file) => file.outputPath.includes(".nif_1.osd")),
+    ).toBe(false);
+  });
+
   it("converts vanilla-detected armor to target body and keeps per-armor ShapeData folders", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -3695,6 +3738,84 @@ describe("convertMod", () => {
     expect(ospContent).toMatch(
       /<SourceFile>Armor\/3BA_cuirass_0\.nif<\/SourceFile>/i,
     );
+  });
+
+  it("normalizes ShapeData-rooted <SourceFile> paths to BodySlide-relative paths", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+      ),
+      { recursive: true },
+    );
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+        "cbbe_cuirass_0.nif",
+      ),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_cuirass.osp",
+      ),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Cuirass">',
+        "    <OutputPath>meshes/armor/</OutputPath>",
+        "    <OutputFile>cbbe_cuirass_0.nif</OutputFile>",
+        "    <SourceFile>CalienteTools/BodySlide/ShapeData/CBBE/Armor/cbbe_cuirass_0.nif</SourceFile>",
+        '    <Groups><Group name="CBBE Outfits"/></Groups>',
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const ospEntry = result.convertedFiles.find(
+      (f) => f.outputPath.endsWith(".osp") && f.action === "rewritten",
+    );
+    expect(ospEntry).toBeDefined();
+
+    const ospContent = await readFile(
+      join(outputDir, ospEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(ospContent).toContain("<SourceFile>Armor/3BA_cuirass_0.nif</SourceFile>");
+    expect(ospContent).not.toContain(
+      "<SourceFile>CalienteTools/BodySlide/ShapeData/",
+    );
+    expect(ospContent).not.toContain("<SourceFile>3BA/Armor/");
   });
 
   it("converts CBBE mods to COCO and rewrites body aliases correctly", async () => {
