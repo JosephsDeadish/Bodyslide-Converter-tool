@@ -217,6 +217,8 @@ describe("python dependency target path", () => {
 
     expect(first).toBe(second);
     expect(first).not.toBe(different);
-    expect(first.startsWith("/home/tester/.slidesmith/python-deps/")).toBe(true);
+    expect(first.startsWith("/home/tester/.slidesmith/python-deps/")).toBe(
+      true,
+    );
   });
 });
