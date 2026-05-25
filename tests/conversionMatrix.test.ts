@@ -2,11 +2,15 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { listBodyTypeOptions } from "../src/bodyTypes.js";
 import { BODY_TYPE_INFO } from "../src/bodyTypeInfo.js";
+import { listBodyTypeOptions } from "../src/bodyTypes.js";
 import { convertMod } from "../src/converter.js";
 import { scanModFiles } from "../src/scanner.js";
-import { BODY_TYPES, type BodyType, type DetectionResult } from "../src/types.js";
+import {
+  BODY_TYPES,
+  type BodyType,
+  type DetectionResult,
+} from "../src/types.js";
 
 const tempDirs: string[] = [];
 
@@ -17,10 +21,9 @@ async function makeTempDir(): Promise<string> {
 }
 
 function makeDetection(bodyType: BodyType): DetectionResult {
-  const scores = Object.fromEntries(BODY_TYPES.map((type) => [type, 0])) as Record<
-    BodyType,
-    number
-  >;
+  const scores = Object.fromEntries(
+    BODY_TYPES.map((type) => [type, 0]),
+  ) as Record<BodyType, number>;
   scores[bodyType] = 1;
 
   return {
@@ -70,9 +73,12 @@ describe("conversion matrix coverage", () => {
     for (const source of BODY_TYPES) {
       const inputDir = await makeTempDir();
       await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
-      await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"), {
-        recursive: true,
-      });
+      await mkdir(
+        join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"),
+        {
+          recursive: true,
+        },
+      );
 
       await writeFile(
         join(inputDir, "meshes", "armor", `${source}_outfit_0.nif`),
@@ -96,7 +102,13 @@ describe("conversion matrix coverage", () => {
 
       for (const target of BODY_TYPES) {
         const outputDir = await makeTempDir();
-        const result = await convertMod(inputDir, outputDir, files, detection, target);
+        const result = await convertMod(
+          inputDir,
+          outputDir,
+          files,
+          detection,
+          target,
+        );
         const targetAlias = result.preferredOutputAlias;
 
         convertedPairs.push(`${source}->${target}`);
@@ -105,7 +117,9 @@ describe("conversion matrix coverage", () => {
         expect(result.convertedFiles.length).toBeGreaterThan(0);
         expect(targetAlias.length).toBeGreaterThan(0);
         expect(
-          result.convertedFiles.some((file) => file.outputPath.includes(targetAlias)),
+          result.convertedFiles.some((file) =>
+            file.outputPath.includes(targetAlias),
+          ),
         ).toBe(true);
 
         const rewrittenXmlPath = join(

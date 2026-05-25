@@ -10,8 +10,8 @@ import {
   ipcMain,
   shell,
 } from "electron";
-import { listBodyTypeOptions } from "./bodyTypes.js";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
+import { listBodyTypeOptions } from "./bodyTypes.js";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
 import { runPythonEngine } from "./engine/pythonEngine.js";
