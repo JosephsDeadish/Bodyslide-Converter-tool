@@ -105,6 +105,7 @@ const SIGNALS = {
         [/tbd[_ -]?3bbb/, 2.3],
         [/tbd[_ -]?se/, 2.2],
         [/tbd[_ -]?physics/, 2.2],
+        [/tbd[_ -]?softbody/, 2.4],
         [/tbd body/, 2],
         [/maars/, 1.5],
         // TBD uses same breast-butt bones as CBBE but project files are named tbd
@@ -178,6 +179,7 @@ const SIGNALS = {
         [/uunp[_ -]?hdt/, 2.4],
         [/uunp[_ -]?bodyslide/, 2.3],
         [/uunp[_ -]?(bbp|tbbp)/, 2.3],
+        [/uunp[_ -]?softbody/, 2.4],
         [/\bube\b/, 2.4],
         [/ube[_ -]?2(\.0)?/, 2.8],
         [/unified body enhancer/, 2.8],
