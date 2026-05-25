@@ -95,6 +95,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 ## Notes
 
 - Detection is heuristic-based and inspects filenames plus file previews.
+- Scanner preview reads are now extension-filtered and streamed from file starts (`.txt/.xml/.osp/.ini/.json` up to 4 KB, `.nif/.tri/.osd` up to 512 B), which improves stability and responsiveness on very large armor/clothing mod trees.
 - Native conversion currently supports same-body output, same-gender cross-family adaptation, vanilla compatibility adaptation, and cross-gender outfit adaptation. Named compatibility paths include CBBE ↔ 3BA ↔ TBD, UNP ↔ UUNP ↔ BHUNP ↔ 7Base, and HIMBO ↔ SAM ↔ BodyTalk ↔ SOS.
 - Generated output file names are normalized to canonical target body aliases (for example `3BA`, `BHUNP`, `UUNP`, `HIMBO`, and `SAM`) to make BodySlide outputs easier to identify.
 - Cross-gender adaptation also rewrites common gendered asset markers such as `femalebody`/`malebody` and first-person hand paths so generated outputs line up with the selected target gender.

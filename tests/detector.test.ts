@@ -544,6 +544,25 @@ describe("scanModFiles", () => {
     expect(names.some((n) => n.includes("nif"))).toBe(true);
   });
 
+  it("caps preview size by extension to reduce scan memory pressure", async () => {
+    const dir = await makeTempDir();
+    await mkdir(join(dir, "meshes"), { recursive: true });
+    await mkdir(join(dir, "configs"), { recursive: true });
+    await writeFile(join(dir, "meshes", "body_0.nif"), Buffer.alloc(2048));
+    await writeFile(
+      join(dir, "configs", "cbpc.ini"),
+      "[CBPC]\nActor=Belly",
+      "utf8",
+    );
+
+    const files = await scanModFiles(dir);
+    const meshFile = files.find((f) => f.relativePath.endsWith("body_0.nif"));
+    const configFile = files.find((f) => f.relativePath.endsWith("cbpc.ini"));
+
+    expect(meshFile?.preview.length).toBeLessThanOrEqual(512);
+    expect(configFile?.preview.includes("cbpc")).toBe(true);
+  });
+
   it("gracefully skips unreadable subdirectories without throwing", async () => {
     const dir = await makeTempDir();
     await mkdir(join(dir, "meshes", "armor"), { recursive: true });

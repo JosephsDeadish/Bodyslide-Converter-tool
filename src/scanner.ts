@@ -1,9 +1,20 @@
 import type { Dirent } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { open, readdir } from "node:fs/promises";
 import { basename, extname, join, relative } from "node:path";
 import type { ScannedFile } from "./types.js";
 
 const TEXT_PREVIEW_BYTES = 4096;
+const BINARY_PREVIEW_BYTES = 512;
+const PREVIEW_BYTE_LIMITS = new Map<string, number>([
+  [".txt", TEXT_PREVIEW_BYTES],
+  [".xml", TEXT_PREVIEW_BYTES],
+  [".osp", TEXT_PREVIEW_BYTES],
+  [".ini", TEXT_PREVIEW_BYTES],
+  [".json", TEXT_PREVIEW_BYTES],
+  [".nif", BINARY_PREVIEW_BYTES],
+  [".tri", BINARY_PREVIEW_BYTES],
+  [".osd", BINARY_PREVIEW_BYTES],
+]);
 
 // Maximum number of concurrent readdir calls during BFS walk.
 // Keeps the OS file-descriptor count under control on large mod trees.
@@ -114,13 +125,21 @@ async function walk(rootDir: string): Promise<string[]> {
   return result;
 }
 
-async function readPreview(path: string): Promise<string> {
+async function readPreview(path: string, extension: string): Promise<string> {
+  const previewBytes = PREVIEW_BYTE_LIMITS.get(extension);
+  if (previewBytes === undefined) {
+    return "";
+  }
+
   try {
-    const buffer = await readFile(path);
-    return buffer
-      .subarray(0, TEXT_PREVIEW_BYTES)
-      .toString("latin1")
-      .toLowerCase();
+    const handle = await open(path, "r");
+    try {
+      const buffer = Buffer.allocUnsafe(previewBytes);
+      const { bytesRead } = await handle.read(buffer, 0, previewBytes, 0);
+      return buffer.subarray(0, bytesRead).toString("latin1").toLowerCase();
+    } finally {
+      await handle.close();
+    }
   } catch {
     return "";
   }
@@ -130,13 +149,16 @@ export async function scanModFiles(inputDir: string): Promise<ScannedFile[]> {
   const files = await walk(inputDir);
   const scanned = await asyncPool(
     READ_CONCURRENCY,
-    files.map((file) => async () => ({
-      absolutePath: file,
-      relativePath: relative(inputDir, file),
-      extension: extname(file).toLowerCase(),
-      basename: basename(file).toLowerCase(),
-      preview: await readPreview(file),
-    })),
+    files.map((file) => async () => {
+      const extension = extname(file).toLowerCase();
+      return {
+        absolutePath: file,
+        relativePath: relative(inputDir, file),
+        extension,
+        basename: basename(file).toLowerCase(),
+        preview: await readPreview(file, extension),
+      };
+    }),
   );
   return scanned;
 }
