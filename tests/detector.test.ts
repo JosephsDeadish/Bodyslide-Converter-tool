@@ -314,9 +314,23 @@ describe("detectBodyType", () => {
         "bhunp softbody",
       ),
     ]);
+    const tbdDetection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/ShapeData/TBD_Softbody/TBD_Body_0.nif",
+        "tbd softbody touched by dibella",
+      ),
+    ]);
+    const uunpDetection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/SliderSets/UUNP_Special_Softbody.osp",
+        "uunp special softbody",
+      ),
+    ]);
 
     expect(threeBaDetection.bodyType).toBe("3ba");
     expect(bhunpDetection.bodyType).toBe("bhunp");
+    expect(tbdDetection.bodyType).toBe("tbd");
+    expect(uunpDetection.bodyType).toBe("uunp");
   });
 
   it("classifies .osd files as mesh evidence", () => {

@@ -105,6 +105,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Physics config auditing now requires full target-bone marker coverage before passing the check, helping catch partial/incomplete config remaps.
 - Physics-bone remapping now includes semantic cross-body matching (breast/butt/belly/genitals chains with side/level handling) before fallback collapse, improving compatibility across physics-capable body-type pairs.
 - Detection and conversion metadata now includes UBE alias coverage under UUNP-family support and softbody physics-profile aliases for 3BA/BHUNP-style projects.
+- Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
 - The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact bundle (`slidesmith-release`) for workflow-run approval and testing.
