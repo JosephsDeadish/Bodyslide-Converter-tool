@@ -18,6 +18,7 @@ import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
 import { runPythonEngine } from "./engine/pythonEngine.js";
 import { createConversionPlan } from "./planner.js";
+import { generateRepairArtifacts } from "./repairArtifacts.js";
 import { scanModFiles } from "./scanner.js";
 import type {
   BodyType,
@@ -315,13 +316,27 @@ async function executeConversion(
 
   const reportsDir = join(output, "_SlideSmith");
   await mkdir(reportsDir, { recursive: true });
+  const repairArtifacts = await generateRepairArtifacts({
+    reportsDir,
+    sourceBodyType: pythonSourceType,
+    targetBodyType: target,
+    pythonSummary,
+  });
+  if (repairArtifacts.length > 0) {
+    result.warnings = [
+      ...new Set([
+        ...result.warnings,
+        `Generated ${repairArtifacts.length} repair helper file(s) in _SlideSmith/repairs for missing assets/metadata follow-up.`,
+      ]),
+    ];
+  }
 
   const reportPath = join(reportsDir, "conversion-report.json");
   const summaryPath = join(reportsDir, "conversion-summary.txt");
 
   await writeFile(
     reportPath,
-    `${JSON.stringify({ detection, plan, result }, null, 2)}\n`,
+    `${JSON.stringify({ detection, plan, result, repairArtifacts }, null, 2)}\n`,
     "utf8",
   );
 
@@ -392,6 +407,15 @@ async function executeConversion(
       `WARNINGS`,
       `========`,
       ...result.warnings.map((w, i) => `${i + 1}. ${w}`),
+      ``,
+      `REPAIR ARTIFACTS`,
+      `================`,
+      ...(repairArtifacts.length > 0
+        ? repairArtifacts.map(
+            (artifact, i) =>
+              `${i + 1}. ${artifact.relativePath}\n   ${artifact.description}`,
+          )
+        : ["No repair artifacts were required for this run."]),
     ].join("\n"),
     "utf8",
   );
