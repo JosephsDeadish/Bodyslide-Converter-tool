@@ -12,6 +12,7 @@ import type {
 
 const TEXT_EXTENSIONS = new Set([".xml", ".osp", ".txt", ".json", ".ini"]);
 const MESH_EXTENSIONS = new Set([".nif", ".tri", ".osd"]);
+const UTF8_REPLACEMENT_CHAR_RE = /\uFFFD/g;
 
 // ── MO2 / Skyrim Data canonical root prefixes ──────────────────────────────
 // Any path already rooted under one of these is left exactly where it is.
@@ -2191,6 +2192,26 @@ function rewriteRelativePath(
     .join("/");
 }
 
+function rewriteBodyMetadataContent(
+  content: string,
+  source: BodyType,
+  target: BodyType,
+): string {
+  return replaceAliases(
+    replacePhysicsReferences(rewriteGenderMarkers(content, source, target), source, target),
+    source,
+    target,
+  );
+}
+
+function isLikelyUtf8Text(buffer: Buffer): boolean {
+  if (buffer.length === 0) return true;
+  if (buffer.includes(0)) return false;
+  const decoded = buffer.toString("utf8");
+  const replacementCount = (decoded.match(UTF8_REPLACEMENT_CHAR_RE) ?? []).length;
+  return replacementCount <= Math.max(3, Math.floor(decoded.length * 0.01));
+}
+
 function getConversionPath(
   source: BodyType,
   target: BodyType,
@@ -2650,15 +2671,7 @@ export async function convertMod(
 
       const content = await readFile(file.absolutePath, "utf8");
       const nextContent = ensureTargetPhysicsBonesPresent(
-        replaceAliases(
-          replacePhysicsReferences(
-            rewriteGenderMarkers(content, sourceBodyType, targetBodyType),
-            sourceBodyType,
-            targetBodyType,
-          ),
-          sourceBodyType,
-          targetBodyType,
-        ),
+        rewriteBodyMetadataContent(content, sourceBodyType, targetBodyType),
         rewrittenRelativePath,
         targetBodyType,
       );
@@ -2667,6 +2680,35 @@ export async function convertMod(
         sourcePath: file.relativePath,
         outputPath: rewrittenRelativePath,
         kind: "text",
+        action: nextContent === content ? "copied" : "rewritten",
+      });
+      continue;
+    }
+
+    if (file.extension === ".osd") {
+      const rawContent = await readFile(file.absolutePath);
+      if (!isLikelyUtf8Text(rawContent)) {
+        await copyFile(file.absolutePath, outputPath);
+        convertedFiles.push({
+          sourcePath: file.relativePath,
+          outputPath: rewrittenRelativePath,
+          kind: "mesh",
+          action: "copied",
+        });
+        continue;
+      }
+
+      const content = rawContent.toString("utf8");
+      const nextContent = rewriteBodyMetadataContent(
+        content,
+        sourceBodyType,
+        targetBodyType,
+      );
+      await writeFile(outputPath, nextContent, "utf8");
+      convertedFiles.push({
+        sourcePath: file.relativePath,
+        outputPath: rewrittenRelativePath,
+        kind: "mesh",
         action: nextContent === content ? "copied" : "rewritten",
       });
       continue;

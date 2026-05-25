@@ -1049,6 +1049,52 @@ describe("convertMod", () => {
     expect(osdFile?.kind).toBe("mesh");
   });
 
+  it("rewrites text-based OSD payload aliases during conversion", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_cuirass_0.osd"),
+      "CBBE Physics body\ncbbe smp\nNPC LBreastRoot=0.4\nNPC BellyRoot=0.2",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    await convertMod(inputDir, outputDir, files, detection, "ube");
+
+    const rewritten = await readFile(
+      join(outputDir, "meshes", "armor", "UBE_cuirass_0.osd"),
+      "utf8",
+    );
+    expect(rewritten).toContain("UBE");
+    expect(rewritten).not.toContain("CBBE");
+    expect(rewritten).toContain("NPC L Breast01=0.4");
+    expect(rewritten).toContain("NPC Belly=0.2");
+  });
+
+  it("keeps binary OSD payloads untouched", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    const binaryPayload = Buffer.from([0x00, 0xff, 0x13, 0x88, 0x00, 0x04]);
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_cuirass_0.osd"),
+      binaryPayload,
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    await convertMod(inputDir, outputDir, files, detection, "ube");
+
+    const copied = await readFile(
+      join(outputDir, "meshes", "armor", "UBE_cuirass_0.osd"),
+    );
+    expect(copied.equals(binaryPayload)).toBe(true);
+  });
+
   it("synthesizes missing _1 OSD weight file when only _0 exists", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
