@@ -10,6 +10,7 @@ import {
   ipcMain,
   shell,
 } from "electron";
+import { listBodyTypeOptions } from "./bodyTypes.js";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
@@ -26,7 +27,6 @@ import type {
   EngineStageReport,
   PythonEngineRunSummary,
 } from "./types.js";
-import { BODY_TYPES } from "./types.js";
 
 const PATREON_SUPPORT_URL = "https://www.patreon.com/cw/DeadOnTheInside";
 const ICON_CANDIDATES = ["build/icon.ico", "build/icon.icns", "build/icon.png"];
@@ -128,12 +128,7 @@ ipcMain.handle("dialog:openDirectory", async (event: IpcMainInvokeEvent) => {
   return canceled ? null : (filePaths[0] ?? null);
 });
 
-ipcMain.handle("get:bodyTypes", () =>
-  BODY_TYPES.map((bt) => ({
-    value: bt,
-    label: BODY_TYPE_INFO[bt].displayName,
-  })),
-);
+ipcMain.handle("get:bodyTypes", () => listBodyTypeOptions());
 
 ipcMain.handle(
   "scan:detect",
