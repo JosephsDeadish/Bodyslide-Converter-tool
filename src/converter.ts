@@ -1270,7 +1270,8 @@ async function synthesizeMissingSliderSetProject(
     (f) =>
       f.kind === "text" &&
       (f.outputPath.endsWith(".osp") ||
-        (f.outputPath.endsWith(".xml") && /\/slidersets\//i.test(f.outputPath))),
+        (f.outputPath.endsWith(".xml") &&
+          /\/slidersets\//i.test(f.outputPath))),
   );
 
   const meshGroups = collectSliderSetMeshGroups(convertedFiles);
@@ -1290,7 +1291,9 @@ async function synthesizeMissingSliderSetProject(
     const highFile = basename(group.highWeightPath ?? "").toLowerCase();
     if (!lowFile && !highFile) return false;
     if (projectOutputFiles.size === 0) return true;
-    return !projectOutputFiles.has(lowFile) && !projectOutputFiles.has(highFile);
+    return (
+      !projectOutputFiles.has(lowFile) && !projectOutputFiles.has(highFile)
+    );
   });
   if (uncoveredMeshGroups.length === 0) return 0;
 

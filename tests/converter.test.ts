@@ -363,9 +363,10 @@ describe("convertMod", () => {
     expect(rewrittenMetadata).toContain("HIMBO");
 
     expect(
-      result.convertedFiles.some((file) =>
-        file.outputPath.toLowerCase().includes("cbbe_cuirass_1.nif") ||
-        file.outputPath.toLowerCase().includes("himbo_cuirass_1.nif"),
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.toLowerCase().includes("cbbe_cuirass_1.nif") ||
+          file.outputPath.toLowerCase().includes("himbo_cuirass_1.nif"),
       ),
     ).toBe(true);
 
@@ -2335,7 +2336,7 @@ describe("convertMod", () => {
       "caliente cbbe",
     );
     await writeFile(
-      join(inputDir, "meshes", "weapons", "cbbe_sword_0.nif"),
+      join(inputDir, "meshes", "weapons", "cbbe_sword.nif"),
       "weapon mesh",
     );
 
@@ -2354,7 +2355,7 @@ describe("convertMod", () => {
     );
     expect(preservedWeapon).toBeDefined();
     expect(preservedWeapon?.outputPath.toLowerCase()).toContain(
-      "meshes/weapons/cbbe_sword_0.nif",
+      "meshes/weapons/cbbe_sword.nif",
     );
 
     expect(
@@ -2388,7 +2389,7 @@ describe("convertMod", () => {
         '<?xml version="1.0" encoding="utf-8"?>',
         "<SliderSetInfo>",
         '  <SliderSet name="CBBE Incomplete">',
-        "    <Groups><Group name=\"CBBE Outfits\"/></Groups>",
+        '    <Groups><Group name="CBBE Outfits"/></Groups>',
         "  </SliderSet>",
         "</SliderSetInfo>",
       ].join("\n"),
@@ -2418,6 +2419,8 @@ describe("convertMod", () => {
       "utf8",
     );
     expect(sliderSetContent).toContain('<SliderSet name="3BA Plated">');
-    expect(sliderSetContent).toContain("<OutputFile>3BA_plated_1.nif</OutputFile>");
+    expect(sliderSetContent).toContain(
+      "<OutputFile>3BA_plated_1.nif</OutputFile>",
+    );
   });
 });
