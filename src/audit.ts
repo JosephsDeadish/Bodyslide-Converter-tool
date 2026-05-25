@@ -158,10 +158,14 @@ function parseSliderSetBuildEntries(file: ScannedFile): SliderSetBuildEntry[] {
     const block = blockMatch[0] ?? "";
     if (!block) continue;
 
-    const sliderSetName = block.match(SLIDERSET_NAME_RE)?.[1]?.trim() ?? "Unnamed";
-    const outputPathRaw = block.match(SLIDERSET_OUTPUTPATH_RE)?.[1]?.trim() ?? "";
-    const outputFileRaw = block.match(SLIDERSET_OUTPUTFILE_RE)?.[1]?.trim() ?? "";
-    const sourceFileRaw = block.match(SLIDERSET_SOURCEFILE_RE)?.[1]?.trim() ?? "";
+    const sliderSetName =
+      block.match(SLIDERSET_NAME_RE)?.[1]?.trim() ?? "Unnamed";
+    const outputPathRaw =
+      block.match(SLIDERSET_OUTPUTPATH_RE)?.[1]?.trim() ?? "";
+    const outputFileRaw =
+      block.match(SLIDERSET_OUTPUTFILE_RE)?.[1]?.trim() ?? "";
+    const sourceFileRaw =
+      block.match(SLIDERSET_SOURCEFILE_RE)?.[1]?.trim() ?? "";
     const outputPathLooksLikeMesh = /\.nif$/i.test(outputPathRaw);
 
     const outputMeshPath = outputFileRaw
@@ -539,7 +543,9 @@ function buildSliderGroupCheck(
   );
 }
 
-function buildBodySlideBuildCheck(outputFiles: ScannedFile[]): ConversionAuditCheck {
+function buildBodySlideBuildCheck(
+  outputFiles: ScannedFile[],
+): ConversionAuditCheck {
   const projects = outputFiles.filter(isBodySlideProject);
   if (projects.length === 0) {
     return createCheck(
@@ -572,7 +578,8 @@ function buildBodySlideBuildCheck(outputFiles: ScannedFile[]): ConversionAuditCh
   const missingSourceFile = entries.filter((entry) => !entry.hasSourceFile);
   const missingOutputMeshes = entries.filter(
     (entry) =>
-      entry.outputMeshPath.length > 0 && !runtimeMeshPaths.has(entry.outputMeshPath),
+      entry.outputMeshPath.length > 0 &&
+      !runtimeMeshPaths.has(entry.outputMeshPath),
   );
   const invalidSourcePaths = entries.filter(
     (entry) =>
@@ -612,27 +619,44 @@ function buildBodySlideBuildCheck(outputFiles: ScannedFile[]): ConversionAuditCh
         : []),
       ...(missingOutputPath.length > 0
         ? [
-            `Missing <OutputPath>: ${missingOutputPath.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+            `Missing <OutputPath>: ${missingOutputPath
+              .slice(0, 4)
+              .map((entry) => `${entry.sliderSetName} (${entry.projectPath})`)
+              .join(", ")}.`,
           ]
         : []),
       ...(missingOutputFile.length > 0
         ? [
-            `Missing <OutputFile> (or legacy OutputPath mesh path): ${missingOutputFile.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+            `Missing <OutputFile> (or legacy OutputPath mesh path): ${missingOutputFile
+              .slice(0, 4)
+              .map((entry) => `${entry.sliderSetName} (${entry.projectPath})`)
+              .join(", ")}.`,
           ]
         : []),
       ...(missingSourceFile.length > 0
         ? [
-            `Missing <SourceFile>: ${missingSourceFile.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+            `Missing <SourceFile>: ${missingSourceFile
+              .slice(0, 4)
+              .map((entry) => `${entry.sliderSetName} (${entry.projectPath})`)
+              .join(", ")}.`,
           ]
         : []),
       ...(invalidSourcePaths.length > 0
         ? [
-            `SourceFile should be ShapeData-relative (not absolute/rooted): ${invalidSourcePaths.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+            `SourceFile should be ShapeData-relative (not absolute/rooted): ${invalidSourcePaths
+              .slice(0, 4)
+              .map((entry) => `${entry.sliderSetName} (${entry.projectPath})`)
+              .join(", ")}.`,
           ]
         : []),
       ...(missingOutputMeshes.length > 0
         ? [
-            `SliderSet output mesh not found in converted runtime output: ${missingOutputMeshes.slice(0, 4).map((entry) => `${entry.outputMeshPath} (${entry.sliderSetName})`).join(", ")}.`,
+            `SliderSet output mesh not found in converted runtime output: ${missingOutputMeshes
+              .slice(0, 4)
+              .map(
+                (entry) => `${entry.outputMeshPath} (${entry.sliderSetName})`,
+              )
+              .join(", ")}.`,
           ]
         : []),
     ],
