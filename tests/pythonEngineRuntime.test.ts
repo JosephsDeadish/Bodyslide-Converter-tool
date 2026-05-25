@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getPythonInterpreterCandidates,
   getRunnerPathCandidates,
   isPythonRunnerPathRunnable,
   scorePythonEngineRun,
@@ -45,6 +46,26 @@ describe("python engine runtime paths", () => {
         "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
       ),
     ).toBe(true);
+  });
+});
+
+describe("python engine interpreter candidates", () => {
+  it("prefers SLIDESMITH_PYTHON override and includes Windows py launcher fallbacks", () => {
+    const interpreters = getPythonInterpreterCandidates({
+      platform: "win32",
+      env: {
+        SLIDESMITH_PYTHON: "C:\\Python312\\python.exe",
+      } as NodeJS.ProcessEnv,
+    });
+
+    expect(interpreters[0]).toEqual({
+      command: "C:\\Python312\\python.exe",
+      args: [],
+    });
+    expect(interpreters).toContainEqual({ command: "py", args: ["-3.12"] });
+    expect(interpreters).toContainEqual({ command: "py", args: ["-3.11"] });
+    expect(interpreters).toContainEqual({ command: "python3", args: [] });
+    expect(interpreters).toContainEqual({ command: "python", args: [] });
   });
 });
 

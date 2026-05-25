@@ -184,13 +184,7 @@ export async function runPythonEngine(
     );
   }
 
-  const interpreters: Array<{ command: string; args: string[] }> = [
-    ...(process.env.SLIDESMITH_PYTHON
-      ? [{ command: process.env.SLIDESMITH_PYTHON, args: [] }]
-      : []),
-    { command: "python3", args: [] },
-    { command: "python", args: [] },
-  ];
+  const interpreters = getPythonInterpreterCandidates();
 
   let bestRun: PythonEngineRunSummary | null = null;
 
@@ -234,6 +228,11 @@ type RunnerPathContext = {
   resourcesPath?: string;
 };
 
+type InterpreterContext = {
+  platform: NodeJS.Platform;
+  env: NodeJS.ProcessEnv;
+};
+
 export function getRunnerPathCandidates(
   context: Partial<RunnerPathContext> = {},
 ): string[] {
@@ -267,6 +266,39 @@ export function getRunnerPathCandidates(
   );
 
   return [...new Set(candidates)];
+}
+
+export function getPythonInterpreterCandidates(
+  context: Partial<InterpreterContext> = {},
+): Array<{ command: string; args: string[] }> {
+  const platformValue = context.platform ?? process.platform;
+  const envValue = context.env ?? process.env;
+  const candidates: Array<{ command: string; args: string[] }> = [];
+
+  if (envValue.SLIDESMITH_PYTHON) {
+    candidates.push({ command: envValue.SLIDESMITH_PYTHON, args: [] });
+  }
+
+  if (platformValue === "win32") {
+    candidates.push(
+      { command: "py", args: ["-3.12"] },
+      { command: "py", args: ["-3.11"] },
+      { command: "py", args: ["-3.10"] },
+    );
+  }
+
+  candidates.push(
+    { command: "python3", args: [] },
+    { command: "python", args: [] },
+  );
+  return [
+    ...new Map(
+      candidates.map((candidate) => [
+        `${candidate.command} ${candidate.args.join(" ")}`,
+        candidate,
+      ]),
+    ).values(),
+  ];
 }
 
 export function isPythonRunnerPathRunnable(path: string): boolean {
