@@ -1524,7 +1524,9 @@ async function synthesizeMissingShapeDataMeshes(
             candidate.outputPath.toLowerCase() === outputPath.toLowerCase(),
         ),
       )
-      .filter((value): value is (typeof convertedFiles)[number] => Boolean(value));
+      .filter((value): value is (typeof convertedFiles)[number] =>
+        Boolean(value),
+      );
 
     for (const companion of sourceCompanions) {
       const companionShapeDataPath = toShapeDataPath(

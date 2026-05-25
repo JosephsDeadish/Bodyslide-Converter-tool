@@ -143,7 +143,14 @@ describe("convertMod", () => {
     });
     await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
     await writeFile(
-      join(inputDir, "BodySlide", "ShapeData", "CBBE", "Armor", "cbbe_demo_0.tri"),
+      join(
+        inputDir,
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+        "cbbe_demo_0.tri",
+      ),
       Buffer.alloc(24),
     );
     await writeFile(
@@ -153,7 +160,13 @@ describe("convertMod", () => {
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
-    const result = await convertMod(inputDir, outputDir, files, detection, "3ba");
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
 
     expect(
       result.convertedFiles.some(
