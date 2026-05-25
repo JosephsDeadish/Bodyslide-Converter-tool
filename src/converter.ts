@@ -1276,10 +1276,13 @@ function buildSliderSetOutputPath(
 type SliderSetCoverageEntry = {
   outputFile: string;
   outputPath: string;
+  hasExplicitOutputPath: boolean;
   hasSourceFile: boolean;
 };
 
-function extractSliderSetCoverageEntries(content: string): SliderSetCoverageEntry[] {
+function extractSliderSetCoverageEntries(
+  content: string,
+): SliderSetCoverageEntry[] {
   const entries: SliderSetCoverageEntry[] = [];
   for (const blockMatch of content.matchAll(SLIDERSET_BLOCK_RE)) {
     const sliderSetBlock = blockMatch[0] ?? "";
@@ -1288,12 +1291,14 @@ function extractSliderSetCoverageEntries(content: string): SliderSetCoverageEntr
     if (outputFiles.length === 0) continue;
     const outputPathMatch = sliderSetBlock.match(SLIDERSET_OUTPUTPATH_RE);
     const outputPath = outputPathMatch?.[1]?.trim() ?? "";
+    const hasExplicitOutputPath = outputPath.length > 0;
     const sourceFileMatch = sliderSetBlock.match(SLIDERSET_SOURCEFILE_RE);
     const hasSourceFile = (sourceFileMatch?.[1]?.trim().length ?? 0) > 0;
     for (const outputFile of outputFiles) {
       entries.push({
         outputFile,
         outputPath: buildSliderSetOutputPath(outputPath, outputFile),
+        hasExplicitOutputPath,
         hasSourceFile,
       });
     }
@@ -1402,13 +1407,17 @@ async function synthesizeMissingSliderSetProject(
     const absPath = join(outputDir, ...projectFile.outputPath.split("/"));
     const content = await readFile(absPath, "utf8").catch(() => "");
     for (const entry of extractSliderSetCoverageEntries(content)) {
-      projectOutputFiles.set(
-        entry.outputFile,
-        (projectOutputFiles.get(entry.outputFile) ?? false) || entry.hasSourceFile,
-      );
+      if (!entry.hasExplicitOutputPath) {
+        projectOutputFiles.set(
+          entry.outputFile,
+          (projectOutputFiles.get(entry.outputFile) ?? false) ||
+            entry.hasSourceFile,
+        );
+      }
       projectOutputPaths.set(
         entry.outputPath,
-        (projectOutputPaths.get(entry.outputPath) ?? false) || entry.hasSourceFile,
+        (projectOutputPaths.get(entry.outputPath) ?? false) ||
+          entry.hasSourceFile,
       );
     }
   }
