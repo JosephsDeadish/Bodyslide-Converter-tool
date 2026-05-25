@@ -131,6 +131,65 @@ describe("conversion matrix coverage", () => {
         );
         const rewrittenXml = await readFile(rewrittenXmlPath, "utf8");
         expect(rewrittenXml).toContain(targetAlias);
+
+        const convertedLowWeightMeshPath = join(
+          outputDir,
+          "meshes",
+          "armor",
+          `${targetAlias}_outfit_0.nif`,
+        );
+        const convertedHighWeightMeshPath = join(
+          outputDir,
+          "meshes",
+          "armor",
+          `${targetAlias}_outfit_1.nif`,
+        );
+        const convertedLowWeightMesh = await readFile(
+          convertedLowWeightMeshPath,
+          "utf8",
+        );
+        const convertedHighWeightMesh = await readFile(
+          convertedHighWeightMeshPath,
+          "utf8",
+        );
+        expect(convertedLowWeightMesh).toBe(convertedHighWeightMesh);
+
+        const synthesizedSliderSetPath = join(
+          outputDir,
+          "CalienteTools",
+          "BodySlide",
+          "SliderSets",
+          `${targetAlias}_AutoConverted.osp`,
+        );
+        const synthesizedSliderSet = await readFile(
+          synthesizedSliderSetPath,
+          "utf8",
+        );
+        expect(synthesizedSliderSet).toContain(`${targetAlias} Outfit`);
+        expect(synthesizedSliderSet).toContain(`${targetAlias}_outfit_0.nif`);
+        expect(synthesizedSliderSet).toContain(`${targetAlias}_outfit_1.nif`);
+
+        const synthesizedPhysicsStubPath = join(
+          outputDir,
+          "SKSE",
+          "Plugins",
+          "CBPC",
+          `${targetAlias}_PhysicsStub.ini`,
+        );
+        if (BODY_TYPE_INFO[target].physicsSupport) {
+          const synthesizedPhysicsStub = await readFile(
+            synthesizedPhysicsStubPath,
+            "utf8",
+          );
+          expect(synthesizedPhysicsStub).toContain(
+            `Auto-generated CBPC physics stub for ${targetAlias}`,
+          );
+          expect(synthesizedPhysicsStub).toContain(
+            BODY_TYPE_INFO[target].physicsBones[0] ?? "",
+          );
+        } else {
+          await expect(readFile(synthesizedPhysicsStubPath, "utf8")).rejects.toThrow();
+        }
       }
     }
 
