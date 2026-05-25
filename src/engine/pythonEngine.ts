@@ -51,7 +51,12 @@ type PythonEngineOptions = {
   onProgress?: (event: PythonEngineProgressEvent) => void;
 };
 
-const PYTHON_DEP_BOOTSTRAP_CACHE = new Map<string, Promise<void>>();
+type BootstrapCommandResult = {
+  ok: boolean;
+  output: string;
+};
+
+const PYTHON_DEP_BOOTSTRAP_CACHE = new Map<string, Promise<string[]>>();
 const REQUIRED_PYTHON_LIBRARIES = [
   "pyffi",
   "numpy",
@@ -371,13 +376,17 @@ export async function runPythonEngine(
   const interpreters = getPythonInterpreterCandidates();
 
   let bestRun: PythonEngineRunSummary | null = null;
+  const bootstrapWarnings: string[] = [];
 
   for (const [index, interpreter] of interpreters.entries()) {
     const interpreterVersion = await probePythonVersion(
       interpreter.command,
       interpreter.args,
     );
-    if (interpreterVersion && !isSupportedPythonInterpreter(interpreterVersion)) {
+    if (
+      interpreterVersion &&
+      !isSupportedPythonInterpreter(interpreterVersion)
+    ) {
       continue;
     }
     const dependencyTargetPath = getPythonDependencyTargetPath(
@@ -399,7 +408,7 @@ export async function runPythonEngine(
       [dependencyTargetPath, ...bundledDependencyPaths],
       process.env.PYTHONPATH,
     );
-    await ensurePythonDependencies(
+    const interpreterBootstrapWarnings = await ensurePythonDependencies(
       interpreter.command,
       interpreter.args,
       runnerPath,
@@ -407,6 +416,7 @@ export async function runPythonEngine(
       pythonPath,
       bundledDependenciesAreUsable,
     );
+    bootstrapWarnings.push(...interpreterBootstrapWarnings);
     const run = await tryInterpreter(
       interpreter.command,
       [...interpreter.args, runnerPath],
@@ -416,6 +426,11 @@ export async function runPythonEngine(
     );
     if (run === null) {
       continue;
+    }
+    if (interpreterBootstrapWarnings.length > 0) {
+      run.warnings = [
+        ...new Set([...run.warnings, ...interpreterBootstrapWarnings]),
+      ];
     }
 
     if (
@@ -436,7 +451,8 @@ export async function runPythonEngine(
 
   return createFallbackRun(
     runId,
-    "No supported Python interpreter found. Install Python 3.10-3.12 (64-bit), avoid broken virtual environments, and set SLIDESMITH_PYTHON if needed.",
+    bootstrapWarnings[0] ??
+      "No supported Python interpreter found. Install Python 3.10-3.12 (64-bit), avoid broken virtual environments, and set SLIDESMITH_PYTHON if needed.",
   );
 }
 
@@ -670,46 +686,71 @@ async function ensurePythonDependencies(
   dependencyTargetPath: string,
   pythonPath: string,
   skipBootstrap: boolean,
-): Promise<void> {
+): Promise<string[]> {
   if (
     process.env.VITEST ||
     process.env.NODE_ENV === "test" ||
     process.env.SLIDESMITH_SKIP_PYTHON_DEP_BOOTSTRAP === "1"
   ) {
-    return;
+    return [];
   }
   if (skipBootstrap) {
-    return;
+    return [];
   }
 
   const requirementsPath = join(dirname(runnerPath), "requirements.txt");
   if (!(await isReadableFile(requirementsPath))) {
-    return;
+    return [];
   }
   const requirements = await loadBootstrapRequirements(requirementsPath);
   if (requirements.length === 0) {
-    return;
+    return [];
+  }
+
+  const managedDependencyProbePath = buildPythonPath(
+    [dependencyTargetPath],
+    process.env.PYTHONPATH,
+  );
+  if (
+    await canImportRequiredLibraries(
+      command,
+      commandArgs,
+      managedDependencyProbePath,
+    )
+  ) {
+    return [];
   }
 
   await mkdir(dependencyTargetPath, { recursive: true });
   const cacheKey = `${command} ${commandArgs.join(" ")}:${requirementsPath}:${dependencyTargetPath}`;
   const cached = PYTHON_DEP_BOOTSTRAP_CACHE.get(cacheKey);
   if (cached) {
-    await cached;
-    return;
+    return await cached;
   }
 
-  const installPromise = new Promise<void>((resolve) => {
+  const installPromise = new Promise<string[]>((resolve) => {
     const env = {
       ...buildPythonSubprocessEnv(process.env, { pythonPath }),
     };
 
     void (async () => {
-      await runBootstrapCommand(
+      const warnings: string[] = [];
+
+      const selfUpgrade = await runBootstrapCommand(
         buildPipSelfUpgradeCommand(command, commandArgs),
         buildPythonSubprocessEnv(process.env, { inheritPythonPath: true }),
       );
-      await runBootstrapCommand(
+      if (!selfUpgrade.ok) {
+        warnings.push(
+          formatBootstrapFailureWarning(
+            "pip/setuptools/wheel self-upgrade",
+            "pip",
+            selfUpgrade.output,
+          ),
+        );
+      }
+
+      const toolchain = await runBootstrapCommand(
         buildPipToolchainBootstrapCommand(
           command,
           commandArgs,
@@ -717,6 +758,15 @@ async function ensurePythonDependencies(
         ),
         env,
       );
+      if (!toolchain.ok) {
+        warnings.push(
+          formatBootstrapFailureWarning(
+            "pip/setuptools/wheel target install",
+            "pip",
+            toolchain.output,
+          ),
+        );
+      }
       for (const requirement of requirements) {
         const installedWithPreferredCommand = await runBootstrapCommand(
           buildDependencyPackageBootstrapCommand(
@@ -727,10 +777,10 @@ async function ensurePythonDependencies(
           ),
           env,
         );
-        if (installedWithPreferredCommand) {
+        if (installedWithPreferredCommand.ok) {
           continue;
         }
-        await runBootstrapCommand(
+        const relaxedInstall = await runBootstrapCommand(
           buildDependencyPackageBootstrapCommand(
             command,
             commandArgs,
@@ -740,13 +790,22 @@ async function ensurePythonDependencies(
           ),
           env,
         );
+        if (!relaxedInstall.ok) {
+          warnings.push(
+            formatBootstrapFailureWarning(
+              "Python dependency install",
+              requirement,
+              relaxedInstall.output || installedWithPreferredCommand.output,
+            ),
+          );
+        }
       }
-      resolve();
+      resolve([...new Set(warnings)]);
     })();
   });
 
   PYTHON_DEP_BOOTSTRAP_CACHE.set(cacheKey, installPromise);
-  await installPromise;
+  return await installPromise;
 }
 
 async function loadBootstrapRequirements(
@@ -762,16 +821,58 @@ async function loadBootstrapRequirements(
 async function runBootstrapCommand(
   command: { command: string; args: string[] },
   env: NodeJS.ProcessEnv,
-): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
+): Promise<BootstrapCommandResult> {
+  return new Promise<BootstrapCommandResult>((resolve) => {
     const child = spawn(command.command, command.args, {
-      stdio: "ignore",
+      stdio: ["ignore", "pipe", "pipe"],
       env,
     });
 
-    child.on("error", () => resolve(false));
-    child.on("close", (code) => resolve(code === 0));
+    let output = "";
+
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      output += chunk.toString("utf8");
+    });
+    child.stderr.on("data", (chunk: Buffer | string) => {
+      output += chunk.toString("utf8");
+    });
+
+    child.on("error", (error) =>
+      resolve({
+        ok: false,
+        output: error.message,
+      }),
+    );
+    child.on("close", (code) =>
+      resolve({
+        ok: code === 0,
+        output: normalizeBootstrapOutput(output),
+      }),
+    );
   });
+}
+
+function normalizeBootstrapOutput(output: string): string {
+  const normalized = output
+    .replace(/\s+/g, " ")
+    .replace(/\s*[\r\n]+\s*/g, " ")
+    .trim();
+  if (normalized.length <= 600) {
+    return normalized;
+  }
+  return `${normalized.slice(0, 597)}...`;
+}
+
+function formatBootstrapFailureWarning(
+  stage: string,
+  requirement: string,
+  output: string,
+): string {
+  const detail =
+    output.trim().length > 0
+      ? output
+      : "pip exited without returning any diagnostic output.";
+  return `${stage} failed for ${requirement}: ${detail}`;
 }
 
 async function canImportRequiredLibraries(
@@ -861,7 +962,9 @@ export function isMissingPythonRuntimeError(message: string): boolean {
 export function isSupportedPythonInterpreter(
   probe: PythonInterpreterProbe,
 ): boolean {
-  return isSupportedPythonVersion(probe.major, probe.minor) && probe.bits === 64;
+  return (
+    isSupportedPythonVersion(probe.major, probe.minor) && probe.bits === 64
+  );
 }
 
 async function isReadableFile(path: string): Promise<boolean> {

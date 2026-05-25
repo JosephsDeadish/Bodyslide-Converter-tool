@@ -41,13 +41,17 @@ const ALL_CANDIDATES =
 async function findPython() {
   for (const [cmd, args] of ALL_CANDIDATES) {
     try {
-      const { stdout } = await execFileAsync(cmd, [
-        ...args,
-        "-c",
-        "import json,struct,sys; print(json.dumps({'major':sys.version_info.major,'minor':sys.version_info.minor,'bits':struct.calcsize('P')*8,'executable':sys.executable}))",
-      ], {
-        env: buildPythonSubprocessEnv(),
-      ]);
+      const { stdout } = await execFileAsync(
+        cmd,
+        [
+          ...args,
+          "-c",
+          "import json,struct,sys; print(json.dumps({'major':sys.version_info.major,'minor':sys.version_info.minor,'bits':struct.calcsize('P')*8,'executable':sys.executable}))",
+        ],
+        {
+          env: buildPythonSubprocessEnv(),
+        },
+      );
       const probe = JSON.parse(stdout.trim());
       if (
         probe.major === 3 &&

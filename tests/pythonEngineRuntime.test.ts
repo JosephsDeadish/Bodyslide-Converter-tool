@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildPythonSubprocessEnv,
   buildBundledDependencyProbeCommand,
   buildDependencyBootstrapCommand,
   buildDependencyPackageBootstrapCommand,
   buildPipSelfUpgradeCommand,
   buildPipToolchainBootstrapCommand,
+  buildPythonSubprocessEnv,
   buildPythonVersionProbeCommand,
   getBundledDependencyPathCandidates,
   getPythonDependencyTargetPath,
   getPythonInterpreterCandidates,
   getRunnerPathCandidates,
   isMissingPythonRuntimeError,
-  isSupportedPythonInterpreter,
   isPythonRunnerPathRunnable,
+  isSupportedPythonInterpreter,
   scorePythonEngineRun,
 } from "../src/engine/pythonEngine.js";
 import type { PythonEngineRunSummary } from "../src/types.js";
@@ -105,7 +105,10 @@ describe("python engine interpreter candidates", () => {
     expect(interpreters).toContainEqual({ command: "python3", args: [] });
     expect(interpreters).toContainEqual({ command: "python", args: [] });
     expect(interpreters).not.toContainEqual({ command: "py", args: ["-3.13"] });
-    expect(interpreters).not.toContainEqual({ command: "python3.13", args: [] });
+    expect(interpreters).not.toContainEqual({
+      command: "python3.13",
+      args: [],
+    });
   });
 });
 
