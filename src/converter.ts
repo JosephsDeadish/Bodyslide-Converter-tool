@@ -1232,6 +1232,7 @@ const SLIDERSET_NAME_RE = /<SliderSet\b[^>]*\bname=["']([^"']+)["'][^>]*>/gi;
 const SLIDERSET_OUTPUTFILE_RE = /<OutputFile>\s*([^<]+)\s*<\/OutputFile>/gi;
 const SLIDERSET_BLOCK_RE = /<SliderSet\b[\s\S]*?<\/SliderSet>/gi;
 const SLIDERSET_OUTPUTPATH_RE = /<OutputPath>\s*([^<]*)\s*<\/OutputPath>/i;
+const SLIDERSET_SOURCEFILE_RE = /<SourceFile>\s*([^<]*)\s*<\/SourceFile>/i;
 
 function extractSliderSetNames(content: string): string[] {
   const names: string[] = [];
@@ -1272,8 +1273,14 @@ function buildSliderSetOutputPath(
   );
 }
 
-function extractSliderSetOutputPaths(content: string): string[] {
-  const outputs: string[] = [];
+type SliderSetCoverageEntry = {
+  outputFile: string;
+  outputPath: string;
+  hasSourceFile: boolean;
+};
+
+function extractSliderSetCoverageEntries(content: string): SliderSetCoverageEntry[] {
+  const entries: SliderSetCoverageEntry[] = [];
   for (const blockMatch of content.matchAll(SLIDERSET_BLOCK_RE)) {
     const sliderSetBlock = blockMatch[0] ?? "";
     if (!sliderSetBlock) continue;
@@ -1281,31 +1288,17 @@ function extractSliderSetOutputPaths(content: string): string[] {
     if (outputFiles.length === 0) continue;
     const outputPathMatch = sliderSetBlock.match(SLIDERSET_OUTPUTPATH_RE);
     const outputPath = outputPathMatch?.[1]?.trim() ?? "";
+    const sourceFileMatch = sliderSetBlock.match(SLIDERSET_SOURCEFILE_RE);
+    const hasSourceFile = (sourceFileMatch?.[1]?.trim().length ?? 0) > 0;
     for (const outputFile of outputFiles) {
-      outputs.push(buildSliderSetOutputPath(outputPath, outputFile));
+      entries.push({
+        outputFile,
+        outputPath: buildSliderSetOutputPath(outputPath, outputFile),
+        hasSourceFile,
+      });
     }
   }
-  return outputs;
-}
-
-function extractPathlessSliderSetOutputFiles(content: string): string[] {
-  const outputs: string[] = [];
-  let sawSliderSet = false;
-  for (const blockMatch of content.matchAll(SLIDERSET_BLOCK_RE)) {
-    const sliderSetBlock = blockMatch[0] ?? "";
-    if (!sliderSetBlock) continue;
-    sawSliderSet = true;
-    const outputPathMatch = sliderSetBlock.match(SLIDERSET_OUTPUTPATH_RE);
-    const outputPath = outputPathMatch?.[1]?.trim() ?? "";
-    if (outputPath.length > 0) {
-      continue;
-    }
-    outputs.push(...extractSliderSetOutputFiles(sliderSetBlock));
-  }
-  if (sawSliderSet) {
-    return outputs;
-  }
-  return extractSliderSetOutputFiles(content);
+  return entries;
 }
 
 function makeBodySlideDisplayName(value: string): string {
@@ -1403,16 +1396,20 @@ async function synthesizeMissingSliderSetProject(
   const meshGroups = collectSliderSetMeshGroups(convertedFiles);
   if (meshGroups.length === 0) return 0;
 
-  const projectOutputFiles = new Set<string>();
-  const projectOutputPaths = new Set<string>();
+  const projectOutputFiles = new Map<string, boolean>();
+  const projectOutputPaths = new Map<string, boolean>();
   for (const projectFile of projectFiles) {
     const absPath = join(outputDir, ...projectFile.outputPath.split("/"));
     const content = await readFile(absPath, "utf8").catch(() => "");
-    for (const outputFile of extractPathlessSliderSetOutputFiles(content)) {
-      projectOutputFiles.add(outputFile);
-    }
-    for (const outputPath of extractSliderSetOutputPaths(content)) {
-      projectOutputPaths.add(outputPath);
+    for (const entry of extractSliderSetCoverageEntries(content)) {
+      projectOutputFiles.set(
+        entry.outputFile,
+        (projectOutputFiles.get(entry.outputFile) ?? false) || entry.hasSourceFile,
+      );
+      projectOutputPaths.set(
+        entry.outputPath,
+        (projectOutputPaths.get(entry.outputPath) ?? false) || entry.hasSourceFile,
+      );
     }
   }
 
@@ -1426,11 +1423,11 @@ async function synthesizeMissingSliderSetProject(
       return true;
     }
     const coveredByFile =
-      (!!lowFile && projectOutputFiles.has(lowFile)) ||
-      (!!highFile && projectOutputFiles.has(highFile));
+      (!!lowFile && (projectOutputFiles.get(lowFile) ?? false)) ||
+      (!!highFile && (projectOutputFiles.get(highFile) ?? false));
     const coveredByPath =
-      (!!lowPath && projectOutputPaths.has(lowPath)) ||
-      (!!highPath && projectOutputPaths.has(highPath));
+      (!!lowPath && (projectOutputPaths.get(lowPath) ?? false)) ||
+      (!!highPath && (projectOutputPaths.get(highPath) ?? false));
     return !(coveredByFile || coveredByPath);
   });
   if (uncoveredMeshGroups.length === 0) return 0;

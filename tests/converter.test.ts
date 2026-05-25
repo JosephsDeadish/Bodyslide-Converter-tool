@@ -2792,6 +2792,70 @@ describe("convertMod", () => {
     );
   });
 
+  it("synthesizes supplemental SliderSet data when source projects lack SourceFile entries", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_plated_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_missing_sourcefile.osp",
+      ),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Missing SourceFile">',
+        "    <OutputPath>meshes/armor/</OutputPath>",
+        "    <OutputFile>cbbe_plated_1.nif</OutputFile>",
+        "    <Groups><Group name=\"CBBE Outfits\"/></Groups>",
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const supplementalSliderSet = result.convertedFiles.find(
+      (file) =>
+        file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
+        file.action === "synthesized",
+    );
+    expect(supplementalSliderSet).toBeDefined();
+
+    const sliderSetContent = await readFile(
+      join(outputDir, supplementalSliderSet?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain('<SliderSet name="3BA Plated">');
+    expect(sliderSetContent).toContain(
+      "<OutputFile>3BA_plated_1.nif</OutputFile>",
+    );
+    expect(sliderSetContent).toContain(
+      "<SourceFile>3BA/armor/3BA_plated_1.nif</SourceFile>",
+    );
+  });
+
   it("synthesizes missing armors when existing SliderSets cover only same-name outputs in other folders", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
