@@ -178,6 +178,99 @@ describe("convertMod", () => {
     ).toBe(true);
   });
 
+  it("synthesizes runtime meshes and SliderSets from ShapeData-only outfit assets", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+      ),
+      { recursive: true },
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+        "cbbe_shapeonly_0.nif",
+      ),
+      "cbbe mesh",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+        "cbbe_shapeonly_0.tri",
+      ),
+      "tri payload",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "meshes/Armor/3BA_shapeonly_1.nif" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+            "CalienteTools/BodySlide/SliderSets/3BA_AutoConverted.osp" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+
+    const runtimeMesh = await readFile(
+      join(outputDir, "meshes", "Armor", "3BA_shapeonly_1.nif"),
+      "utf8",
+    );
+    expect(runtimeMesh).toBe("cbbe mesh");
+    const sliderSetContent = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "3BA_AutoConverted.osp",
+      ),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain(
+      "<OutputPath>meshes/Armor/</OutputPath>",
+    );
+    expect(sliderSetContent).toContain(
+      "<OutputFile>3BA_shapeonly_1.nif</OutputFile>",
+    );
+    expect(sliderSetContent).toContain(
+      "<SourceFile>3BA/Armor/3BA_shapeonly_1.nif</SourceFile>",
+    );
+  });
+
   it("remaps known physics bone references in text configs", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

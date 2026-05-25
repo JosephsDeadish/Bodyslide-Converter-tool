@@ -1537,6 +1537,22 @@ function toShapeDataPath(meshPath: string, targetAlias: string): string {
   return `${outputDir}/${fileName}`;
 }
 
+function toRuntimeMeshPathFromShapeData(shapeDataPath: string): string | null {
+  const normalized = shapeDataPath.replace(/\\/g, "/");
+  const shapeDataSubpath = extractBodySlideSubpath(
+    normalized,
+    BODYSLIDE_SHAPEDATA_PATH_MARKERS,
+  );
+  if (!shapeDataSubpath) {
+    return null;
+  }
+  const segments = shapeDataSubpath.split("/").filter(Boolean);
+  if (segments.length <= 1) {
+    return null;
+  }
+  return `meshes/${segments.slice(1).join("/")}`;
+}
+
 function toBodySlideSourceFilePath(path: string): string {
   const normalized = path.replace(/\\/g, "/");
   const sourceSubpath = extractBodySlideSubpath(
@@ -1629,6 +1645,56 @@ async function synthesizeMissingShapeDataMeshes(
   }
 
   return outputPathMap;
+}
+
+async function synthesizeMissingRuntimeMeshesFromShapeData(
+  outputDir: string,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<Map<string, string>> {
+  const knownOutputPaths = new Set(
+    convertedFiles.map((file) => file.outputPath.toLowerCase()),
+  );
+  const runtimeToShapeDataPath = new Map<string, string>();
+  const shapeDataCandidates = convertedFiles.filter(
+    (file) =>
+      file.kind === "mesh" &&
+      /\.(nif|tri|osd)$/i.test(file.outputPath) &&
+      /(^|\/)calientetools\/bodyslide\/shapedata\//i.test(file.outputPath),
+  );
+
+  for (const shapeDataFile of shapeDataCandidates) {
+    const runtimeMeshPath = toRuntimeMeshPathFromShapeData(
+      shapeDataFile.outputPath,
+    );
+    if (!runtimeMeshPath) {
+      continue;
+    }
+    if (knownOutputPaths.has(runtimeMeshPath.toLowerCase())) {
+      runtimeToShapeDataPath.set(runtimeMeshPath, shapeDataFile.outputPath);
+      continue;
+    }
+
+    const sourceAbsPath = join(outputDir, shapeDataFile.outputPath);
+    const runtimeAbsPath = join(outputDir, runtimeMeshPath);
+    if (await pathExists(runtimeAbsPath)) {
+      knownOutputPaths.add(runtimeMeshPath.toLowerCase());
+      runtimeToShapeDataPath.set(runtimeMeshPath, shapeDataFile.outputPath);
+      continue;
+    }
+
+    await mkdir(dirname(runtimeAbsPath), { recursive: true });
+    await copyFile(sourceAbsPath, runtimeAbsPath);
+    knownOutputPaths.add(runtimeMeshPath.toLowerCase());
+    convertedFiles.push({
+      sourcePath: shapeDataFile.sourcePath,
+      outputPath: runtimeMeshPath,
+      kind: "mesh",
+      action: "synthesized",
+    });
+    runtimeToShapeDataPath.set(runtimeMeshPath, shapeDataFile.outputPath);
+  }
+
+  return runtimeToShapeDataPath;
 }
 
 /**
@@ -2474,6 +2540,22 @@ export async function convertMod(
       sourcePath: "(native post-process)",
       outputPath: "(generated bodyslide shapedata)",
       reason: `Synthesized ${shapeDataMeshes.size} BodySlide ShapeData mesh entr${shapeDataMeshes.size === 1 ? "y" : "ies"} for SliderSet SourceFile/OutputPath compatibility.`,
+    });
+  }
+
+  const synthesizedRuntimeMeshes =
+    await synthesizeMissingRuntimeMeshesFromShapeData(
+      outputDir,
+      convertedFiles,
+    );
+  for (const [runtimeMeshPath, shapeDataPath] of synthesizedRuntimeMeshes) {
+    shapeDataMeshes.set(runtimeMeshPath, shapeDataPath);
+  }
+  if (synthesizedRuntimeMeshes.size > 0) {
+    skippedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: "(generated runtime meshes from shapedata)",
+      reason: `Synthesized ${synthesizedRuntimeMeshes.size} runtime mesh entr${synthesizedRuntimeMeshes.size === 1 ? "y" : "ies"} from BodySlide ShapeData so generated SliderSets have valid game output paths.`,
     });
   }
 
