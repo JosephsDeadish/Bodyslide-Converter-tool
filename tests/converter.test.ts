@@ -2618,4 +2618,71 @@ describe("convertMod", () => {
       "<OutputFile>3BA_plated_1.nif</OutputFile>",
     );
   });
+
+  it("synthesizes missing armors when existing SliderSets cover only same-name outputs in other folders", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor", "seta"), { recursive: true });
+    await mkdir(join(inputDir, "meshes", "armor", "setb"), { recursive: true });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "seta", "cbbe_cuirass_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "setb", "cbbe_cuirass_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_covered.osp",
+      ),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Covered">',
+        "    <OutputPath>meshes/armor/seta/</OutputPath>",
+        "    <OutputFile>cbbe_cuirass_1.nif</OutputFile>",
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const supplementalSliderSet = result.convertedFiles.find(
+      (file) =>
+        file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
+        file.action === "synthesized",
+    );
+    expect(supplementalSliderSet).toBeDefined();
+
+    const sliderSetContent = await readFile(
+      join(outputDir, supplementalSliderSet?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain(
+      "<OutputPath>meshes/armor/setb/</OutputPath>",
+    );
+    expect(sliderSetContent).not.toContain(
+      "<OutputPath>meshes/armor/seta/</OutputPath>",
+    );
+  });
 });
