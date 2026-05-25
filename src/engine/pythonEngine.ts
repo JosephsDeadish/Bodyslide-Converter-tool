@@ -122,6 +122,27 @@ function createFallbackRun(
   };
 }
 
+// Extensions whose text preview carries meaningful body-type signals for
+// the Python engine. Binary mesh/texture formats (.nif, .tri, .dds, .bsa …)
+// contain no human-readable markup — sending their 4 KB binary preview
+// inflates the stdin payload for large mod folders without helping Python.
+const PYTHON_TEXT_EXTENSIONS = new Set([
+  ".xml",
+  ".osp",
+  ".json",
+  ".ini",
+  ".txt",
+  ".esp",
+  ".esl",
+  ".esm",
+]);
+
+// Cap on how many bytes of preview Python receives per file.
+// The full 4 KB preview is useful for local TypeScript detection, but Python
+// only needs a short excerpt for its pattern matching — sending less JSON
+// reduces stdin write time and peak main-process memory.
+const PYTHON_PREVIEW_LIMIT = 512;
+
 export async function runPythonEngine(
   args: {
     inputPath: string;
@@ -139,11 +160,16 @@ export async function runPythonEngine(
     outputPath: args.outputPath,
     sourceBodyType: args.sourceBodyType,
     targetBodyType: args.targetBodyType,
-    files: args.files.map((file) => ({
-      relativePath: file.relativePath,
-      extension: file.extension,
-      preview: file.preview,
-    })),
+    // Only forward text/config files — binary mesh formats carry no useful
+    // text signals for Python and would balloon stdin to tens of megabytes
+    // on large mod folders, causing the subprocess write to stall.
+    files: args.files
+      .filter((file) => PYTHON_TEXT_EXTENSIONS.has(file.extension))
+      .map((file) => ({
+        relativePath: file.relativePath,
+        extension: file.extension,
+        preview: file.preview.slice(0, PYTHON_PREVIEW_LIMIT),
+      })),
   };
 
   const runnerPath = join(__dirname, "python_engine", "runner.py");
