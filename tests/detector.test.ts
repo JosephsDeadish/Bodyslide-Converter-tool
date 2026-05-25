@@ -290,6 +290,35 @@ describe("detectBodyType", () => {
     expect(bhunpDetection.bodyType).toBe("bhunp");
   });
 
+  it("detects UBE aliases as UUNP-family data", () => {
+    const detection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/SliderSets/UBE_2.0_Softbody.osp",
+        "unified body enhancer ube softbody",
+      ),
+    ]);
+
+    expect(detection.bodyType).toBe("uunp");
+  });
+
+  it("detects softbody variants for 3BA and BHUNP", () => {
+    const threeBaDetection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/ShapeData/CBBE_3BA_Softbody/Body_0.nif",
+        "cbbe 3ba softbody physics",
+      ),
+    ]);
+    const bhunpDetection = detectBodyType([
+      file(
+        "CalienteTools/BodySlide/ShapeData/BHUNP_Softbody/BHUNP_Body_0.nif",
+        "bhunp softbody",
+      ),
+    ]);
+
+    expect(threeBaDetection.bodyType).toBe("3ba");
+    expect(bhunpDetection.bodyType).toBe("bhunp");
+  });
+
   it("classifies .osd files as mesh evidence", () => {
     const detection = detectBodyType([
       file(
