@@ -177,9 +177,10 @@ export function buildDependencyPackageBootstrapCommand(
   commandArgs: string[],
   requirement: string,
   dependencyTargetPath?: string,
-  options: Partial<{ preferBinary: boolean }> = {},
+  options: Partial<{ preferBinary: boolean; onlyBinary: boolean }> = {},
 ): { command: string; args: string[] } {
   const preferBinary = options.preferBinary ?? true;
+  const onlyBinary = options.onlyBinary ?? false;
   const args = [
     ...commandArgs,
     "-m",
@@ -192,6 +193,9 @@ export function buildDependencyPackageBootstrapCommand(
   ];
   if (preferBinary) {
     args.splice(args.length - 1, 0, "--prefer-binary");
+  }
+  if (onlyBinary) {
+    args.splice(args.length - 1, 0, "--only-binary", ":all:");
   }
   if (dependencyTargetPath) {
     args.push("--target", dependencyTargetPath);
@@ -755,6 +759,7 @@ async function ensurePythonDependencies(
 
     void (async () => {
       const warnings: string[] = [];
+      const enforceBinaryOnly = process.platform === "win32";
 
       const selfUpgrade = await runBootstrapCommand(
         buildPipSelfUpgradeCommand(command, commandArgs),
@@ -802,10 +807,21 @@ async function ensurePythonDependencies(
             commandArgs,
             requirement,
             dependencyTargetPath,
+            { onlyBinary: enforceBinaryOnly },
           ),
           env,
         );
         if (installedWithPreferredCommand.ok) {
+          continue;
+        }
+        if (enforceBinaryOnly) {
+          warnings.push(
+            formatBootstrapFailureWarning(
+              "Python dependency install (wheel-only on Windows)",
+              requirement,
+              installedWithPreferredCommand.output,
+            ),
+          );
           continue;
         }
         const relaxedInstall = await runBootstrapCommand(

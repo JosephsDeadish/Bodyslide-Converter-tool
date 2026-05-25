@@ -85,6 +85,7 @@ python -m pip install -r python_engine/requirements.txt
 ```
 
 `PyFFI` (NIF IO), `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
+On Windows, runtime bootstrap now enforces wheel-only (`--only-binary=:all:`) package installs to avoid fragile source builds that require local C/C++ toolchains.
 
 ### Bundle Python dependencies inside the EXE build
 

@@ -395,6 +395,35 @@ describe("python dependency bootstrap command", () => {
     });
   });
 
+  it("supports wheel-only package bootstrap flags for Windows dependency installs", () => {
+    const bootstrap = buildDependencyPackageBootstrapCommand(
+      "py",
+      ["-3.12"],
+      "numpy>=2.2.0",
+      "C:\\Users\\tester\\.slidesmith\\python-deps\\abc123",
+      { onlyBinary: true },
+    );
+
+    expect(bootstrap).toEqual({
+      command: "py",
+      args: [
+        "-3.12",
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--upgrade",
+        "--prefer-binary",
+        "--only-binary",
+        ":all:",
+        "numpy>=2.2.0",
+        "--target",
+        "C:\\Users\\tester\\.slidesmith\\python-deps\\abc123",
+      ],
+    });
+  });
+
   it("can build a relaxed per-package bootstrap command without binary preference", () => {
     const bootstrap = buildDependencyPackageBootstrapCommand(
       "python3",
