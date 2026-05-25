@@ -173,7 +173,7 @@ describe("convertMod", () => {
         (file) =>
           file.sourcePath.includes("BodySlide/ShapeData") &&
           file.outputPath ===
-            "CalienteTools/BodySlide/ShapeData/3BA/Armor/3BA_demo_0.tri",
+            "CalienteTools/BodySlide/ShapeData/Armor/3BA_demo_0.tri",
       ),
     ).toBe(true);
   });
@@ -267,7 +267,7 @@ describe("convertMod", () => {
       "<OutputFile>3BA_shapeonly_1.nif</OutputFile>",
     );
     expect(sliderSetContent).toContain(
-      "<SourceFile>3BA/Armor/3BA_shapeonly_1.nif</SourceFile>",
+      "<SourceFile>Armor/3BA_shapeonly_1.nif</SourceFile>",
     );
   });
 
@@ -2181,7 +2181,7 @@ describe("convertMod", () => {
       "<OutputFile>3BA_plated_1.nif</OutputFile>",
     );
     expect(sliderSetContent).toContain(
-      "<SourceFile>3BA/armor/3BA_plated_1.nif</SourceFile>",
+      "<SourceFile>armor/3BA_plated_1.nif</SourceFile>",
     );
     const shapeDataMesh = await readFile(
       join(
@@ -2189,7 +2189,6 @@ describe("convertMod", () => {
         "CalienteTools",
         "BodySlide",
         "ShapeData",
-        "3BA",
         "armor",
         "3BA_plated_1.nif",
       ),
@@ -2202,7 +2201,6 @@ describe("convertMod", () => {
         "CalienteTools",
         "BodySlide",
         "ShapeData",
-        "3BA",
         "armor",
         "3BA_plated_1.tri",
       ),
@@ -2215,7 +2213,6 @@ describe("convertMod", () => {
         "CalienteTools",
         "BodySlide",
         "ShapeData",
-        "3BA",
         "armor",
         "3BA_plated_1.osd",
       ),
@@ -2345,7 +2342,7 @@ describe("convertMod", () => {
       result.convertedFiles.some(
         (file) =>
           file.outputPath ===
-            "CalienteTools/BodySlide/ShapeData/3BA/armor/3BA_1.tri" &&
+            "CalienteTools/BodySlide/ShapeData/armor/3BA_1.tri" &&
           file.action === "synthesized",
       ),
     ).toBe(true);
@@ -2353,10 +2350,76 @@ describe("convertMod", () => {
       result.convertedFiles.some(
         (file) =>
           file.outputPath ===
-            "CalienteTools/BodySlide/ShapeData/3BA/armor/3BA_1.osd" &&
+            "CalienteTools/BodySlide/ShapeData/armor/3BA_1.osd" &&
           file.action === "synthesized",
       ),
     ).toBe(true);
+  });
+
+  it("converts vanilla-detected armor to target body and keeps per-armor ShapeData folders", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor", "imperial", "light"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        inputDir,
+        "meshes",
+        "armor",
+        "imperial",
+        "light",
+        "vanilla_cuirass_0.nif",
+      ),
+      "skyrim vanilla default body",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    expect(detection.bodyType).toBe("vanilla");
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "meshes/armor/imperial/light/3BA_cuirass_1.nif" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/ShapeData/armor/imperial/light/3BA_cuirass_1.nif",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.startsWith("CalienteTools/BodySlide/ShapeData/3BA/"),
+      ),
+    ).toBe(false);
+
+    const sliderSetContent = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "3BA_AutoConverted.osp",
+      ),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain(
+      "<SourceFile>armor/imperial/light/3BA_cuirass_1.nif</SourceFile>",
+    );
   });
 
   it("does not synthesize a duplicate SliderGroup when one already exists in the source", async () => {
@@ -3268,7 +3331,7 @@ describe("convertMod", () => {
       "<OutputFile>3BA_plated_1.nif</OutputFile>",
     );
     expect(sliderSetContent).toContain(
-      "<SourceFile>3BA/armor/3BA_plated_1.nif</SourceFile>",
+      "<SourceFile>armor/3BA_plated_1.nif</SourceFile>",
     );
   });
 

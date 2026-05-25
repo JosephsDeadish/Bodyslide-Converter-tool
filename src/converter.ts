@@ -216,7 +216,9 @@ function normalizeToMo2DataPath(
       shapeDataSubpathForMesh ??
       extractBodySlideSubpath(forward, BODYSLIDE_SHAPEDATA_PATH_MARKERS);
     if (shapeDataSubpath) {
-      return `CalienteTools/BodySlide/ShapeData/${shapeDataSubpath}`;
+      const normalizedShapeDataSubpath =
+        stripKnownBodyAliasRoot(shapeDataSubpath);
+      return `CalienteTools/BodySlide/ShapeData/${normalizedShapeDataSubpath}`;
     }
     return `meshes/${forward}`;
   }
@@ -277,6 +279,22 @@ const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
   sam: "SAM",
   vanilla: "Vanilla",
 };
+
+const KNOWN_OUTPUT_ALIASES = new Set(
+  Object.values(BODY_TYPE_OUTPUT_ALIASES).map((alias) => alias.toLowerCase()),
+);
+
+function stripKnownBodyAliasRoot(shapeDataSubpath: string): string {
+  const segments = shapeDataSubpath.split("/").filter(Boolean);
+  if (segments.length <= 1) {
+    return shapeDataSubpath;
+  }
+  const first = segments[0];
+  if (!first || !KNOWN_OUTPUT_ALIASES.has(first.toLowerCase())) {
+    return shapeDataSubpath;
+  }
+  return segments.slice(1).join("/");
+}
 
 const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
   cbbe: [
@@ -1588,16 +1606,16 @@ async function synthesizeMissingSliderSetProject(
   return sliderSetEntries.length;
 }
 
-function toShapeDataPath(meshPath: string, targetAlias: string): string {
+function toShapeDataPath(meshPath: string): string {
   const normalized = meshPath.replace(/\\/g, "/");
   const slashIndex = normalized.lastIndexOf("/");
   const fileName =
     slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
   const meshDir = slashIndex >= 0 ? normalized.slice(0, slashIndex) : "";
-  const relativeMeshDir = meshDir.replace(/^meshes\//i, "");
+  const relativeMeshDir = meshDir.replace(/^meshes\/?/i, "");
   const outputDir = relativeMeshDir
-    ? `CalienteTools/BodySlide/ShapeData/${targetAlias}/${relativeMeshDir}`
-    : `CalienteTools/BodySlide/ShapeData/${targetAlias}`;
+    ? `CalienteTools/BodySlide/ShapeData/${relativeMeshDir}`
+    : "CalienteTools/BodySlide/ShapeData";
   return `${outputDir}/${fileName}`;
 }
 
@@ -1615,11 +1633,8 @@ function toRuntimeMeshPathFromShapeData(shapeDataPath: string): string | null {
     return null;
   }
   const firstSegment = segments[0] ?? "";
-  const knownOutputAliases = new Set(
-    Object.values(BODY_TYPE_OUTPUT_ALIASES).map((alias) => alias.toLowerCase()),
-  );
   const runtimeSegments =
-    knownOutputAliases.has(firstSegment.toLowerCase()) && segments.length > 1
+    KNOWN_OUTPUT_ALIASES.has(firstSegment.toLowerCase()) && segments.length > 1
       ? segments.slice(1)
       : segments;
   if (runtimeSegments.length === 0) {
@@ -1639,10 +1654,8 @@ function toBodySlideSourceFilePath(path: string): string {
 
 async function synthesizeMissingShapeDataMeshes(
   outputDir: string,
-  targetBodyType: BodyType,
   convertedFiles: ConversionResult["convertedFiles"],
 ): Promise<Map<string, string>> {
-  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
   const outputPathMap = new Map<string, string>();
   const knownOutputPaths = new Set(
     convertedFiles.map((file) => file.outputPath),
@@ -1655,7 +1668,7 @@ async function synthesizeMissingShapeDataMeshes(
   );
 
   for (const meshFile of meshCandidates) {
-    const shapeDataPath = toShapeDataPath(meshFile.outputPath, targetAlias);
+    const shapeDataPath = toShapeDataPath(meshFile.outputPath);
     outputPathMap.set(meshFile.outputPath, shapeDataPath);
     if (knownOutputPaths.has(shapeDataPath)) {
       continue;
@@ -1693,10 +1706,7 @@ async function synthesizeMissingShapeDataMeshes(
       );
 
     for (const companion of sourceCompanions) {
-      const companionShapeDataPath = toShapeDataPath(
-        companion.outputPath,
-        targetAlias,
-      );
+      const companionShapeDataPath = toShapeDataPath(companion.outputPath);
       if (knownOutputPaths.has(companionShapeDataPath)) {
         continue;
       }
@@ -2846,7 +2856,6 @@ export async function convertMod(
 
   const shapeDataMeshes = await synthesizeMissingShapeDataMeshes(
     outputDir,
-    targetBodyType,
     convertedFiles,
   );
   if (shapeDataMeshes.size > 0) {
