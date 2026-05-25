@@ -127,12 +127,13 @@ function targetSpecificOperations(targetType: BodyType): ConversionOperation[] {
     });
   }
 
-  if (targetType === "3ba") {
+  if (targetType === "3ba" || targetType === "coco") {
+    const label = targetType === "3ba" ? "3BA" : "COCO";
     ops.push({
       id: "3ba-belly",
-      name: "Add 3BA belly physics group",
+      name: `Add ${label} belly physics group`,
       description:
-        "3BA supports a belly physics chain in addition to breast/butt. Confirm NPC Belly is weighted in the mesh and that both NPC Belly and NPC BellyRoot are listed in the CBPC config for full 3BA physics support.",
+        `${label} supports a belly physics chain in addition to breast/butt. Confirm NPC Belly is weighted in the mesh and that both NPC Belly and NPC BellyRoot are listed in the CBPC/HDT-SMP config for full ${label} physics support.`,
     });
   }
 

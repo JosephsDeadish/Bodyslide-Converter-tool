@@ -8,6 +8,7 @@ The desktop path now uses a **Python core conversion engine** (invoked by Electr
 
 - cbbe
 - 3ba
+- coco
 - himbo
 - bodytalk
 - tbd
@@ -15,6 +16,7 @@ The desktop path now uses a **Python core conversion engine** (invoked by Electr
 - unp
 - bhunp
 - uunp
+- ube
 - 7base
 - sam
 - vanilla

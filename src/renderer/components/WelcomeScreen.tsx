@@ -13,11 +13,11 @@ export function WelcomeScreen() {
         <ul className="feature-list">
           <Tooltip
             dir="bottom"
-            text="Detects 13 body types including all major female bodies (CBBE, 3BA, TBD, UNP, BHUNP, UUNP, UBE, 7base), male bodies (HIMBO, BodyTalk, SOS, SAM), and Vanilla. You probably have at least 7 of these installed."
+            text="Detects 15 body types including all major female bodies (CBBE, 3BA, COCO, TBD, UNP, BHUNP, UUNP, UBE, 7base), male bodies (HIMBO, BodyTalk, SOS, SAM), and Vanilla."
           >
             <li>
-              ✓ Detects CBBE, 3BA, HIMBO, TBD, SOS, UNP, BHUNP, UUNP, UBE,
-              7base, SAM, BodyTalk, Vanilla
+              ✓ Detects CBBE, 3BA, COCO, HIMBO, TBD, SOS, UNP, BHUNP, UUNP,
+              UBE, 7base, SAM, BodyTalk, and Vanilla
             </li>
           </Tooltip>
           <Tooltip

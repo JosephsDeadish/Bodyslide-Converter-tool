@@ -53,6 +53,7 @@ const PACKAGING_TOOLTIP: Record<string, string> = {
 const FEMALE_BODY_TYPES = [
   "cbbe",
   "3ba",
+  "coco",
   "tbd",
   "unp",
   "bhunp",
@@ -520,6 +521,8 @@ const BODY_HUMOR: Record<string, string> = {
   cbbe: "The McDonald's of Skyrim female bodies — everyone has it installed. It just works. The unofficial prerequisite of modding.",
   "3ba":
     "CBBE but now everything jiggles realistically. You have achieved maximum physics. Your GPU is slightly concerned.",
+  coco:
+    "COCO Body: CBBE-family curves with 3BBB-style physics support. Great if you like your presets spicy and your bounce settings dangerously configurable.",
   himbo:
     "Big himbo energy for your male NPCs. Shoulders wider than your monitor. Built different.",
   bodytalk:

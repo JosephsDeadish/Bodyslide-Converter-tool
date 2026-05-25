@@ -411,15 +411,16 @@ function buildPhysicsConfigCheck(
 }
 
 function buildBellyCheck(outputFiles: ScannedFile[], targetType: BodyType) {
-  if (targetType !== "3ba") {
+  if (targetType !== "3ba" && targetType !== "coco") {
     return createCheck(
       "3ba-belly",
-      "Add 3BA belly physics group",
+      "Add 3BA/COCO belly physics group",
       "not-applicable",
-      "3BA belly validation is only required when targeting 3BA.",
+      "3BA/COCO belly validation is only required when targeting 3BA or COCO.",
     );
   }
 
+  const label = targetType.toUpperCase();
   const haystack = outputFiles
     .filter((file) => isMesh(file) || isPhysicsConfig(file))
     .map((file) => `${file.relativePath}\n${file.preview}`)
@@ -429,15 +430,17 @@ function buildBellyCheck(outputFiles: ScannedFile[], targetType: BodyType) {
 
   return createCheck(
     "3ba-belly",
-    "Add 3BA belly physics group",
+    `Add ${label} belly physics group`,
     status,
     hits.length === 2
       ? "Detected both NPC Belly and NPC BellyRoot markers in converted assets/configs."
       : "Could not confirm both NPC Belly and NPC BellyRoot markers in converted assets/configs.",
     hits.length === 2
-      ? ["3BA belly chain markers were detected for both the mesh/config pass."]
+      ? [
+          `${label} belly chain markers were detected for both the mesh/config pass.`,
+        ]
       : [
-          "3BA belly support needs both NPC Belly and NPC BellyRoot references for full coverage.",
+          `${label} belly support needs both NPC Belly and NPC BellyRoot references for full coverage.`,
         ],
     hits,
   );
