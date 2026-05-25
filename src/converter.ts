@@ -53,6 +53,46 @@ const BODYSLIDE_PROJECT_XML_MARKERS: readonly string[] = [
   "<sliderset>",
 ];
 
+const BODYSLIDE_SLIDERSET_PATH_MARKERS: readonly string[] = [
+  "calientetools/bodyslide/slidersets/",
+  "bodyslide/slidersets/",
+  "slidersets/",
+];
+const BODYSLIDE_SLIDERGROUP_PATH_MARKERS: readonly string[] = [
+  "calientetools/bodyslide/slidergroups/",
+  "bodyslide/slidergroups/",
+  "slidergroups/",
+];
+const BODYSLIDE_SHAPEDATA_PATH_MARKERS: readonly string[] = [
+  "calientetools/bodyslide/shapedata/",
+  "bodyslide/shapedata/",
+  "shapedata/",
+];
+
+function extractBodySlideSubpath(
+  forwardPath: string,
+  markers: readonly string[],
+): string | null {
+  const normalized = forwardPath.replace(/\\/g, "/");
+  const lower = normalized.toLowerCase();
+  for (const marker of markers) {
+    const lowerMarker = marker.toLowerCase();
+    if (lower.startsWith(lowerMarker)) {
+      const suffix = normalized.slice(marker.length).replace(/^\/+/, "");
+      return suffix.length > 0 ? suffix : null;
+    }
+    const embeddedMarker = `/${lowerMarker}`;
+    const markerIndex = lower.indexOf(embeddedMarker);
+    if (markerIndex >= 0) {
+      const suffix = normalized
+        .slice(markerIndex + embeddedMarker.length)
+        .replace(/^\/+/, "");
+      return suffix.length > 0 ? suffix : null;
+    }
+  }
+  return null;
+}
+
 /**
  * Remaps a rewritten relative path to its canonical Skyrim Data location so
  * that MO2 picks it up automatically when the output folder is set as a mod.
@@ -115,7 +155,11 @@ function normalizeToMo2DataPath(
 
   // .osp → BodySlide slider-set definition; must live in SliderSets/
   if (extension === ".osp") {
-    return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
+    const sliderSetSubpath = extractBodySlideSubpath(
+      forward,
+      BODYSLIDE_SLIDERSET_PATH_MARKERS,
+    );
+    return `CalienteTools/BodySlide/SliderSets/${sliderSetSubpath ?? basename(forward)}`;
   }
 
   // .xml → route BodySlide project XMLs (<SliderSetInfo>) to SliderSets/,
@@ -138,14 +182,22 @@ function normalizeToMo2DataPath(
       /(^|\/)bodyslide\/slidersets\//.test(lower) ||
       /(^|\/)slidersets\//.test(lower)
     ) {
-      return `CalienteTools/BodySlide/SliderSets/${basename(forward)}`;
+      const sliderSetSubpath = extractBodySlideSubpath(
+        forward,
+        BODYSLIDE_SLIDERSET_PATH_MARKERS,
+      );
+      return `CalienteTools/BodySlide/SliderSets/${sliderSetSubpath ?? basename(forward)}`;
     }
     if (
       /(^|\/)calientetools\/bodyslide\/slidergroups\//.test(lower) ||
       /(^|\/)bodyslide\/slidergroups\//.test(lower) ||
       /(^|\/)slidergroups\//.test(lower)
     ) {
-      return `CalienteTools/BodySlide/SliderGroups/${basename(forward)}`;
+      const sliderGroupSubpath = extractBodySlideSubpath(
+        forward,
+        BODYSLIDE_SLIDERGROUP_PATH_MARKERS,
+      );
+      return `CalienteTools/BodySlide/SliderGroups/${sliderGroupSubpath ?? basename(forward)}`;
     }
     return forward;
   }
@@ -1328,21 +1380,23 @@ async function synthesizeMissingSliderSetProject(
       const primaryPath = group.highWeightPath ?? group.lowWeightPath;
       if (!primaryPath) return "";
       const sliderSourcePath = shapeDataMeshMap.get(primaryPath) ?? primaryPath;
+      const outputPathForSliderSet = primaryPath;
       // Split into directory (with trailing slash) and filename so that
       // BodySlide can parse OutputPath + OutputFile correctly.
-      const slashIndex = sliderSourcePath.lastIndexOf("/");
+      const slashIndex = outputPathForSliderSet.lastIndexOf("/");
       const nifDir =
-        slashIndex >= 0 ? sliderSourcePath.slice(0, slashIndex + 1) : "";
+        slashIndex >= 0 ? outputPathForSliderSet.slice(0, slashIndex + 1) : "";
       const nifFile =
         slashIndex >= 0
-          ? sliderSourcePath.slice(slashIndex + 1)
-          : sliderSourcePath;
+          ? outputPathForSliderSet.slice(slashIndex + 1)
+          : outputPathForSliderSet;
+      const sourceFile = toBodySlideSourceFilePath(sliderSourcePath);
       const groupName = `${targetAlias} Outfits`;
       return [
         `  <SliderSet name="${escapeXml(displayName)}">`,
         `    <OutputPath>${escapeXml(nifDir)}</OutputPath>`,
         `    <OutputFile>${escapeXml(nifFile)}</OutputFile>`,
-        `    <SourceFile>${escapeXml(nifFile)}</SourceFile>`,
+        `    <SourceFile>${escapeXml(sourceFile)}</SourceFile>`,
         `    <ShapeCount>1</ShapeCount>`,
         `    <DefaultWeight>1</DefaultWeight>`,
         `    <Groups>`,
@@ -1401,6 +1455,15 @@ function toShapeDataPath(meshPath: string, targetAlias: string): string {
     ? `CalienteTools/BodySlide/ShapeData/${targetAlias}/${relativeMeshDir}`
     : `CalienteTools/BodySlide/ShapeData/${targetAlias}`;
   return `${outputDir}/${fileName}`;
+}
+
+function toBodySlideSourceFilePath(path: string): string {
+  const normalized = path.replace(/\\/g, "/");
+  const sourceSubpath = extractBodySlideSubpath(
+    normalized,
+    BODYSLIDE_SHAPEDATA_PATH_MARKERS,
+  );
+  return sourceSubpath ?? basename(normalized);
 }
 
 async function synthesizeMissingShapeDataMeshes(
@@ -1983,8 +2046,12 @@ const BODY_ASSET_PATH_FRAGMENTS = [
 
 const OUTFIT_MESH_PATH_FRAGMENTS = [
   "/meshes/armor/",
+  "/meshes/armors/",
   "/meshes/clothes/",
   "/meshes/clothing/",
+  "/meshes/outfit/",
+  "/meshes/outfits/",
+  "/meshes/apparel/",
   "/meshes/armour/",
   "/calientetools/bodyslide/shapedata/",
   "/bodyslide/shapedata/",
@@ -2004,7 +2071,26 @@ const OUTFIT_MESH_FILENAME_HINTS = [
   "helmet",
   "hood",
   "robe",
+  "shirt",
+  "blouse",
+  "pants",
+  "trouser",
+  "skirt",
+  "jacket",
+  "coat",
   "dress",
+  "sleeve",
+  "stocking",
+  "sock",
+  "shoe",
+  "panty",
+  "bra",
+  "harness",
+  "bodysuit",
+  "vest",
+  "cloak",
+  "cape",
+  "mask",
   "corset",
   "bikini",
 ];
@@ -2047,7 +2133,26 @@ const BODY_CONVERTIBLE_NIF_HINTS = [
   "armour",
   "clothes",
   "clothing",
+  "shirt",
+  "blouse",
+  "pants",
+  "trouser",
+  "skirt",
+  "jacket",
+  "coat",
   "dress",
+  "sleeve",
+  "stocking",
+  "sock",
+  "shoe",
+  "panty",
+  "bra",
+  "harness",
+  "bodysuit",
+  "vest",
+  "cloak",
+  "cape",
+  "mask",
   "corset",
   "bikini",
   "top",

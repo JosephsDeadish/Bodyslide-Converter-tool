@@ -1791,10 +1791,13 @@ describe("convertMod", () => {
     );
     expect(sliderSetContent).toContain('<SliderSet name="3BA Plated">');
     expect(sliderSetContent).toContain(
-      "<OutputPath>CalienteTools/BodySlide/ShapeData/3BA/armor/</OutputPath>",
+      "<OutputPath>meshes/armor/</OutputPath>",
     );
     expect(sliderSetContent).toContain(
       "<OutputFile>3BA_plated_1.nif</OutputFile>",
+    );
+    expect(sliderSetContent).toContain(
+      "<SourceFile>3BA/armor/3BA_plated_1.nif</SourceFile>",
     );
     const shapeDataMesh = await readFile(
       join(
@@ -1872,6 +1875,67 @@ describe("convertMod", () => {
 
     await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
       recursive: true,
+    });
+
+    it("preserves nested SliderSets folder structure to avoid project filename collisions", async () => {
+      const inputDir = await makeTempDir();
+      const outputDir = await makeTempDir();
+
+      await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "SetA"), {
+        recursive: true,
+      });
+      await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets", "SetB"), {
+        recursive: true,
+      });
+      await writeFile(
+        join(
+          inputDir,
+          "CalienteTools",
+          "BodySlide",
+          "SliderSets",
+          "SetA",
+          "cbbe_armor.osp",
+        ),
+        '<SliderSetInfo><SliderSet name="CBBE Armor A"></SliderSet></SliderSetInfo>',
+        "utf8",
+      );
+      await writeFile(
+        join(
+          inputDir,
+          "CalienteTools",
+          "BodySlide",
+          "SliderSets",
+          "SetB",
+          "cbbe_armor.osp",
+        ),
+        '<SliderSetInfo><SliderSet name="CBBE Armor B"></SliderSet></SliderSetInfo>',
+        "utf8",
+      );
+
+      const files = await scanModFiles(inputDir);
+      const detection = detectBodyType(files);
+      const result = await convertMod(
+        inputDir,
+        outputDir,
+        files,
+        detection,
+        "3ba",
+      );
+
+      expect(
+        result.convertedFiles.some(
+          (file) =>
+            file.outputPath ===
+            "CalienteTools/BodySlide/SliderSets/SetA/3BA_armor.osp",
+        ),
+      ).toBe(true);
+      expect(
+        result.convertedFiles.some(
+          (file) =>
+            file.outputPath ===
+            "CalienteTools/BodySlide/SliderSets/SetB/3BA_armor.osp",
+        ),
+      ).toBe(true);
     });
     await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"), {
       recursive: true,
@@ -2374,6 +2438,43 @@ describe("convertMod", () => {
     expect(
       result.convertedFiles.some((file) =>
         file.outputPath.endsWith("3BA_outfit_0.nif"),
+      ),
+    ).toBe(true);
+  });
+
+  it("converts clothing meshes with non-weighted filenames when clothing keywords are present", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "custom"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "custom", "linen_shirt.nif"),
+      "caliente cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) => file.outputPath === "meshes/custom/linen_shirt.nif",
+      ),
+    ).toBe(false);
+    expect(
+      result.convertedFiles.some(
+        (file) => file.outputPath === "meshes/custom/linen_3BA.nif",
+      ),
+    ).toBe(false);
+    expect(
+      result.convertedFiles.some(
+        (file) => file.outputPath === "meshes/custom/3BA_linen_shirt.nif",
       ),
     ).toBe(true);
   });
