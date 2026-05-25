@@ -1547,10 +1547,21 @@ function toRuntimeMeshPathFromShapeData(shapeDataPath: string): string | null {
     return null;
   }
   const segments = shapeDataSubpath.split("/").filter(Boolean);
-  if (segments.length <= 1) {
+  if (segments.length === 0) {
     return null;
   }
-  return `meshes/${segments.slice(1).join("/")}`;
+  const firstSegment = segments[0] ?? "";
+  const knownOutputAliases = new Set(
+    Object.values(BODY_TYPE_OUTPUT_ALIASES).map((alias) => alias.toLowerCase()),
+  );
+  const runtimeSegments =
+    knownOutputAliases.has(firstSegment.toLowerCase()) && segments.length > 1
+      ? segments.slice(1)
+      : segments;
+  if (runtimeSegments.length === 0) {
+    return null;
+  }
+  return `meshes/${runtimeSegments.join("/")}`;
 }
 
 function toBodySlideSourceFilePath(path: string): string {

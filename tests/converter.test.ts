@@ -271,6 +271,86 @@ describe("convertMod", () => {
     );
   });
 
+  it("keeps non-alias ShapeData project folders when synthesizing runtime OSD outputs", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "MyCoolProject",
+      ),
+      { recursive: true },
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "MyCoolProject",
+        "cbbe_projectoutfit_0.nif",
+      ),
+      "cbbe mesh",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "MyCoolProject",
+        "cbbe_projectoutfit_0.osd",
+      ),
+      "osd payload",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "meshes/MyCoolProject/3BA_projectoutfit_1.osd" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+
+    const runtimeOsd = await readFile(
+      join(outputDir, "meshes", "MyCoolProject", "3BA_projectoutfit_1.osd"),
+      "utf8",
+    );
+    expect(runtimeOsd).toBe("osd payload");
+
+    const sliderSetContent = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "3BA_AutoConverted.osp",
+      ),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain(
+      "<OutputPath>meshes/MyCoolProject/</OutputPath>",
+    );
+    expect(sliderSetContent).toContain(
+      "<OutputFile>3BA_projectoutfit_1.nif</OutputFile>",
+    );
+  });
+
   it("remaps known physics bone references in text configs", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
