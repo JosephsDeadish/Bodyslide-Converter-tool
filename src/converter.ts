@@ -1854,6 +1854,8 @@ const CBPC_BELLY_DEFAULT = "0.300";
 const CBPC_BREASTROOT_DEFAULT = "1.000";
 const CBPC_GENITALS_DEFAULT = "0.350";
 const CBPC_SCROTUM_DEFAULT = "0.250";
+const CBPC_ASSIGNMENT_LINE_RE =
+  /^\s*([A-Za-z][^\n=;#]*?)\s*=\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?:\s*[;#].*)?$/;
 
 function cbpcDefaultWeight(boneName: string): string {
   const lower = boneName.toLowerCase();
@@ -1864,6 +1866,21 @@ function cbpcDefaultWeight(boneName: string): string {
   if (lower.includes("scrotum")) return CBPC_SCROTUM_DEFAULT;
   if (lower.includes("genitals")) return CBPC_GENITALS_DEFAULT;
   return CBPC_BREAST_DEFAULT;
+}
+
+function normalizeBoneNameForLookup(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function collectCbpcAssignedBones(content: string): Set<string> {
+  const assignedBones = new Set<string>();
+  for (const line of content.split(/\r?\n/)) {
+    const match = line.match(CBPC_ASSIGNMENT_LINE_RE);
+    const boneName = match?.[1]?.trim();
+    if (!boneName) continue;
+    assignedBones.add(normalizeBoneNameForLookup(boneName));
+  }
+  return assignedBones;
 }
 
 /**
@@ -1881,7 +1898,7 @@ function looksLikeCbpcConfig(content: string, outputPath: string): boolean {
   if (!pathIsCbpc) return false;
   // Confirm the content contains at least one bone=weight assignment so we
   // don't misidentify an empty or comment-only INI as a config file.
-  return /^[A-Za-z][^\n=]*=[0-9.]+/m.test(content.slice(0, 8192));
+  return collectCbpcAssignedBones(content.slice(0, 8192)).size > 0;
 }
 
 /**
@@ -1908,9 +1925,9 @@ function ensureTargetPhysicsBonesPresent(
   if (!looksLikeCbpcConfig(content, outputPath)) {
     return content;
   }
-  const lowerContent = content.toLowerCase();
+  const assignedBones = collectCbpcAssignedBones(content);
   const missingBones = targetInfo.physicsBones.filter(
-    (bone) => !lowerContent.includes(bone.toLowerCase()),
+    (bone) => !assignedBones.has(normalizeBoneNameForLookup(bone)),
   );
   if (missingBones.length === 0) return content;
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[target];

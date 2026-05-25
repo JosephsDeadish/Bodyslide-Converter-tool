@@ -2968,6 +2968,58 @@ describe("convertMod", () => {
     }
   });
 
+  it("handles spaced CBPC assignments and ignores commented-out bone lines when filling missing physics bones", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe mesh",
+    );
+
+    const partialConfig = [
+      "; NPC R Breast03=0.123",
+      "NPC L Breast01 = 0.500",
+      "NPC R Breast01 = 0.500 ; inline comment",
+      "NPC L Breast02 = .400",
+      "NPC R Breast02 = .400",
+    ].join("\n");
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbbe_spaced.ini"),
+      partialConfig,
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const convertedConfigEntry = result.convertedFiles.find(
+      (file) =>
+        file.kind === "text" &&
+        file.outputPath.toLowerCase().includes("cbpc/cbbe_spaced.ini"),
+    );
+    expect(convertedConfigEntry).toBeDefined();
+
+    const convertedConfig = await readFile(
+      join(outputDir, convertedConfigEntry?.outputPath ?? ""),
+      "utf8",
+    );
+
+    expect(convertedConfig).toContain(
+      "; Missing physics chain bones added by SlideSmith",
+    );
+    expect(convertedConfig).toContain("NPC R Breast03=0.600");
+  });
+
   it("preserves non-armor/non-clothing NIFs without body alias rewriting", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
