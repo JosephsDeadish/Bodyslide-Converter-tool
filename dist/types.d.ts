@@ -62,6 +62,7 @@ export type PythonEngineRunSummary = {
     warnings: string[];
     libraries: {
         pynifly: boolean;
+        pyffi: boolean;
         numpy: boolean;
         scipy: boolean;
         trimesh: boolean;
