@@ -55,14 +55,14 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   "3ba": {
     displayName: "3BA – 3BBB Amazing Body",
     description:
-      "CBBE-based female body with full physics for breasts, butt, and belly. Requires CBPC or HDT-SMP. Extends the CBBE skeleton with BreastRoot control bones and a belly physics chain on top of the standard NPC breast/butt bones. The most widely used physics body for Skyrim SE/AE as of 2024.",
+      "CBBE-based female body with full physics for breasts, butt, and belly. Supports both CBPC (CPU physics) and HDT-SMP (GPU softbody). The '3BA Softbody' variant enables per-vertex HDT-SMP deformation via NiSkinData partitions for the most realistic cloth/body simulation available in SE/AE. Extends the CBBE skeleton with NPC LBreastRoot / NPC RBreastRoot control bones and a NPC BellyRoot chain. The most widely used physics body for Skyrim SE/AE.",
     gender: "female",
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: true,
     skeletonProfile: "XPMSSE / XP32 Extended required",
     skeletonNotes:
-      "3BA expects XPMSSE-style extended breast/butt/belly chains (including L/R BreastRoot). Using a non-XP32 skeleton usually breaks runtime physics behavior.",
+      "3BA expects XPMSSE-style extended breast/butt/belly chains (including L/R BreastRoot). Using a non-XP32 skeleton usually breaks runtime physics behavior. 3BA Softbody requires a correctly configured HDT-SMP XML alongside the NIF.",
     referenceProject: "3BA / 3BBB Amazing Body by acro748",
     aliases: [
       "3BA",
@@ -87,6 +87,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "3BA Body Amazing",
       "3BBB Advanced",
       "3BA Advanced",
+      "3BA CBPC",
+      "3BA HDT-SMP",
+      "3BA SMP",
     ],
     physicsBones: [
       "NPC L Breast01",
@@ -108,21 +111,22 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "butt volume",
       "belly weighting",
       "physics groups",
+      "softbody partitions",
     ],
     conversionNotes:
-      "Converting TO 3BA: add physics-chain bone weighting to breast and butt areas; CBPC config must list those bones. NPC LBreastRoot / NPC RBreastRoot are 3BA-specific root control bones above the standard chain. Converting FROM 3BA to a non-physics body: collapse all physics-chain bone weights back to NPC Spine2 (breast) and NPC Pelvis (butt). NPC BellyRoot collapses to NPC Belly for non-3BA targets.",
+      "Converting TO 3BA: add physics-chain bone weighting to breast and butt areas; CBPC config must list those bones. NPC LBreastRoot / NPC RBreastRoot are 3BA-specific root control bones above the standard chain — they must be preserved for CBPC/HDT-SMP to work correctly. For 3BA Softbody, the NIF must use NiSkinData partitions and a matching HDT-SMP XML must be provided. Converting FROM 3BA to a non-physics body: collapse all physics-chain bone weights back to NPC Spine2 (breast) and NPC Pelvis (butt). NPC BellyRoot collapses to NPC Belly for non-3BA targets.",
   },
   himbo: {
     displayName: "HIMBO – Highly Improved Male Body Overhaul",
     description:
-      "Leading male body replacer for Skyrim SE/AE with extensive BodySlide support and a full slider set. Uses a different bone hierarchy and proportions from all female bodies — wider shoulders, deeper chest, and narrower hips. HIMBO V5+ supports optional physics via the HIMBO Physics Addon (HDT-SMP), which uses NPC L/R Pectoral bones. Compatible with most male armor conversions.",
+      "Leading male body replacer for Skyrim SE/AE with extensive BodySlide support and a full slider set. Uses a different bone hierarchy and proportions from all female bodies — wider shoulders, deeper chest, and narrower hips. HIMBO V5+ supports optional pectoral physics via the separate HIMBO Physics Addon (HDT-SMP only), which uses NPC L/R Pectoral bones. Compatible with most male armor conversions.",
     gender: "male",
     family: "male",
     topology: "male",
-    physicsSupport: false,
+    physicsSupport: true,
     skeletonProfile: "XPMSSE male skeleton recommended",
     skeletonNotes:
-      "HIMBO armor conversion is most reliable with XPMSSE-compatible male skeleton paths and modern animation behavior packs. The optional HIMBO Physics Addon requires XPMSSE with pectoral node support.",
+      "HIMBO armor conversion is most reliable with XPMSSE-compatible male skeleton paths and modern animation behavior packs. The optional HIMBO Physics Addon requires XPMSSE with pectoral node support and an HDT-SMP XML config; CBPC is not used for HIMBO pectoral physics.",
     referenceProject: "HIMBO by Tiktak123 (V5+)",
     aliases: [
       "HIMBO",
@@ -140,9 +144,11 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "HIMBO V4",
       "HIMBO V5",
       "HIMBO Physics Addon",
+      "HIMBO Physics",
+      "HIMBO SMP",
       "HIMBO Reduced",
     ],
-    physicsBones: [],
+    physicsBones: ["NPC L Pectoral", "NPC R Pectoral"],
     adaptationFocus: [
       "shoulders",
       "pectorals",
@@ -153,19 +159,19 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "calves",
     ],
     conversionNotes:
-      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Prioritize BodySlide preview and in-game checks for chest and shoulder fit extremes. For HIMBO V5+ physics, the optional HIMBO Physics Addon uses HDT-SMP with NPC L/R Pectoral bones; enable that separately after the BodySlide conversion.",
+      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Prioritize BodySlide preview and in-game checks for chest and shoulder fit extremes. For HIMBO V5+ physics, the optional HIMBO Physics Addon is a separate install that adds HDT-SMP pectoral motion via NPC L/R Pectoral bones; enable that after the base BodySlide conversion and ensure the SMP XML config is included. CBPC is not used for HIMBO pectoral physics.",
   },
   bodytalk: {
     displayName: "BodyTalk – High-Poly Male Body Replacer",
     description:
-      "Popular high-poly male body replacer family (BodyTalk V2/V3 / BT3) with BodySlide slider presets. Predates HIMBO. Older in style but widely referenced in legacy male conversions. BT3 (BodyTalk V3) is the most used modern variant and includes a BodyTalk Physics variant (HDT-SMP).",
+      "Popular high-poly male body replacer family (BodyTalk V2/V3 / BT3) with BodySlide slider presets. Predates HIMBO. Older in style but widely referenced in legacy male conversions. BT3 (BodyTalk V3) is the most used modern variant. The separate BodyTalk Physics addon (HDT-SMP) adds pectoral motion using NPC L/R Pectoral bones, the same convention as the HIMBO Physics Addon.",
     gender: "male",
     family: "male",
     topology: "male",
-    physicsSupport: false,
+    physicsSupport: true,
     skeletonProfile: "XPMSSE male skeleton recommended",
     skeletonNotes:
-      "BodyTalk packs generally assume XP32/XPMSSE-era skeleton layouts in Skyrim SE ports, especially when mixed with modern animation and physics mods.",
+      "BodyTalk packs generally assume XP32/XPMSSE-era skeleton layouts in Skyrim SE ports, especially when mixed with modern animation and physics mods. The BodyTalk Physics addon requires XPMSSE pectoral node support and an HDT-SMP XML config.",
     referenceProject:
       "BodyTalk by Haeun / Bad Dog / assorted community maintainers",
     aliases: [
@@ -181,9 +187,11 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "BT2",
       "BT3 Muscle Solution",
       "BodyTalk Physics",
+      "BodyTalk SMP",
       "BodyTalk V3 SE",
+      "BodyTalk HDT-SMP",
     ],
-    physicsBones: [],
+    physicsBones: ["NPC L Pectoral", "NPC R Pectoral"],
     adaptationFocus: [
       "shoulders",
       "chest depth",
@@ -191,19 +199,19 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "thigh mass",
     ],
     conversionNotes:
-      "BodyTalk projects behave similarly to other male slider sets but keep distinct naming. Converting to or from BodyTalk should preserve male asset paths while retargeting BodySlide metadata to BodyTalk aliases. BT3 (BodyTalk V3) is the most common modern variant.",
+      "BodyTalk projects behave similarly to other male slider sets but keep distinct naming. Converting to or from BodyTalk should preserve male asset paths while retargeting BodySlide metadata to BodyTalk aliases. BT3 (BodyTalk V3) is the most common modern variant. The BodyTalk Physics addon adds HDT-SMP pectoral physics via NPC L/R Pectoral bones; ensure the SMP XML config is included when converting physics-enabled BT3 content.",
   },
   tbd: {
     displayName: "TBD – Touched by Dibella",
     description:
-      "Alternative female body replacer by Maars focused on larger proportions and a distinct CBBE-compatible silhouette. TBD uses CBBE topology and the same skeleton, so it is directly compatible with standard CBBE/CBPC physics bone configs (NPC breast/butt bones). Requires a physics addon (CBPC or HDT-SMP) to activate breast/butt/belly motion. TBD 3BBB adds full belly physics support.",
+      "Alternative female body replacer by Maars focused on larger proportions and a distinct CBBE-compatible silhouette. TBD uses CBBE topology and the same skeleton, so it is directly compatible with standard CBBE/CBPC physics bone configs (NPC breast/butt bones). Supports both CBPC and HDT-SMP physics. TBD 3BBB adds full belly physics support, and TBD Softbody enables per-vertex HDT-SMP deformation via NiSkinData partitions.",
     gender: "female",
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: true,
     skeletonProfile: "XPMSSE / XP32-compatible skeleton recommended",
     skeletonNotes:
-      "TBD uses CBBE-family physics naming and is typically deployed on XPMSSE in Skyrim SE modlists to keep CBPC/HDT-SMP behavior consistent.",
+      "TBD uses CBBE-family physics naming and is typically deployed on XPMSSE in Skyrim SE modlists to keep CBPC/HDT-SMP behavior consistent. TBD Softbody requires a correctly configured HDT-SMP XML.",
     referenceProject: "TBD / Touched by Dibella by Maars",
     aliases: [
       "TBD",
@@ -221,6 +229,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "TBD Physics",
       "Touched by Dibella Physics",
       "TBD CBBE Physics",
+      "TBD CBPC",
+      "TBD HDT-SMP",
     ],
     physicsBones: [
       "NPC L Breast01",
@@ -238,9 +248,10 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "hip volume",
       "waist curve",
       "physics groups",
+      "softbody partitions",
     ],
     conversionNotes:
-      "TBD proportions differ notably from standard CBBE — larger bust and hip volume. When projecting TO TBD, lower the projection threshold slightly to avoid clipping at bust and hip extremes. TBD uses the same physics bone names as CBBE (NPC L/R Breast01-03, L/R Butt, NPC Belly) without the 3BA-specific BreastRoot bones; physics configs are interchangeable with CBBE-family physics setups.",
+      "TBD proportions differ notably from standard CBBE — larger bust and hip volume. When projecting TO TBD, lower the projection threshold slightly to avoid clipping at bust and hip extremes. TBD uses the same physics bone names as CBBE (NPC L/R Breast01-03, L/R Butt, NPC Belly) without the 3BA-specific BreastRoot bones; CBPC configs are interchangeable with CBBE-family physics setups. For TBD Softbody, include the HDT-SMP XML config alongside the NIF. TBD 3BBB adds full belly physics on NPC Belly.",
   },
   sos: {
     displayName: "SOS – Schlongs of Skyrim",
@@ -321,14 +332,14 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
   bhunp: {
     displayName: "BHUNP – BoneHunger UNP 3BBB",
     description:
-      "UNP variant with full CBPC/HDT-SMP physics support. Adds three-level breast chains (L/R01–03), butt bones, and belly physics to the UNP skeleton using the BHUNP-prefixed bone naming convention. Compatible with BodySlide. BHUNP V3 introduced improved topology and additional sliders.",
+      "UNP variant with full CBPC and HDT-SMP physics support. Adds three-level breast chains (L/R01–03), butt bones, and belly physics to the UNP skeleton using the BHUNP-prefixed bone naming convention — distinct from the NPC L/R Breast naming used by CBBE-family bodies. BHUNP Softbody enables per-vertex HDT-SMP deformation via NiSkinData partitions. Compatible with BodySlide. BHUNP V3 introduced improved topology and additional sliders.",
     gender: "female",
     family: "unp",
     topology: "unp",
     physicsSupport: true,
     skeletonProfile: "XPMSSE / XP32 Extended required",
     skeletonNotes:
-      "BHUNP physics chains are usually deployed through XPMSSE-compatible setups; confirm BHUNP-prefixed breast/butt node support before shipping.",
+      "BHUNP physics chains are deployed through XPMSSE-compatible setups; confirm BHUNP-prefixed breast/butt node support before shipping. BHUNP Softbody requires a matching HDT-SMP XML config alongside the NIF.",
     referenceProject: "BHUNP by BoneHunger",
     aliases: [
       "BHUNP",
@@ -347,6 +358,9 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "BHUNP V3",
       "BHUNP 3BBB Advanced",
       "BHUNP Special Edition",
+      "BHUNP CBPC",
+      "BHUNP HDT-SMP",
+      "BHUNP SMP",
     ],
     physicsBones: [
       "BHUNP Breast L01",
@@ -364,21 +378,22 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "butt weighting",
       "physics groups",
       "waist seams",
+      "softbody partitions",
     ],
     conversionNotes:
-      "Similar conversion path to 3BA but uses different physics bone names for breast chains (BHUNP Breast L/R01-03 vs NPC L/R Breast01-03) and butt bones (BHUNP Butt L/R vs NPC L/R Butt). Belly physics uses the shared NPC Belly bone. BHUNP does NOT use BreastRoot bones — those are 3BA-specific. Confirm CBPC config references BHUNP bone names specifically.",
+      "Similar conversion path to 3BA but uses different physics bone names for breast chains (BHUNP Breast L/R01-03 vs NPC L/R Breast01-03) and butt bones (BHUNP Butt L/R vs NPC L/R Butt). Belly physics uses the shared NPC Belly bone. BHUNP does NOT use BreastRoot bones — those are 3BA-specific. CBPC config must reference BHUNP bone names specifically. For BHUNP Softbody, include the HDT-SMP XML config alongside the NIF. When converting 3BA content to BHUNP, remap all NPC L/R Breast01-03 → BHUNP Breast L/R01-03 and NPC L/R Butt → BHUNP Butt L/R.",
   },
   uunp: {
     displayName: "UUNP – Unified UNP",
     description:
-      "BodySlide-compatible unified version of UNP supporting multiple shape presets via a single slider set, mirroring CBBE's workflow. UUNP Special (the most common variant) includes TBBP (Triple BBB Physics) support using standard UNP-family physics bones. Maintained by ousnius as part of the BodySlide and Outfit Studio project.",
+      "BodySlide-compatible unified version of UNP supporting multiple shape presets via a single slider set, mirroring CBBE's workflow. UUNP Special (the most common variant) includes TBBP physics support using standard NPC L/R Breast01-03, NPC L/R Butt, and NPC Belly bone names — the same convention as CBBE-family physics bodies. UBE (Unified Body Enhancer) is a UUNP alias. UUNP Special Softbody enables per-vertex HDT-SMP deformation. Maintained by ousnius as part of the BodySlide and Outfit Studio project.",
     gender: "female",
     family: "unp",
     topology: "unp",
     physicsSupport: true,
     skeletonProfile: "XPMSSE / XP32-compatible skeleton recommended",
     skeletonNotes:
-      "UUNP Special physics deployments in Skyrim SE usually rely on XPMSSE-compatible bone layouts for breast/butt/belly runtime motion.",
+      "UUNP Special physics deployments in Skyrim SE usually rely on XPMSSE-compatible bone layouts for breast/butt/belly runtime motion. UUNP Special Softbody requires a matching HDT-SMP XML alongside the NIF.",
     referenceProject: "UUNP by ousnius",
     aliases: [
       "UUNP",
@@ -402,9 +417,13 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "UUNP UBE",
       "UBE Physics",
       "UBE Softbody",
+      "UBE 2.0 Physics",
       "UUNP Special TBBP",
       "UUNP BBP",
       "UUNP TBBP",
+      "UUNP CBPC",
+      "UUNP HDT-SMP",
+      "UUNP SMP",
     ],
     physicsBones: [
       "NPC L Breast01",
@@ -422,9 +441,11 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "waist",
       "hip curve",
       "TBBP weighting",
+      "softbody partitions",
+      "UBE compatibility",
     ],
     conversionNotes:
-      "Shares topology with UNP but optimised for BodySlide workflows. Project onto the UUNP BodySlide reference body and rebuild OSP slider sets. UUNP Special ships with TBBP physics support — if the source mod includes physics configs, verify they match the UUNP bone naming (NPC L/R Breast01-03, L/R Butt, NPC Belly).",
+      "Shares topology with UNP but optimised for BodySlide workflows. Project onto the UUNP BodySlide reference body and rebuild OSP slider sets. UUNP Special ships with TBBP physics support — if the source mod includes physics configs, verify they match the UUNP bone naming (NPC L/R Breast01-03, L/R Butt, NPC Belly). UBE (Unified Body Enhancer) uses the same bone names and physics pipeline as UUNP Special; UBE configs are interchangeable with UUNP Special physics configs. For UUNP Softbody, include the HDT-SMP XML config alongside the NIF.",
   },
   "7base": {
     displayName: "7base – SevenBase Female Body",

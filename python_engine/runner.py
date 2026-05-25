@@ -404,10 +404,71 @@ def stage_status(
                     f"Target physics bones: {target_bones}",
                 ],
             )
+
+        # Build informational detail lines from physicsConfig if present.
+        detail_lines: list[str] = [
+            f"Source physics bones: {source_bones}",
+            f"Target physics bones: {target_bones}",
+        ]
+        source_cfg = source_meta.get("physicsConfig") if isinstance(source_meta, dict) else None
+        target_cfg = target_meta.get("physicsConfig") if isinstance(target_meta, dict) else None
+
+        def physics_config_summary(cfg: Any, label: str) -> list[str]:
+            if not isinstance(cfg, dict):
+                return []
+            lines: list[str] = []
+            level = cfg.get("physicsLevel")
+            convention = cfg.get("boneNamingConvention")
+            cbpc = cfg.get("cbpcCompatible")
+            hdt = cfg.get("hdtSmpCompatible")
+            softbody = cfg.get("softbodySupported")
+            if level:
+                lines.append(f"{label} physics level: {level}")
+            if convention:
+                lines.append(f"{label} bone naming convention: {convention}")
+            compat: list[str] = []
+            if cbpc:
+                compat.append("CBPC")
+            if hdt:
+                compat.append("HDT-SMP")
+            if compat:
+                lines.append(f"{label} compatible physics systems: {', '.join(compat)}")
+            if softbody:
+                lines.append(f"{label} supports softbody (per-vertex HDT-SMP deformation).")
+            notes = cfg.get("notes")
+            if isinstance(notes, str) and notes.strip():
+                lines.append(f"{label} note: {notes.strip()}")
+            return lines
+
+        detail_lines.extend(physics_config_summary(source_cfg, "Source"))
+        detail_lines.extend(physics_config_summary(target_cfg, "Target"))
+
+        # Cross-system compatibility warning.
+        if isinstance(source_cfg, dict) and isinstance(target_cfg, dict):
+            src_conv = source_cfg.get("boneNamingConvention", "")
+            tgt_conv = target_cfg.get("boneNamingConvention", "")
+            if src_conv and tgt_conv and src_conv != tgt_conv:
+                detail_lines.append(
+                    f"Bone naming convention mismatch ({src_conv} → {tgt_conv}): "
+                    "physics config files (CBPC ini / HDT-SMP XML) must be regenerated for the target body."
+                )
+            src_softbody = source_cfg.get("softbodySupported", False)
+            tgt_softbody = target_cfg.get("softbodySupported", False)
+            if src_softbody and not tgt_softbody:
+                detail_lines.append(
+                    "Source supports softbody deformation but target does not: "
+                    "per-vertex HDT-SMP data will be collapsed to standard bone-driven physics."
+                )
+            elif not src_softbody and tgt_softbody:
+                detail_lines.append(
+                    "Target supports softbody deformation: "
+                    "an HDT-SMP XML config with per-vertex skin data is required for full softbody output."
+                )
+
         return (
             "pass",
             "Physics bone and partition preservation profile loaded.",
-            [f"Source physics bones: {source_bones}", f"Target physics bones: {target_bones}"],
+            detail_lines,
         )
 
     if stage_id == "morph-transfer":
