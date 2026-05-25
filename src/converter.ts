@@ -2029,24 +2029,23 @@ async function synthesizeMissingCbpcStub(
     return;
   }
 
-  // Skip if at least one physics config file already came from the source mod.
-  const hasPhysicsConfig = convertedFiles.some((f) => {
+  // Skip only when a real CBPC INI already came from the source mod.
+  // HDT-SMP XML/JSON assets can coexist with CBPC and should not prevent
+  // generating a fallback CBPC stub for users who run CBPC physics.
+  const hasCbpcIniConfig = convertedFiles.some((f) => {
     if (f.action === "synthesized" || f.kind !== "text") {
       return false;
     }
     const normalizedPath = f.outputPath.toLowerCase().replace(/\\/g, "/");
-    const extension = extname(normalizedPath);
-    if (![".ini", ".xml", ".txt", ".json"].includes(extension)) {
+    if (extname(normalizedPath) !== ".ini") {
       return false;
     }
     return (
       normalizedPath.includes("/skse/plugins/cbpc/") ||
-      normalizedPath.includes("/cbpc/") ||
-      normalizedPath.includes("hdt") ||
-      normalizedPath.includes("physics")
+      normalizedPath.includes("/cbpc/")
     );
   });
-  if (hasPhysicsConfig) return;
+  if (hasCbpcIniConfig) return;
 
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
   const boneEntries = targetInfo.physicsBones

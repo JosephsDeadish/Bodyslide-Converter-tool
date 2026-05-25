@@ -2650,6 +2650,43 @@ describe("convertMod", () => {
     expect(stubEntry).toBeDefined();
   });
 
+  it("still synthesizes a CBPC stub when source only ships HDT-SMP XML configs", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "SKSE", "Plugins", "hdtSMP64"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "caliente",
+    );
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "hdtSMP64", "hdtConfigs.xml"),
+      '<hdtPhysicsExtensions><constraints /></hdtPhysicsExtensions>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const stubEntry = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.outputPath.endsWith(".ini") &&
+        f.action === "synthesized",
+    );
+    expect(stubEntry).toBeDefined();
+  });
+
   it("uses genital-specific defaults for synthesized SOS CBPC stubs", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
