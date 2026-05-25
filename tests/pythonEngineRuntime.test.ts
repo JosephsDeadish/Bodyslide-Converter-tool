@@ -4,6 +4,7 @@ import {
   buildDependencyBootstrapCommand,
   buildDependencyPackageBootstrapCommand,
   buildPipToolchainBootstrapCommand,
+  buildPythonVersionProbeCommand,
   getBundledDependencyPathCandidates,
   getPythonDependencyTargetPath,
   getPythonInterpreterCandidates,
@@ -95,6 +96,7 @@ describe("python engine interpreter candidates", () => {
     });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.12"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.11"] });
+    expect(interpreters).toContainEqual({ command: "python3.12", args: [] });
     expect(interpreters).toContainEqual({ command: "python3", args: [] });
     expect(interpreters).toContainEqual({ command: "python", args: [] });
   });
@@ -262,6 +264,7 @@ describe("python dependency bootstrap command", () => {
         "--no-input",
         "--upgrade",
         "--prefer-binary",
+        "--only-binary=:all:",
         "numpy>=2.2.0",
         "--target",
         "/home/user/.slidesmith/python-deps/abc123",
@@ -278,6 +281,16 @@ describe("python dependency bootstrap command", () => {
     expect(probe.args[2]).toContain("import importlib.util");
     expect(probe.args[2]).toContain("pyffi");
     expect(probe.args[2]).toContain("pyvista");
+  });
+
+  it("builds a python version probe command with interpreter args preserved", () => {
+    const probe = buildPythonVersionProbeCommand("py", ["-3.12"]);
+
+    expect(probe.command).toBe("py");
+    expect(probe.args[0]).toBe("-3.12");
+    expect(probe.args[1]).toBe("-c");
+    expect(probe.args[2]).toContain("version_info.major");
+    expect(probe.args[2]).toContain("version_info.minor");
   });
 });
 

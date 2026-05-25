@@ -59,11 +59,20 @@ const REQUIRED_PYTHON_LIBRARIES = [
   "trimesh",
   "pyvista",
 ] as const;
+const SUPPORTED_PYTHON_VERSION_RANGE = {
+  major: 3,
+  minMinor: 10,
+  maxMinor: 12,
+} as const;
 const BUNDLED_DEPENDENCY_PROBE_SNIPPET = [
   "import importlib.util, sys",
   "mods = ['pyffi','numpy','scipy','trimesh','pyvista']",
   "missing = [m for m in mods if importlib.util.find_spec(m) is None]",
   "sys.exit(1 if missing else 0)",
+].join("; ");
+const PYTHON_VERSION_PROBE_SNIPPET = [
+  "import json,sys",
+  "print(json.dumps({'major':sys.version_info.major,'minor':sys.version_info.minor}))",
 ].join("; ");
 
 function isStageReport(value: unknown): value is EngineStageReport {
@@ -146,6 +155,7 @@ export function buildDependencyPackageBootstrapCommand(
     "--no-input",
     "--upgrade",
     "--prefer-binary",
+    "--only-binary=:all:",
     requirement,
   ];
   if (dependencyTargetPath) {
@@ -164,6 +174,16 @@ export function buildBundledDependencyProbeCommand(
   return {
     command,
     args: [...commandArgs, "-c", BUNDLED_DEPENDENCY_PROBE_SNIPPET],
+  };
+}
+
+export function buildPythonVersionProbeCommand(
+  command: string,
+  commandArgs: string[],
+): { command: string; args: string[] } {
+  return {
+    command,
+    args: [...commandArgs, "-c", PYTHON_VERSION_PROBE_SNIPPET],
   };
 }
 
@@ -323,6 +343,19 @@ export async function runPythonEngine(
   let bestRun: PythonEngineRunSummary | null = null;
 
   for (const [index, interpreter] of interpreters.entries()) {
+    const interpreterVersion = await probePythonVersion(
+      interpreter.command,
+      interpreter.args,
+    );
+    if (
+      interpreterVersion &&
+      !isSupportedPythonVersion(
+        interpreterVersion.major,
+        interpreterVersion.minor,
+      )
+    ) {
+      continue;
+    }
     const dependencyTargetPath = getPythonDependencyTargetPath(
       interpreter.command,
       interpreter.args,
@@ -379,7 +412,7 @@ export async function runPythonEngine(
 
   return createFallbackRun(
     runId,
-    "Python interpreter not found. Install Python 3.11+ and set SLIDESMITH_PYTHON if needed.",
+    "No supported Python interpreter found. Install Python 3.10-3.12 (64-bit) and set SLIDESMITH_PYTHON if needed.",
   );
 }
 
@@ -478,6 +511,15 @@ export function getPythonInterpreterCandidates(
       { command: "py", args: ["-3.12"] },
       { command: "py", args: ["-3.11"] },
       { command: "py", args: ["-3.10"] },
+      { command: "python3.12", args: [] },
+      { command: "python3.11", args: [] },
+      { command: "python3.10", args: [] },
+    );
+  } else {
+    candidates.push(
+      { command: "python3.12", args: [] },
+      { command: "python3.11", args: [] },
+      { command: "python3.10", args: [] },
     );
   }
 
@@ -664,6 +706,52 @@ async function canImportRequiredLibraries(
     });
     child.on("error", () => resolve(false));
     child.on("close", (code) => resolve(code === 0));
+  });
+}
+
+function isSupportedPythonVersion(major: number, minor: number): boolean {
+  return (
+    major === SUPPORTED_PYTHON_VERSION_RANGE.major &&
+    minor >= SUPPORTED_PYTHON_VERSION_RANGE.minMinor &&
+    minor <= SUPPORTED_PYTHON_VERSION_RANGE.maxMinor
+  );
+}
+
+async function probePythonVersion(
+  command: string,
+  commandArgs: string[],
+): Promise<null | { major: number; minor: number }> {
+  const probe = buildPythonVersionProbeCommand(command, commandArgs);
+  return new Promise<null | { major: number; minor: number }>((resolve) => {
+    const child = spawn(probe.command, probe.args, {
+      stdio: ["ignore", "pipe", "ignore"],
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: "1",
+      },
+    });
+
+    let output = "";
+    child.on("error", () => resolve(null));
+    child.stdout.on("data", (chunk: Buffer | string) => {
+      output += chunk.toString("utf8");
+    });
+    child.on("close", () => {
+      try {
+        const parsed = JSON.parse(output.trim()) as {
+          major?: unknown;
+          minor?: unknown;
+        };
+        if (
+          typeof parsed.major === "number" &&
+          typeof parsed.minor === "number"
+        ) {
+          resolve({ major: parsed.major, minor: parsed.minor });
+          return;
+        }
+      } catch {}
+      resolve(null);
+    });
   });
 }
 
