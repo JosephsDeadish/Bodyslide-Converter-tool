@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
-import { access, mkdir } from "node:fs/promises";
+import { access, mkdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import type {
@@ -89,6 +89,58 @@ export function buildDependencyBootstrapCommand(
     "--prefer-binary",
     "-r",
     requirementsPath,
+  ];
+  if (dependencyTargetPath) {
+    args.push("--target", dependencyTargetPath);
+  }
+  return {
+    command,
+    args,
+  };
+}
+
+export function buildPipToolchainBootstrapCommand(
+  command: string,
+  commandArgs: string[],
+  dependencyTargetPath?: string,
+): { command: string; args: string[] } {
+  const args = [
+    ...commandArgs,
+    "-m",
+    "pip",
+    "install",
+    "--disable-pip-version-check",
+    "--no-input",
+    "--upgrade",
+    "pip",
+    "setuptools",
+    "wheel",
+  ];
+  if (dependencyTargetPath) {
+    args.push("--target", dependencyTargetPath);
+  }
+  return {
+    command,
+    args,
+  };
+}
+
+export function buildDependencyPackageBootstrapCommand(
+  command: string,
+  commandArgs: string[],
+  requirement: string,
+  dependencyTargetPath?: string,
+): { command: string; args: string[] } {
+  const args = [
+    ...commandArgs,
+    "-m",
+    "pip",
+    "install",
+    "--disable-pip-version-check",
+    "--no-input",
+    "--upgrade",
+    "--prefer-binary",
+    requirement,
   ];
   if (dependencyTargetPath) {
     args.push("--target", dependencyTargetPath);
@@ -494,6 +546,10 @@ async function ensurePythonDependencies(
   if (!(await isReadableFile(requirementsPath))) {
     return;
   }
+  const requirements = await loadBootstrapRequirements(requirementsPath);
+  if (requirements.length === 0) {
+    return;
+  }
 
   await mkdir(dependencyTargetPath, { recursive: true });
   const cacheKey = `${command} ${commandArgs.join(" ")}:${requirementsPath}:${dependencyTargetPath}`;
@@ -504,28 +560,64 @@ async function ensurePythonDependencies(
   }
 
   const installPromise = new Promise<void>((resolve) => {
-    const bootstrap = buildDependencyBootstrapCommand(
-      command,
-      commandArgs,
-      requirementsPath,
-      dependencyTargetPath,
-    );
-    const child = spawn(bootstrap.command, bootstrap.args, {
+    const env = {
+      ...process.env,
+      PYTHONPATH: pythonPath,
+      PIP_DISABLE_PIP_VERSION_CHECK: "1",
+      PYTHONUNBUFFERED: "1",
+    };
+
+    void (async () => {
+      await runBootstrapCommand(
+        buildPipToolchainBootstrapCommand(
+          command,
+          commandArgs,
+          dependencyTargetPath,
+        ),
+        env,
+      );
+      for (const requirement of requirements) {
+        await runBootstrapCommand(
+          buildDependencyPackageBootstrapCommand(
+            command,
+            commandArgs,
+            requirement,
+            dependencyTargetPath,
+          ),
+          env,
+        );
+      }
+      resolve();
+    })();
+  });
+
+  PYTHON_DEP_BOOTSTRAP_CACHE.set(cacheKey, installPromise);
+  await installPromise;
+}
+
+async function loadBootstrapRequirements(
+  requirementsPath: string,
+): Promise<string[]> {
+  const content = await readFile(requirementsPath, "utf8").catch(() => "");
+  return content
+    .split(/\r?\n/)
+    .map((line) => line.replace(/#.*/, "").trim())
+    .filter((line) => line.length > 0);
+}
+
+async function runBootstrapCommand(
+  command: { command: string; args: string[] },
+  env: NodeJS.ProcessEnv,
+): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const child = spawn(command.command, command.args, {
       stdio: "ignore",
-      env: {
-        ...process.env,
-        PYTHONPATH: pythonPath,
-        PIP_DISABLE_PIP_VERSION_CHECK: "1",
-        PYTHONUNBUFFERED: "1",
-      },
+      env,
     });
 
     child.on("error", () => resolve());
     child.on("close", () => resolve());
   });
-
-  PYTHON_DEP_BOOTSTRAP_CACHE.set(cacheKey, installPromise);
-  await installPromise;
 }
 
 async function isReadableFile(path: string): Promise<boolean> {

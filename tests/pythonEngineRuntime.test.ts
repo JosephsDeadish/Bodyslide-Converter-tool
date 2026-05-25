@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDependencyBootstrapCommand,
+  buildDependencyPackageBootstrapCommand,
+  buildPipToolchainBootstrapCommand,
   getBundledDependencyPathCandidates,
   getPythonDependencyTargetPath,
   getPythonInterpreterCandidates,
@@ -213,6 +215,57 @@ describe("python dependency bootstrap command", () => {
       "--target",
       "/home/user/.slidesmith/python-deps/abc123",
     ]);
+  });
+
+  it("builds pip/setuptools/wheel upgrade command before dependency install", () => {
+    const bootstrap = buildPipToolchainBootstrapCommand(
+      "py",
+      ["-3.12"],
+      "C:\\Users\\tester\\.slidesmith\\python-deps\\abc123",
+    );
+
+    expect(bootstrap).toEqual({
+      command: "py",
+      args: [
+        "-3.12",
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--upgrade",
+        "pip",
+        "setuptools",
+        "wheel",
+        "--target",
+        "C:\\Users\\tester\\.slidesmith\\python-deps\\abc123",
+      ],
+    });
+  });
+
+  it("builds per-package bootstrap command so a single package failure is isolated", () => {
+    const bootstrap = buildDependencyPackageBootstrapCommand(
+      "python3",
+      [],
+      "numpy>=2.2.0",
+      "/home/user/.slidesmith/python-deps/abc123",
+    );
+
+    expect(bootstrap).toEqual({
+      command: "python3",
+      args: [
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--upgrade",
+        "--prefer-binary",
+        "numpy>=2.2.0",
+        "--target",
+        "/home/user/.slidesmith/python-deps/abc123",
+      ],
+    });
   });
 });
 
