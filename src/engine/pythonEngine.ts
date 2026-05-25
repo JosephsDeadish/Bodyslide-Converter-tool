@@ -192,17 +192,34 @@ export async function runPythonEngine(
     { command: "python", args: [] },
   ];
 
-  for (const interpreter of interpreters) {
+  let bestRun: PythonEngineRunSummary | null = null;
+
+  for (const [index, interpreter] of interpreters.entries()) {
     await ensurePythonDependencies(interpreter.command, runnerPath);
     const run = await tryInterpreter(
       interpreter.command,
       [...interpreter.args, runnerPath],
       payload,
-      options,
+      index === 0 ? options : {},
     );
-    if (run !== null) {
+    if (run === null) {
+      continue;
+    }
+
+    if (
+      bestRun === null ||
+      scorePythonEngineRun(run) > scorePythonEngineRun(bestRun)
+    ) {
+      bestRun = run;
+    }
+
+    if (isIdealPythonEngineRun(run)) {
       return run;
     }
+  }
+
+  if (bestRun !== null) {
+    return bestRun;
   }
 
   return createFallbackRun(
@@ -226,12 +243,7 @@ export function getRunnerPathCandidates(
     context.resourcesPath ??
     (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
 
-  const candidates = [
-    join(dirnameValue, "python_engine", "runner.py"),
-    join(dirnameValue, "..", "python_engine", "runner.py"),
-    join(cwdValue, "dist-main", "python_engine", "runner.py"),
-    join(cwdValue, "python_engine", "runner.py"),
-  ];
+  const candidates: string[] = [];
 
   if (resourcesPathValue) {
     candidates.push(
@@ -247,16 +259,69 @@ export function getRunnerPathCandidates(
     );
   }
 
+  candidates.push(
+    join(dirnameValue, "..", "python_engine", "runner.py"),
+    join(cwdValue, "dist-main", "python_engine", "runner.py"),
+    join(cwdValue, "python_engine", "runner.py"),
+    join(dirnameValue, "python_engine", "runner.py"),
+  );
+
   return [...new Set(candidates)];
+}
+
+export function isPythonRunnerPathRunnable(path: string): boolean {
+  const normalizedPath = path.toLowerCase();
+  if (
+    normalizedPath.includes("app.asar") &&
+    !normalizedPath.includes("app.asar.unpacked")
+  ) {
+    return false;
+  }
+  return true;
 }
 
 async function resolvePythonRunnerPath(): Promise<string | null> {
   for (const candidate of getRunnerPathCandidates()) {
-    if (await isReadableFile(candidate)) {
+    if (
+      isPythonRunnerPathRunnable(candidate) &&
+      (await isReadableFile(candidate))
+    ) {
       return candidate;
     }
   }
   return null;
+}
+
+function isFallbackEngineRun(run: PythonEngineRunSummary): boolean {
+  return run.stages.some(
+    (stage) =>
+      stage.id === "reference-body" &&
+      stage.summary.includes(
+        "Python engine did not execute; converter ran in compatibility fallback mode.",
+      ),
+  );
+}
+
+export function scorePythonEngineRun(run: PythonEngineRunSummary): number {
+  const libraryScore = Object.values(run.libraries).filter(Boolean).length * 10;
+  const stageScore = run.stages.reduce((score, stage) => {
+    if (stage.status === "pass") return score + 2;
+    if (stage.status === "attention") return score - 1;
+    return score;
+  }, 0);
+  const gateScore = run.qualityGates.reduce((score, gate) => {
+    if (gate.status === "pass") return score + 1;
+    if (gate.status === "attention") return score - 1;
+    return score;
+  }, 0);
+  const fallbackPenalty = isFallbackEngineRun(run) ? -50 : 20;
+  return libraryScore + stageScore + gateScore + fallbackPenalty;
+}
+
+function isIdealPythonEngineRun(run: PythonEngineRunSummary): boolean {
+  return (
+    !isFallbackEngineRun(run) && Object.values(run.libraries).every(Boolean)
+  );
 }
 
 async function ensurePythonDependencies(
