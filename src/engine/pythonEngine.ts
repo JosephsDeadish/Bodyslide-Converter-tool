@@ -52,6 +52,13 @@ type PythonEngineOptions = {
 };
 
 const PYTHON_DEP_BOOTSTRAP_CACHE = new Map<string, Promise<void>>();
+const REQUIRED_PYTHON_LIBRARIES = [
+  "pynifly",
+  "numpy",
+  "scipy",
+  "trimesh",
+  "pyvista",
+] as const;
 
 function isStageReport(value: unknown): value is EngineStageReport {
   if (!value || typeof value !== "object") return false;
@@ -187,6 +194,12 @@ const PYTHON_TEXT_EXTENSIONS = new Set([
   ".esl",
   ".esm",
 ]);
+const PYTHON_MANIFEST_EXTENSIONS = new Set([
+  ...PYTHON_TEXT_EXTENSIONS,
+  ".nif",
+  ".tri",
+  ".osd",
+]);
 
 // Cap on how many bytes of preview Python receives per file.
 // The full 4 KB preview is useful for local TypeScript detection, but Python
@@ -211,15 +224,17 @@ export async function runPythonEngine(
     outputPath: args.outputPath,
     sourceBodyType: args.sourceBodyType,
     targetBodyType: args.targetBodyType,
-    // Only forward text/config files — binary mesh formats carry no useful
-    // text signals for Python and would balloon stdin to tens of megabytes
-    // on large mod folders, causing the subprocess write to stall.
+    // Forward a compact manifest of both text/config and mesh files.
+    // Python stage readiness checks require mesh extensions (.nif/.tri/.osd),
+    // while only text/config files need preview snippets.
     files: args.files
-      .filter((file) => PYTHON_TEXT_EXTENSIONS.has(file.extension))
+      .filter((file) => PYTHON_MANIFEST_EXTENSIONS.has(file.extension))
       .map((file) => ({
         relativePath: file.relativePath,
         extension: file.extension,
-        preview: file.preview.slice(0, PYTHON_PREVIEW_LIMIT),
+        preview: PYTHON_TEXT_EXTENSIONS.has(file.extension)
+          ? file.preview.slice(0, PYTHON_PREVIEW_LIMIT)
+          : "",
       })),
   };
 
@@ -230,6 +245,11 @@ export async function runPythonEngine(
       "Python runner script was not found. Rebuild with `npm run build:main` and ensure packaged assets include dist-main/python_engine.",
     );
   }
+  const bundledDependencyPaths = await resolveBundledPythonDependencyPaths(
+    runnerPath,
+  );
+  const hasCompleteBundledDependencies =
+    await hasCompleteBundledDependenciesInPaths(bundledDependencyPaths);
 
   const interpreters = getPythonInterpreterCandidates();
 
@@ -240,18 +260,24 @@ export async function runPythonEngine(
       interpreter.command,
       interpreter.args,
     );
+    const pythonPath = buildPythonPath(
+      [dependencyTargetPath, ...bundledDependencyPaths],
+      process.env.PYTHONPATH,
+    );
     await ensurePythonDependencies(
       interpreter.command,
       interpreter.args,
       runnerPath,
       dependencyTargetPath,
+      pythonPath,
+      hasCompleteBundledDependencies,
     );
     const run = await tryInterpreter(
       interpreter.command,
       [...interpreter.args, runnerPath],
       payload,
       index === 0 ? options : {},
-      dependencyTargetPath,
+      pythonPath,
     );
     if (run === null) {
       continue;
@@ -285,6 +311,11 @@ type RunnerPathContext = {
   resourcesPath?: string;
 };
 
+type BundledDependencyPathContext = {
+  cwd: string;
+  resourcesPath?: string;
+};
+
 type InterpreterContext = {
   platform: NodeJS.Platform;
   env: NodeJS.ProcessEnv;
@@ -313,6 +344,32 @@ export function getRunnerPathCandidates(
       join(resourcesPathValue, "dist-main", "python_engine", "runner.py"),
       join(resourcesPathValue, "python_engine", "runner.py"),
     );
+  }
+
+  export function getBundledDependencyPathCandidates(
+    runnerPath: string,
+    context: Partial<BundledDependencyPathContext> = {},
+  ): string[] {
+    const cwdValue = context.cwd ?? process.cwd();
+    const resourcesPathValue =
+      context.resourcesPath ??
+      (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+
+    const candidates = [
+      join(dirname(runnerPath), "..", "python_deps"),
+      join(cwdValue, "dist-main", "python_deps"),
+      join(cwdValue, "python_deps"),
+    ];
+
+    if (resourcesPathValue) {
+      candidates.unshift(
+        join(resourcesPathValue, "app.asar.unpacked", "dist-main", "python_deps"),
+        join(resourcesPathValue, "dist-main", "python_deps"),
+        join(resourcesPathValue, "python_deps"),
+      );
+    }
+
+    return [...new Set(candidates)];
   }
 
   candidates.push(
@@ -418,12 +475,17 @@ async function ensurePythonDependencies(
   commandArgs: string[],
   runnerPath: string,
   dependencyTargetPath: string,
+  pythonPath: string,
+  skipBootstrap: boolean,
 ): Promise<void> {
   if (
     process.env.VITEST ||
     process.env.NODE_ENV === "test" ||
     process.env.SLIDESMITH_SKIP_PYTHON_DEP_BOOTSTRAP === "1"
   ) {
+    return;
+  }
+  if (skipBootstrap) {
     return;
   }
 
@@ -451,10 +513,7 @@ async function ensurePythonDependencies(
       stdio: "ignore",
       env: {
         ...process.env,
-        PYTHONPATH: prependPythonPath(
-          dependencyTargetPath,
-          process.env.PYTHONPATH,
-        ),
+        PYTHONPATH: pythonPath,
         PIP_DISABLE_PIP_VERSION_CHECK: "1",
         PYTHONUNBUFFERED: "1",
       },
@@ -482,17 +541,14 @@ async function tryInterpreter(
   args: string[],
   payload: PythonEngineInput,
   options: PythonEngineOptions,
-  dependencyTargetPath: string,
+  pythonPath: string,
 ): Promise<PythonEngineRunSummary | null> {
   return new Promise<PythonEngineRunSummary | null>((resolve) => {
     const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
       env: {
         ...process.env,
-        PYTHONPATH: prependPythonPath(
-          dependencyTargetPath,
-          process.env.PYTHONPATH,
-        ),
+        PYTHONPATH: pythonPath,
         PYTHONUNBUFFERED: "1",
       },
     });
@@ -575,13 +631,75 @@ async function tryInterpreter(
   });
 }
 
-function prependPythonPath(pathToAdd: string, currentPath?: string): string {
-  if (!currentPath || currentPath.trim().length === 0) {
-    return pathToAdd;
+function buildPythonPath(pathsToAdd: string[], currentPath?: string): string {
+  const normalizedPaths = pathsToAdd
+    .map((path) => path.trim())
+    .filter((path) => path.length > 0);
+  const existingPaths =
+    currentPath && currentPath.trim().length > 0 ? currentPath.split(delimiter) : [];
+  const merged = [
+    ...normalizedPaths,
+    ...existingPaths.filter((path) => path.trim().length > 0),
+  ];
+  return [...new Set(merged)].join(delimiter);
+}
+
+async function resolveBundledPythonDependencyPaths(
+  runnerPath: string,
+): Promise<string[]> {
+  const candidates = getBundledDependencyPathCandidates(runnerPath);
+  const discovered: string[] = [];
+  for (const candidate of candidates) {
+    if (!(await isReadableDirectory(candidate))) {
+      continue;
+    }
+    const containsLibrary = await containsAnyLibrary(candidate);
+    if (!containsLibrary) {
+      continue;
+    }
+    discovered.push(candidate);
   }
-  const paths = currentPath.split(delimiter);
-  if (paths.includes(pathToAdd)) {
-    return currentPath;
+  return discovered;
+}
+
+async function containsAnyLibrary(path: string): Promise<boolean> {
+  for (const library of REQUIRED_PYTHON_LIBRARIES) {
+    if (await isReadableFile(join(path, library)) || (await isReadableDirectory(join(path, library)))) {
+      return true;
+    }
+
+    async function hasCompleteBundledDependenciesInPaths(
+      paths: string[],
+    ): Promise<boolean> {
+      if (paths.length === 0) {
+        return false;
+      }
+      for (const library of REQUIRED_PYTHON_LIBRARIES) {
+        let found = false;
+        for (const path of paths) {
+          if (
+            (await isReadableFile(join(path, library))) ||
+            (await isReadableDirectory(join(path, library)))
+          ) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          return false;
+        }
+      }
+      return true;
+    }
   }
-  return `${pathToAdd}${delimiter}${currentPath}`;
+  return false;
+}
+
+async function isReadableDirectory(path: string): Promise<boolean> {
+  try {
+    await access(path, constants.R_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }

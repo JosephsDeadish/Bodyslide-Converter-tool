@@ -2351,7 +2351,7 @@ describe("convertMod", () => {
     );
 
     const preservedWeapon = result.skippedFiles.find((file) =>
-      file.reason.includes("Non-armor/non-clothing NIF"),
+      file.reason.includes("NIF appears unrelated to body/outfit conversion"),
     );
     expect(preservedWeapon).toBeDefined();
     expect(preservedWeapon?.outputPath.toLowerCase()).toContain(

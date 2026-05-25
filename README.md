@@ -86,6 +86,16 @@ python -m pip install -r python_engine/requirements.txt
 
 `PyNifly`, `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
 
+### Bundle Python dependencies inside the EXE build
+
+To ship those Python packages with the packaged app, preinstall them into a local `python_deps/` folder before `npm run package:win`:
+
+```bash
+python -m pip install -r python_engine/requirements.txt --target python_deps
+```
+
+`npm run build:main` now copies `python_deps/` into `dist-main/python_deps` (when present), and the packaged runtime adds that folder to `PYTHONPATH` before falling back to runtime pip bootstrap.
+
 If Python is not on `PATH`, set:
 
 ```bash
@@ -113,7 +123,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Physics alias remapping now also recognizes UBE softbody-style UUNP tokens (for example `NPC L/R UUNP Glute 01` and `NPC Belly01`) during UUNP-family physics conversion.
 - Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
 - Physics remapping now also recognizes modern softbody alias chains found in some 3BA/UUNP/UBE configs (for example `NPC L/R PreBreast01-03`, `NPC Belly01`, and `NPC L/R UBE Breast 01-03`) so conversions preserve breast/belly physics data more reliably.
-- Non-armor/non-clothing `.nif` meshes are now preserved without body-alias rewriting so the converter focuses body conversion logic on outfit/body-relevant meshes.
+- `.nif` conversion now prioritizes body/outfit-likely meshes (including weighted/body-aliased naming patterns) while still preserving clearly non-body paths such as weapon/world meshes.
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
 - Desktop builds now include a native right-click context menu for copy/cut/paste/select-all in the renderer so selected report text can be copied directly.
 - Detection now surfaces FOMOD, MO2, and Vortex packaging signals in planning/UI so deployment context is visible before conversion.

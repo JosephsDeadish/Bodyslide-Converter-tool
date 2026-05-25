@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDependencyBootstrapCommand,
+  getBundledDependencyPathCandidates,
   getPythonDependencyTargetPath,
   getPythonInterpreterCandidates,
   getRunnerPathCandidates,
@@ -27,6 +28,22 @@ describe("python engine runtime paths", () => {
       dirname: "/tmp/resources/app.asar/dist-main/engine",
       cwd: "/tmp/resources",
       resourcesPath: "/tmp/resources",
+    });
+
+    it("includes python_deps candidates for bundled EXE resources", () => {
+      const candidates = getBundledDependencyPathCandidates(
+        "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
+        {
+          cwd: "/tmp/resources",
+          resourcesPath: "/tmp/resources",
+        },
+      );
+
+      expect(candidates).toContain(
+        "/tmp/resources/app.asar.unpacked/dist-main/python_deps",
+      );
+      expect(candidates).toContain("/tmp/resources/dist-main/python_deps");
+      expect(candidates).toContain("/tmp/resources/python_deps");
     });
 
     expect(candidates).toContain(

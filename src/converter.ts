@@ -1971,6 +1971,60 @@ function isArmorOrClothingNif(relativePath: string): boolean {
   return OUTFIT_MESH_FILENAME_HINTS.some((hint) => filename.includes(hint));
 }
 
+const BODY_CONVERTIBLE_NIF_HINTS = [
+  "_0.nif",
+  "_1.nif",
+  "body",
+  "outfit",
+  "armor",
+  "armour",
+  "clothes",
+  "clothing",
+  "dress",
+  "corset",
+  "bikini",
+  "top",
+  "bottom",
+  "cbbe",
+  "3ba",
+  "uunp",
+  "bhunp",
+  "ube",
+  "tbd",
+  "himbo",
+  "bodytalk",
+  "sam",
+  "sos",
+];
+const NON_BODY_NIF_PATH_FRAGMENTS = [
+  "/meshes/weapons/",
+  "/meshes/architecture/",
+  "/meshes/clutter/",
+  "/meshes/landscape/",
+  "/meshes/terrain/",
+  "/meshes/trees/",
+  "/meshes/plants/",
+  "/meshes/furniture/",
+  "/meshes/effects/",
+  "/meshes/magic/",
+  "/meshes/lod/",
+];
+
+function isLikelyBodyConvertibleNif(relativePath: string): boolean {
+  const lower = relativePath.toLowerCase().replace(/\\/g, "/");
+  if (!lower.endsWith(".nif")) return false;
+  if (NON_BODY_NIF_PATH_FRAGMENTS.some((fragment) => lower.includes(fragment))) {
+    return false;
+  }
+  if (isArmorOrClothingNif(relativePath)) {
+    return true;
+  }
+  const filename = lower.split("/").at(-1) ?? lower;
+  return BODY_CONVERTIBLE_NIF_HINTS.some(
+    (hint) => filename.includes(hint) || lower.includes(`/${hint}`),
+  );
+}
+
 export async function convertMod(
   _inputDir: string,
   outputDir: string,
@@ -2014,7 +2068,10 @@ export async function convertMod(
       continue;
     }
 
-    if (file.extension === ".nif" && !isArmorOrClothingNif(file.relativePath)) {
+    if (
+      file.extension === ".nif" &&
+      !isLikelyBodyConvertibleNif(file.relativePath)
+    ) {
       const preservedPath = normalizeToMo2DataPath(
         file.relativePath.replace(/\\/g, "/"),
         file.extension,
@@ -2027,7 +2084,7 @@ export async function convertMod(
         sourcePath: file.relativePath,
         outputPath: preservedPath,
         reason:
-          "Non-armor/non-clothing NIF — preserved without body-type conversion.",
+          "NIF appears unrelated to body/outfit conversion — preserved without body-type conversion.",
       });
       continue;
     }
