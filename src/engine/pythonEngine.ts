@@ -172,7 +172,9 @@ export function buildDependencyPackageBootstrapCommand(
   commandArgs: string[],
   requirement: string,
   dependencyTargetPath?: string,
+  options: Partial<{ preferBinary: boolean }> = {},
 ): { command: string; args: string[] } {
+  const preferBinary = options.preferBinary ?? true;
   const args = [
     ...commandArgs,
     "-m",
@@ -181,10 +183,11 @@ export function buildDependencyPackageBootstrapCommand(
     "--disable-pip-version-check",
     "--no-input",
     "--upgrade",
-    "--prefer-binary",
-    "--only-binary=:all:",
     requirement,
   ];
+  if (preferBinary) {
+    args.splice(args.length - 1, 0, "--prefer-binary");
+  }
   if (dependencyTargetPath) {
     args.push("--target", dependencyTargetPath);
   }
@@ -683,12 +686,25 @@ async function ensurePythonDependencies(
         env,
       );
       for (const requirement of requirements) {
+        const installedWithPreferredCommand = await runBootstrapCommand(
+          buildDependencyPackageBootstrapCommand(
+            command,
+            commandArgs,
+            requirement,
+            dependencyTargetPath,
+          ),
+          env,
+        );
+        if (installedWithPreferredCommand) {
+          continue;
+        }
         await runBootstrapCommand(
           buildDependencyPackageBootstrapCommand(
             command,
             commandArgs,
             requirement,
             dependencyTargetPath,
+            { preferBinary: false },
           ),
           env,
         );
@@ -714,15 +730,15 @@ async function loadBootstrapRequirements(
 async function runBootstrapCommand(
   command: { command: string; args: string[] },
   env: NodeJS.ProcessEnv,
-): Promise<void> {
-  await new Promise<void>((resolve) => {
+): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
     const child = spawn(command.command, command.args, {
       stdio: "ignore",
       env,
     });
 
-    child.on("error", () => resolve());
-    child.on("close", () => resolve());
+    child.on("error", () => resolve(false));
+    child.on("close", (code) => resolve(code === 0));
   });
 }
 

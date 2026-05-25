@@ -311,8 +311,32 @@ describe("python dependency bootstrap command", () => {
         "--no-input",
         "--upgrade",
         "--prefer-binary",
-        "--only-binary=:all:",
         "numpy>=2.2.0",
+        "--target",
+        "/home/user/.slidesmith/python-deps/abc123",
+      ],
+    });
+  });
+
+  it("can build a relaxed per-package bootstrap command without binary preference", () => {
+    const bootstrap = buildDependencyPackageBootstrapCommand(
+      "python3",
+      [],
+      "pyffi>=2.2.3",
+      "/home/user/.slidesmith/python-deps/abc123",
+      { preferBinary: false },
+    );
+
+    expect(bootstrap).toEqual({
+      command: "python3",
+      args: [
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--upgrade",
+        "pyffi>=2.2.3",
         "--target",
         "/home/user/.slidesmith/python-deps/abc123",
       ],
