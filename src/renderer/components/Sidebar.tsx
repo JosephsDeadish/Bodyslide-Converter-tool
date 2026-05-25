@@ -394,7 +394,6 @@ export function Sidebar({
         {outputPath && (
           <div className="path-basename">{pathBasename(outputPath)}</div>
         )}
-
       </div>
 
       <div className="sidebar-footer">
