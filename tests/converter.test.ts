@@ -3036,7 +3036,7 @@ describe("convertMod", () => {
       "NPC L Brest01=0.250",
       "NPC L Breast01=0.700",
       "NPC L Butt:0.300",
-      "<bone name=\"NPC R Breast01\" weight=\"0.550\"/>",
+      '<bone name="NPC R Breast01" weight="0.550"/>',
       "; NPC R Breast01=0.100",
     ].join("\n");
     await writeFile(

@@ -1982,17 +1982,15 @@ function ensureTargetPhysicsBonesPresent(
     return content;
   }
   const assignedBones = collectCbpcAssignedBones(content);
-  const missingBones = targetInfo.physicsBones.filter(
-    (bone) => {
-      const lookupKeys = getTargetBoneLookupKeys(target, bone);
-      for (const key of lookupKeys) {
-        if (assignedBones.has(key)) {
-          return false;
-        }
+  const missingBones = targetInfo.physicsBones.filter((bone) => {
+    const lookupKeys = getTargetBoneLookupKeys(target, bone);
+    for (const key of lookupKeys) {
+      if (assignedBones.has(key)) {
+        return false;
       }
-      return true;
-    },
-  );
+    }
+    return true;
+  });
   if (missingBones.length === 0) return content;
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[target];
   const patch = [
