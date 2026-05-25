@@ -10,7 +10,6 @@ const SIGNALS = {
         [/cbbe[_ -]?ae/, 1.8],
         [/cbbe[_ -]?le/, 1.5],
         [/caliente/, 2],
-        [/calientetools/, 2],
         [/cbbe curvy/, 1.8],
         [/cbbe slim/, 1.8],
         [/cbbe vanilla/, 1.5],
@@ -90,7 +89,7 @@ const SIGNALS = {
         [/bodytalk[_ -]?body/, 2.4],
         [/bodytalk[_ -]?physics/, 2.3],
         [/bad dog/, 1.4],
-        [/haeun/, 1.4],
+        [/bodytalk.*haeun|haeun.*bodytalk/, 1.4],
         [/malebody/, 0.7],
         [/male_body/, 0.7],
         [/bodyslide[/\\]slidersets[/\\][^/\\]*bodytalk/, 2.5],
@@ -153,6 +152,7 @@ const SIGNALS = {
         [/\bbhunp\b/, 3],
         [/bhunp[_ -]?(se|sse)/, 2.5],
         [/bonehunger unp/, 2.5],
+        [/baka[_ ./\\-]?haeun[_ ./\\-]?unp/, 2.8],
         [/bodyslide and hdt unp/, 2.8],
         [/unp 3bbb/, 2.5],
         [/bhunp 3bbb/, 2.8],
@@ -231,6 +231,16 @@ function normalizeKeywordText(value) {
         .replaceAll(/\s+/g, " ")
         .trim();
 }
+function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function hasNormalizedKeyword(normalizedHaystack, normalizedKeyword) {
+    if (normalizedKeyword.length === 0) {
+        return false;
+    }
+    const pattern = new RegExp(`(^| )${escapeRegExp(normalizedKeyword)}(?= |$)`);
+    return pattern.test(normalizedHaystack);
+}
 function getBodyKeywords(bodyType) {
     const info = BODY_TYPE_INFO[bodyType];
     return [
@@ -259,7 +269,9 @@ const FALSE_POSITIVE_PENALTIES = {
     ],
     tbd: [[/\bcbbe\b|caliente/, 0.35]],
     sos: [[/\bhimbo\b|bodytalk/, 0.45]],
-    unp: [[/\bbhunp\b|\buunp\b|\b7base\b/, 0.85]],
+    unp: [
+        [/\bbhunp\b|\buunp\b|\b7base\b|baka[_ ./\\-]?haeun[_ ./\\-]?unp/, 0.85],
+    ],
     bhunp: [[/\buunp\b|\b7base\b/, 0.35]],
     uunp: [[/\bbhunp\b|\b7base\b/, 0.35]],
     "7base": [[/\bbhunp\b|\buunp\b/, 0.35]],
@@ -293,8 +305,8 @@ function scoreGenderHint(file, bodyType) {
     return 0;
 }
 function detectGenderHint(haystack) {
-    const hasFemale = /(femalebody|femalehands|femalefeet|1stpersonfemale)/.test(haystack);
-    const hasMale = /(malebody|malehands|malefeet|1stpersonmale)/.test(haystack);
+    const hasFemale = /((^|[^a-z])female([ _./\\-]+)?(body|hands|feet|head)\b|1stpersonfemale)/.test(haystack);
+    const hasMale = /((^|[^a-z])male([ _./\\-]+)?(body|hands|feet|head)\b|1stpersonmale)/.test(haystack);
     if (hasFemale && !hasMale)
         return "female";
     if (hasMale && !hasFemale)
@@ -306,7 +318,7 @@ function scoreKeywordHit(haystack, bodyType) {
     const normalizedHaystack = normalizeKeywordText(haystack);
     let matches = 0;
     for (const keyword of keywords) {
-        if (normalizedHaystack.includes(keyword)) {
+        if (hasNormalizedKeyword(normalizedHaystack, keyword)) {
             matches += 1;
         }
     }
@@ -321,7 +333,7 @@ function scoreStructureHint(file, bodyType) {
         path.includes("calientetools/bodyslide/slidergroups/")) {
         bonus += 0.35;
     }
-    const keywordInPath = getBodyKeywords(bodyType).some((keyword) => normalizedPath.includes(keyword));
+    const keywordInPath = getBodyKeywords(bodyType).some((keyword) => hasNormalizedKeyword(normalizedPath, keyword));
     if (keywordInPath && path.includes("bodyslide/")) {
         bonus += 0.4;
     }
