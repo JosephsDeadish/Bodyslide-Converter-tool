@@ -625,6 +625,11 @@ async function tryInterpreter(
       );
     });
 
+    // Guard against EPIPE/write-EOF if the child exits before stdin is fully
+    // drained (e.g. Python crashes at import time).  Without this listener the
+    // error propagates as an uncaught exception and triggers the Electron crash
+    // dialog.
+    child.stdin.on("error", () => {});
     child.stdin.write(`${JSON.stringify(payload)}\n`);
     child.stdin.end();
   });
