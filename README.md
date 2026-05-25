@@ -105,6 +105,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Installer-style layouts are now handled more safely: embedded `Data/` roots inside option folders are normalized to canonical game paths, while `fomod/` installer metadata files are preserved without body-alias rewrites.
 - Native conversion now auto-synthesizes missing `_0`/`_1` `.nif` weight-pair meshes when only one side exists, improving in-game weight-slider completeness.
 - Native conversion now auto-synthesizes a BodySlide SliderSet `.osp` file when mesh outputs exist but no project file was provided, so converted outfits still appear directly in BodySlide without manual project setup.
+- Native conversion now also synthesizes supplemental BodySlide SliderSet data when source project files are present but missing mesh `OutputFile` coverage, reducing BodySlide "missing SliderSet data" issues.
 - Reports now include a structured conversion audit that checks extracted mesh/slider assets, BodySlide slider-set generation, topology risk, and target physics-config coverage (including 3BA belly-chain validation).
 - Physics config auditing now requires full target-bone marker coverage before passing the check, helping catch partial/incomplete config remaps.
 - Physics-bone remapping now includes semantic cross-body matching (breast/butt/belly/genitals chains with side/level handling) before fallback collapse, improving compatibility across physics-capable body-type pairs.
@@ -112,6 +113,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Physics alias remapping now also recognizes UBE softbody-style UUNP tokens (for example `NPC L/R UUNP Glute 01` and `NPC Belly01`) during UUNP-family physics conversion.
 - Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
 - Physics remapping now also recognizes modern softbody alias chains found in some 3BA/UUNP/UBE configs (for example `NPC L/R PreBreast01-03`, `NPC Belly01`, and `NPC L/R UBE Breast 01-03`) so conversions preserve breast/belly physics data more reliably.
+- Non-armor/non-clothing `.nif` meshes are now preserved without body-alias rewriting so the converter focuses body conversion logic on outfit/body-relevant meshes.
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
 - Desktop builds now include a native right-click context menu for copy/cut/paste/select-all in the renderer so selected report text can be copied directly.
 - Detection now surfaces FOMOD, MO2, and Vortex packaging signals in planning/UI so deployment context is visible before conversion.

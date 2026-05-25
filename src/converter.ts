@@ -1170,6 +1170,7 @@ function escapeXml(value: string): string {
 
 // Matches a `name="…"` or `name='…'` attribute inside a <SliderSet …> opening tag.
 const SLIDERSET_NAME_RE = /<SliderSet\b[^>]*\bname=["']([^"']+)["'][^>]*>/gi;
+const SLIDERSET_OUTPUTFILE_RE = /<OutputFile>\s*([^<]+)\s*<\/OutputFile>/gi;
 
 function extractSliderSetNames(content: string): string[] {
   const names: string[] = [];
@@ -1177,6 +1178,14 @@ function extractSliderSetNames(content: string): string[] {
     if (match[1]) names.push(match[1].trim());
   }
   return names;
+}
+
+function extractSliderSetOutputFiles(content: string): string[] {
+  const outputs: string[] = [];
+  for (const match of content.matchAll(SLIDERSET_OUTPUTFILE_RE)) {
+    if (match[1]) outputs.push(match[1].trim().toLowerCase());
+  }
+  return outputs;
 }
 
 function makeBodySlideDisplayName(value: string): string {
@@ -1218,7 +1227,8 @@ function collectSliderSetMeshGroups(
   for (const file of convertedFiles) {
     if (
       file.kind !== "mesh" ||
-      !file.outputPath.toLowerCase().endsWith(".nif")
+      !file.outputPath.toLowerCase().endsWith(".nif") ||
+      !isArmorOrClothingNif(file.outputPath)
     ) {
       continue;
     }
@@ -1256,20 +1266,36 @@ async function synthesizeMissingSliderSetProject(
   targetBodyType: BodyType,
   convertedFiles: ConversionResult["convertedFiles"],
 ): Promise<number> {
-  const hasProject = convertedFiles.some(
+  const projectFiles = convertedFiles.filter(
     (f) =>
       f.kind === "text" &&
       (f.outputPath.endsWith(".osp") ||
-        (f.outputPath.endsWith(".xml") &&
-          /\/slidersets\//i.test(f.outputPath))),
+        (f.outputPath.endsWith(".xml") && /\/slidersets\//i.test(f.outputPath))),
   );
-  if (hasProject) return 0;
 
   const meshGroups = collectSliderSetMeshGroups(convertedFiles);
   if (meshGroups.length === 0) return 0;
 
+  const projectOutputFiles = new Set<string>();
+  for (const projectFile of projectFiles) {
+    const absPath = join(outputDir, ...projectFile.outputPath.split("/"));
+    const content = await readFile(absPath, "utf8").catch(() => "");
+    for (const outputFile of extractSliderSetOutputFiles(content)) {
+      projectOutputFiles.add(outputFile);
+    }
+  }
+
+  const uncoveredMeshGroups = meshGroups.filter((group) => {
+    const lowFile = basename(group.lowWeightPath ?? "").toLowerCase();
+    const highFile = basename(group.highWeightPath ?? "").toLowerCase();
+    if (!lowFile && !highFile) return false;
+    if (projectOutputFiles.size === 0) return true;
+    return !projectOutputFiles.has(lowFile) && !projectOutputFiles.has(highFile);
+  });
+  if (uncoveredMeshGroups.length === 0) return 0;
+
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
-  const baseDisplayNames = meshGroups.map((group) =>
+  const baseDisplayNames = uncoveredMeshGroups.map((group) =>
     buildSliderSetDisplayName(group.key, targetAlias),
   );
   const baseDisplayNameCounts = new Map<string, number>();
@@ -1280,7 +1306,7 @@ async function synthesizeMissingSliderSetProject(
       (baseDisplayNameCounts.get(lower) ?? 0) + 1,
     );
   }
-  const sliderSetEntries = meshGroups
+  const sliderSetEntries = uncoveredMeshGroups
     .map((group, index) => {
       const baseDisplayName = baseDisplayNames[index] ?? "";
       const needsContext =
@@ -1318,7 +1344,10 @@ async function synthesizeMissingSliderSetProject(
 
   if (sliderSetEntries.length === 0) return 0;
 
-  const fileName = `${targetAlias}_AutoConverted.osp`;
+  const fileName =
+    projectFiles.length > 0
+      ? `${targetAlias}_AutoSupplement.osp`
+      : `${targetAlias}_AutoConverted.osp`;
   const outputRelPath = `CalienteTools/BodySlide/SliderSets/${fileName}`;
   const outputAbsPath = join(
     outputDir,
@@ -1486,15 +1515,6 @@ function ensureTargetPhysicsBonesPresent(
     return content;
   }
   const lowerContent = content.toLowerCase();
-  // Only patch when at least one target-body physics bone is already present
-  // in the converted content.  If a cross-family fallback replaced all
-  // physics bones with generic skeleton bones (e.g. 3BA→SOS remaps breast
-  // chains to NPC Spine2/Pelvis) there would be no target-specific bones to
-  // complement, so we leave the content untouched.
-  const hasAnyTargetBone = targetInfo.physicsBones.some((bone) =>
-    lowerContent.includes(bone.toLowerCase()),
-  );
-  if (!hasAnyTargetBone) return content;
   const missingBones = targetInfo.physicsBones.filter(
     (bone) => !lowerContent.includes(bone.toLowerCase()),
   );
@@ -1506,7 +1526,7 @@ function ensureTargetPhysicsBonesPresent(
     ...missingBones.map((bone) => `${bone}=${cbpcDefaultWeight(bone)}`),
     "",
   ].join("\n");
-  return content.trimEnd() + "\n" + patch;
+  return `${content.trimEnd()}\n${patch}`;
 }
 
 /**
@@ -1891,6 +1911,34 @@ const BODY_ASSET_PATH_FRAGMENTS = [
   "actors/character/character assets male/",
 ];
 
+const OUTFIT_MESH_PATH_FRAGMENTS = [
+  "/meshes/armor/",
+  "/meshes/clothes/",
+  "/meshes/clothing/",
+  "/meshes/armour/",
+  "/calientetools/bodyslide/shapedata/",
+  "/bodyslide/shapedata/",
+];
+
+const OUTFIT_MESH_FILENAME_HINTS = [
+  "_0.nif",
+  "_1.nif",
+  "outfit",
+  "armor",
+  "armour",
+  "cuirass",
+  "gauntlet",
+  "glove",
+  "boot",
+  "greave",
+  "helmet",
+  "hood",
+  "robe",
+  "dress",
+  "corset",
+  "bikini",
+];
+
 /**
  * Returns true when `relativePath` refers to a body-replacer NIF — i.e. a
  * mesh that replaces the player/NPC body itself rather than an outfit or
@@ -1908,6 +1956,16 @@ function isBodyReplacerNif(relativePath: string): boolean {
   const filename = lower.split("/").at(-1) ?? lower;
   const baseName = filename.replace(/_[01]\.nif$/, "").replace(/\.nif$/, "");
   return BODY_REPLACER_BASENAMES.has(baseName);
+}
+
+function isArmorOrClothingNif(relativePath: string): boolean {
+  const lower = relativePath.toLowerCase().replace(/\\/g, "/");
+  if (!lower.endsWith(".nif")) return false;
+  if (OUTFIT_MESH_PATH_FRAGMENTS.some((fragment) => lower.includes(fragment))) {
+    return true;
+  }
+  const filename = lower.split("/").at(-1) ?? lower;
+  return OUTFIT_MESH_FILENAME_HINTS.some((hint) => filename.includes(hint));
 }
 
 export async function convertMod(
@@ -1949,6 +2007,24 @@ export async function convertMod(
         outputPath: preservedPath,
         reason:
           "Body replacer mesh — preserved at original path without body-type conversion.",
+      });
+      continue;
+    }
+
+    if (file.extension === ".nif" && !isArmorOrClothingNif(file.relativePath)) {
+      const preservedPath = normalizeToMo2DataPath(
+        file.relativePath.replace(/\\/g, "/"),
+        file.extension,
+        file.preview,
+      );
+      const preservedAbsPath = join(outputDir, preservedPath);
+      await mkdir(dirname(preservedAbsPath), { recursive: true });
+      await copyFile(file.absolutePath, preservedAbsPath);
+      skippedFiles.push({
+        sourcePath: file.relativePath,
+        outputPath: preservedPath,
+        reason:
+          "Non-armor/non-clothing NIF — preserved without body-type conversion.",
       });
       continue;
     }

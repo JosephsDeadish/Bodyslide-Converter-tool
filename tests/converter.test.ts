@@ -1572,7 +1572,9 @@ describe("convertMod", () => {
     expect(rewritten).toContain("NPC Spine2");
     expect(rewritten).toContain("NPC Pelvis");
     expect(rewritten).toContain("NPC Belly");
-    expect(rewritten).not.toContain("NPC GenitalsBase01");
+    expect(rewritten).toContain("NPC GenitalsBase01");
+    expect(rewritten).toContain("NPC L GenitalsScrotum01");
+    expect(rewritten).toContain("NPC R GenitalsScrotum01");
     expect(rewritten).not.toContain("NPC L Breast01");
   });
 
@@ -2320,5 +2322,102 @@ describe("convertMod", () => {
     for (const bone of bti["3ba"].physicsBones) {
       expect(convertedConfig.toLowerCase()).toContain(bone.toLowerCase());
     }
+  });
+
+  it("preserves non-armor/non-clothing NIFs without body alias rewriting", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "meshes", "weapons"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "weapons", "cbbe_sword_0.nif"),
+      "weapon mesh",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const preservedWeapon = result.skippedFiles.find((file) =>
+      file.reason.includes("Non-armor/non-clothing NIF"),
+    );
+    expect(preservedWeapon).toBeDefined();
+    expect(preservedWeapon?.outputPath.toLowerCase()).toContain(
+      "meshes/weapons/cbbe_sword_0.nif",
+    );
+
+    expect(
+      result.convertedFiles.some((file) =>
+        file.outputPath.endsWith("3BA_outfit_0.nif"),
+      ),
+    ).toBe(true);
+  });
+
+  it("synthesizes supplemental SliderSet data when source projects lack OutputFile entries", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_plated_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_incomplete.osp",
+      ),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Incomplete">',
+        "    <Groups><Group name=\"CBBE Outfits\"/></Groups>",
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const supplementalSliderSet = result.convertedFiles.find(
+      (file) =>
+        file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
+        file.action === "synthesized",
+    );
+    expect(supplementalSliderSet).toBeDefined();
+
+    const sliderSetContent = await readFile(
+      join(outputDir, supplementalSliderSet?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain('<SliderSet name="3BA Plated">');
+    expect(sliderSetContent).toContain("<OutputFile>3BA_plated_1.nif</OutputFile>");
   });
 });
