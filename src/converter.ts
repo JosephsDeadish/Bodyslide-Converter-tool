@@ -1,5 +1,5 @@
 import { copyFile, mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import { createConversionAudit } from "./audit.js";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { scanModFiles } from "./scanner.js";
@@ -1446,11 +1446,22 @@ async function synthesizeMissingCbpcStub(
   }
 
   // Skip if at least one physics config file already came from the source mod.
-  const hasPhysicsConfig = convertedFiles.some(
-    (f) =>
-      f.action !== "synthesized" &&
-      /cbpc|hdt|physics/i.test(f.outputPath.toLowerCase()),
-  );
+  const hasPhysicsConfig = convertedFiles.some((f) => {
+    if (f.action === "synthesized" || f.kind !== "text") {
+      return false;
+    }
+    const normalizedPath = f.outputPath.toLowerCase().replace(/\\/g, "/");
+    const extension = extname(normalizedPath);
+    if (![".ini", ".xml", ".txt", ".json"].includes(extension)) {
+      return false;
+    }
+    return (
+      normalizedPath.includes("/skse/plugins/cbpc/") ||
+      normalizedPath.includes("/cbpc/") ||
+      normalizedPath.includes("hdt") ||
+      normalizedPath.includes("physics")
+    );
+  });
   if (hasPhysicsConfig) return;
 
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];

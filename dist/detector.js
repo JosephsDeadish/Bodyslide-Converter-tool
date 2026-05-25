@@ -1,5 +1,6 @@
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { BODY_TYPES } from "./types.js";
+const MIN_DETECTION_SCORE = 0.2;
 // Each array can contain plain RegExp (1 point) or a tuple [RegExp, weight] for custom weighting.
 // The haystack per file is: relativePath + "\n" + basename + "\n" + first-4KB binary preview (latin1 lowercase).
 // Physics config file names and BodySlide folder structures are strong signals.
@@ -314,13 +315,19 @@ const FALSE_POSITIVE_PENALTIES = {
     himbo: [
         [/\bbodytalk\b|bt3\b|schlongs of skyrim/, 0.6],
         [/\bsam\b|shape atlas for men/, 0.5],
+        [/\bzelda\b|\bhyrule\b|relics of hyrule/, 1.5],
+        [/\bfemale(body|hands|feet)\b/, 1.2],
     ],
     bodytalk: [
         [/\bhimbo\b|highpolymalebody/, 0.5],
         [/\bsam\b|shape atlas for men/, 0.4],
+        [/\bzelda\b|\bhyrule\b|relics of hyrule/, 1.5],
     ],
     tbd: [[/\bcbbe\b|caliente/, 0.35]],
-    sos: [[/\bhimbo\b|bodytalk/, 0.45]],
+    sos: [
+        [/\bhimbo\b|bodytalk/, 0.45],
+        [/\bzelda\b|\bhyrule\b|relics of hyrule/, 1.5],
+    ],
     unp: [
         [/\bbhunp\b|\buunp\b|\b7base\b/, 0.85],
         [/\bbaka[_ ./\\-]?haeun[_ ./\\-]?unp\b|\bube\b|unified body enhancer/, 2.4],
@@ -335,7 +342,10 @@ const FALSE_POSITIVE_PENALTIES = {
         [/\buunp\b(?![_ -]?ube)/, 0.5],
     ],
     "7base": [[/\bbhunp\b|\buunp\b/, 0.35]],
-    sam: [[/\bhimbo\b|\bbodytalk\b/, 0.25]],
+    sam: [
+        [/\bhimbo\b|\bbodytalk\b/, 0.25],
+        [/\bzelda\b|\bhyrule\b|relics of hyrule/, 1.5],
+    ],
     vanilla: [],
 };
 function getSignalParts(signal) {
@@ -500,7 +510,7 @@ export function detectBodyType(files) {
     }
     const bestScore = scores[bestType];
     const secondBest = scores[sorted[1] ?? bestType] ?? 0;
-    if (bestScore <= 0) {
+    if (bestScore < MIN_DETECTION_SCORE) {
         return {
             bodyType: "unknown",
             confidence: 0,

@@ -1967,6 +1967,35 @@ describe("convertMod", () => {
     expect(stubContent).toContain("NPC Belly=0.300");
   });
 
+  it("still synthesizes a CBPC stub when only mesh filenames include physics keywords", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_physics_showcase_0.nif"),
+      "caliente",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const stubEntry = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.outputPath.endsWith(".ini") &&
+        f.action === "synthesized",
+    );
+    expect(stubEntry).toBeDefined();
+  });
+
   it("uses genital-specific defaults for synthesized SOS CBPC stubs", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

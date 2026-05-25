@@ -272,6 +272,18 @@ describe("detectBodyType", () => {
     expect(sosumiDetection.bodyType).toBe("unknown");
   });
 
+  it("avoids misclassifying Zelda/Relics armor mods as HIMBO from weak male markers", () => {
+    const detection = detectBodyType([
+      file(
+        "meshes/armor/relics_of_hyrule/malebody_0.nif",
+        "zelda relics of hyrule hylian armor",
+      ),
+    ]);
+
+    expect(detection.bodyType).toBe("unknown");
+    expect(detection.confidence).toBe(0);
+  });
+
   it("recognizes newer alias variants from metadata keywords", () => {
     const samDetection = detectBodyType([
       file(

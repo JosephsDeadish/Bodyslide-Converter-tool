@@ -55,6 +55,7 @@ body {
 .content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 28px;
   position: relative;
 }
@@ -79,6 +80,7 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-footer {
@@ -473,11 +475,13 @@ body {
   font-weight: 600;
   font-size: 13px;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 .op-desc {
   font-size: 12px;
   color: var(--text-dim);
   margin-top: 2px;
+  overflow-wrap: anywhere;
 }
 
 /* Warnings */
@@ -813,7 +817,9 @@ body {
    Replaces the wide default OS-style bars that clutter the dark UI. */
 ::-webkit-scrollbar {
   width: 6px;
-  height: 6px;
+}
+::-webkit-scrollbar:horizontal {
+  height: 0;
 }
 ::-webkit-scrollbar-track {
   background: transparent;

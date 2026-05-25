@@ -96,6 +96,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 
 - Detection is heuristic-based and inspects filenames plus file previews.
 - Scanner preview reads are now extension-filtered and streamed from file starts (`.txt/.xml/.osp/.ini/.json` up to 4 KB, `.nif/.tri/.osd` up to 512 B), which improves stability and responsiveness on very large armor/clothing mod trees.
+- Scanner file-count cap now defaults to 300,000 files per pass and can be increased with `SLIDESMITH_MAX_SCAN_FILES=<number>` for exceptionally large mod packs.
 - Native conversion currently supports same-body output, same-gender cross-family adaptation, vanilla compatibility adaptation, and cross-gender outfit adaptation. Named compatibility paths include CBBE ↔ 3BA ↔ TBD, UNP ↔ UUNP ↔ BHUNP ↔ 7Base, and HIMBO ↔ SAM ↔ BodyTalk ↔ SOS.
 - Generated output file names are normalized to canonical target body aliases (for example `3BA`, `BHUNP`, `UUNP`, `HIMBO`, and `SAM`) to make BodySlide outputs easier to identify.
 - Cross-gender adaptation also rewrites common gendered asset markers such as `femalebody`/`malebody` and first-person hand paths so generated outputs line up with the selected target gender.
@@ -112,6 +113,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
 - Physics remapping now also recognizes modern softbody alias chains found in some 3BA/UUNP/UBE configs (for example `NPC L/R PreBreast01-03`, `NPC Belly01`, and `NPC L/R UBE Breast 01-03`) so conversions preserve breast/belly physics data more reliably.
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
+- Desktop builds now include a native right-click context menu for copy/cut/paste/select-all in the renderer so selected report text can be copied directly.
 - Detection now surfaces FOMOD, MO2, and Vortex packaging signals in planning/UI so deployment context is visible before conversion.
 - The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
 - Packaged Windows builds now use `build/icon.ico` as the executable/taskbar icon; runtime window icon also resolves from `build/icon.*` candidates.

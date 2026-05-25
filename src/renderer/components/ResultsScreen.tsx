@@ -58,7 +58,7 @@ export function ResultsScreen({
           />
         </div>
         <div className="card">
-          <h3>Conversion Plan &amp; Output</h3>
+          <h3>Conversion Output</h3>
           <PlanCard conversion={conversion} plan={plan} />
         </div>
       </div>
@@ -273,8 +273,8 @@ function PlanCard({
         ))}
       </ul>
 
-      <Tooltip text="The steps that were planned and executed for this conversion. A list of things SlideSmith did so you don't have to.">
-        <div className="result-section-title">Generated conversion plan</div>
+      <Tooltip text="Conversion actions SlideSmith executed for this run.">
+        <div className="result-section-title">Executed conversion actions</div>
       </Tooltip>
       <ul className="op-list">
         {plan.operations.map((op) => (

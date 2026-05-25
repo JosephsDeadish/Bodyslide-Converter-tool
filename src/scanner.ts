@@ -24,10 +24,17 @@ const WALK_CONCURRENCY = 8;
 // Prevents EMFILE (too many open files) on large mod folders.
 const READ_CONCURRENCY = 32;
 
+function readPositiveIntEnv(envName: string, fallback: number): number {
+  const value = process.env[envName];
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 // Hard cap on the number of files scanned in one pass.
 // Typical Skyrim mod folders contain well under 10 000 files;
-// very large collections should be scanned one mod at a time.
-const MAX_SCAN_FILES = 100_000;
+// large collections can opt into a higher cap via env override.
+const MAX_SCAN_FILES = readPositiveIntEnv("SLIDESMITH_MAX_SCAN_FILES", 300_000);
 
 // Directory names that should never be walked — prevents report bleed-back
 // when scanning an output folder and avoids leaking VCS metadata into signals.

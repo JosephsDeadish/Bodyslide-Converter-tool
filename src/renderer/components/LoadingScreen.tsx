@@ -25,7 +25,7 @@ const STAGE_LABELS: Record<Exclude<Stage, "">, string> = {
 const FUN_FACTS = [
   "Did you know? The average Skyrim modder has approximately 500+ mods installed. Statistically, at least three of them crash together.",
   "Remapping physics bones… gently. We don't want them to know we're moving them.",
-  "Checking skeleton compatibility. Unlike your last modlist, this part actually has a plan.",
+  "Checking skeleton compatibility so this conversion actually works in-game.",
   "Fun fact: CBPC stands for CBPC Physics Component. Nobody remembers what the first C is for. Don't worry about it.",
   "Writing BodySlide project files with the energy of someone who REALLY wants this outfit to work in-game.",
   "HDT-SMP: because sometimes you need your physics to be computed by a GPU and not just vibes.",

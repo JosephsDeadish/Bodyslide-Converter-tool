@@ -8,6 +8,8 @@ import {
   dialog,
   type IpcMainInvokeEvent,
   ipcMain,
+  Menu,
+  type MenuItemConstructorOptions,
   shell,
 } from "electron";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
@@ -91,6 +93,20 @@ async function createWindow(): Promise<BrowserWindow> {
 
   win.once("ready-to-show", () => {
     win.show();
+  });
+
+  win.webContents.on("context-menu", (_event, params) => {
+    const template: MenuItemConstructorOptions[] = [];
+
+    if (params.editFlags.canCut) template.push({ role: "cut" });
+    if (params.editFlags.canCopy && params.selectionText.trim().length > 0) {
+      template.push({ role: "copy" });
+    }
+    if (params.editFlags.canPaste) template.push({ role: "paste" });
+    if (params.editFlags.canSelectAll) template.push({ role: "selectAll" });
+
+    if (template.length === 0) return;
+    Menu.buildFromTemplate(template).popup({ window: win });
   });
 
   void win.loadFile(join(__dirname, "renderer", "index.html"));
@@ -326,15 +342,15 @@ async function executeConversion(
         ? `Top candidates: ${detection.rankedCandidates.map((c) => `${c.bodyType} ${Math.round(c.share * 100)}%`).join(" | ")}`
         : `No strong candidates detected.`,
       ``,
-      `CONVERSION PLAN`,
-      `===============`,
+      `CONVERSION ACTIONS EXECUTED`,
+      `===========================`,
       ...plan.operations.map(
         (operation, i) =>
           `${i + 1}. ${operation.name}\n   ${operation.description}`,
       ),
       ``,
-      `PLAN WARNINGS`,
-      `=============`,
+      `CONVERSION WARNINGS`,
+      `===================`,
       ...plan.warnings.map((warning, i) => `${i + 1}. ${warning}`),
       ``,
       `PYTHON CORE ENGINE`,
