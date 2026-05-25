@@ -1338,6 +1338,14 @@ function buildSliderSetDisplayName(
     : `${targetAlias} ${displayNameRaw}`;
 }
 
+function toSliderSetFileToken(value: string): string {
+  const token = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return token.length > 0 ? token : "outfit";
+}
+
 type SliderSetMeshGroup = {
   key: string;
   lowWeightPath: string | null;
@@ -1485,6 +1493,7 @@ async function synthesizeMissingSliderSetProject(
       const sourceFile = toBodySlideSourceFilePath(sliderSourcePath);
       const groupName = `${targetAlias} Outfits`;
       return [
+        displayName,
         `  <SliderSet name="${escapeXml(displayName)}">`,
         `    <OutputPath>${escapeXml(nifDir)}</OutputPath>`,
         `    <OutputFile>${escapeXml(nifFile)}</OutputFile>`,
@@ -1496,42 +1505,84 @@ async function synthesizeMissingSliderSetProject(
         `    </Groups>`,
         `    <Sliders/>`,
         "  </SliderSet>",
-      ].join("\n");
+      ];
     })
-    .filter(Boolean);
+    .filter((value): value is string[] => value.length > 0);
 
   if (sliderSetEntries.length === 0) return 0;
 
-  const fileName =
+  const prefix =
     projectFiles.length > 0
-      ? `${targetAlias}_AutoSupplement.osp`
-      : `${targetAlias}_AutoConverted.osp`;
-  const outputRelPath = `CalienteTools/BodySlide/SliderSets/${fileName}`;
-  const outputAbsPath = join(
-    outputDir,
-    "CalienteTools",
-    "BodySlide",
-    "SliderSets",
-    fileName,
-  );
+      ? `${targetAlias}_AutoSupplement`
+      : `${targetAlias}_AutoConverted`;
 
-  const ospContent = [
-    '<?xml version="1.0" encoding="utf-8"?>',
-    "<SliderSetInfo>",
-    ...sliderSetEntries,
-    "</SliderSetInfo>",
-    "",
-  ].join("\n");
+  if (sliderSetEntries.length === 1) {
+    const outputRelPath = `CalienteTools/BodySlide/SliderSets/${prefix}.osp`;
+    const outputAbsPath = join(
+      outputDir,
+      "CalienteTools",
+      "BodySlide",
+      "SliderSets",
+      `${prefix}.osp`,
+    );
+    const [, ...sliderSetLines] = sliderSetEntries[0] ?? [];
+    const ospContent = [
+      '<?xml version="1.0" encoding="utf-8"?>',
+      "<SliderSetInfo>",
+      ...sliderSetLines,
+      "</SliderSetInfo>",
+      "",
+    ].join("\n");
 
-  await mkdir(dirname(outputAbsPath), { recursive: true });
-  await writeFile(outputAbsPath, ospContent, "utf8");
+    await mkdir(dirname(outputAbsPath), { recursive: true });
+    await writeFile(outputAbsPath, ospContent, "utf8");
 
-  convertedFiles.push({
-    sourcePath: "(native post-process)",
-    outputPath: outputRelPath,
-    kind: "text",
-    action: "synthesized",
-  });
+    convertedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: outputRelPath,
+      kind: "text",
+      action: "synthesized",
+    });
+    return 1;
+  }
+
+  const slugCounts = new Map<string, number>();
+  for (const entry of sliderSetEntries) {
+    const displayName = entry[0] ?? "";
+    const sliderSetLines = entry.slice(1);
+    if (sliderSetLines.length === 0) continue;
+    const baseSlug = toSliderSetFileToken(displayName);
+    const nextCount = (slugCounts.get(baseSlug) ?? 0) + 1;
+    slugCounts.set(baseSlug, nextCount);
+    const disambiguatedSlug =
+      nextCount > 1 ? `${baseSlug}_${nextCount}` : baseSlug;
+    const fileName = `${prefix}_${disambiguatedSlug}.osp`;
+    const outputRelPath = `CalienteTools/BodySlide/SliderSets/${fileName}`;
+    const outputAbsPath = join(
+      outputDir,
+      "CalienteTools",
+      "BodySlide",
+      "SliderSets",
+      fileName,
+    );
+    const ospContent = [
+      '<?xml version="1.0" encoding="utf-8"?>',
+      "<SliderSetInfo>",
+      ...sliderSetLines,
+      "</SliderSetInfo>",
+      "",
+    ].join("\n");
+
+    await mkdir(dirname(outputAbsPath), { recursive: true });
+    await writeFile(outputAbsPath, ospContent, "utf8");
+
+    convertedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: outputRelPath,
+      kind: "text",
+      action: "synthesized",
+    });
+  }
 
   return sliderSetEntries.length;
 }
@@ -2019,6 +2070,105 @@ async function synthesizeMissingWeightMeshes(
       action: "synthesized",
     });
     synthesizedCount += 1;
+  }
+
+  return synthesizedCount;
+}
+
+async function synthesizeMissingOutfitSliderDataMeshes(
+  outputDir: string,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<number> {
+  const knownOutputPaths = new Set(
+    convertedFiles.map((file) => file.outputPath.toLowerCase()),
+  );
+  const runtimeNifGroups = new Set(
+    convertedFiles
+      .filter(
+        (file) =>
+          file.kind === "mesh" &&
+          file.outputPath.toLowerCase().endsWith(".nif") &&
+          isArmorOrClothingNif(file.outputPath),
+      )
+      .map((file) =>
+        file.outputPath
+          .replace(/\\/g, "/")
+          .replace(/_0\.nif$/i, "")
+          .replace(/_1\.nif$/i, "")
+          .toLowerCase(),
+      ),
+  );
+  const byLowerPath = new Map(
+    convertedFiles.map(
+      (file) => [file.outputPath.toLowerCase(), file] as const,
+    ),
+  );
+  let synthesizedCount = 0;
+
+  for (const groupBasePath of runtimeNifGroups) {
+    const candidateTemplates = {
+      _0: `${groupBasePath}_0.nif`,
+      _1: `${groupBasePath}_1.nif`,
+    };
+    for (const weight of ["_0", "_1"] as const) {
+      const otherWeight = weight === "_0" ? "_1" : "_0";
+      for (const extension of [".tri", ".osd"] as const) {
+        const outputPath = `${groupBasePath}${weight}${extension}`;
+        if (knownOutputPaths.has(outputPath)) {
+          continue;
+        }
+
+        const sourceCandidates = [
+          `${groupBasePath}${otherWeight}${extension}`,
+          candidateTemplates[weight],
+          candidateTemplates[otherWeight],
+        ];
+        const sourcePath =
+          sourceCandidates.find((candidate) =>
+            knownOutputPaths.has(candidate),
+          ) ?? null;
+        if (!sourcePath) {
+          continue;
+        }
+
+        const sourceEntry = byLowerPath.get(sourcePath);
+        if (!sourceEntry) {
+          continue;
+        }
+        const sourceOutputPath = sourceEntry.outputPath;
+        const baseOutputPath = sourceOutputPath.replace(
+          /(_0|_1)\.(nif|tri|osd)$/i,
+          "",
+        );
+        const targetOutputPath = `${baseOutputPath}${weight}${extension}`;
+        if (knownOutputPaths.has(targetOutputPath.toLowerCase())) {
+          continue;
+        }
+
+        const sourceAbsolutePath = join(outputDir, sourceOutputPath);
+        const targetAbsolutePath = join(outputDir, targetOutputPath);
+        if (!(await pathExists(sourceAbsolutePath))) {
+          continue;
+        }
+        if (await pathExists(targetAbsolutePath)) {
+          knownOutputPaths.add(targetOutputPath.toLowerCase());
+          continue;
+        }
+
+        await mkdir(dirname(targetAbsolutePath), { recursive: true });
+        await copyFile(sourceAbsolutePath, targetAbsolutePath);
+        knownOutputPaths.add(targetOutputPath.toLowerCase());
+        const synthesizedEntry = {
+          sourcePath: sourceEntry.sourcePath,
+          outputPath: targetOutputPath,
+          kind: "mesh" as const,
+          action: "synthesized" as const,
+        };
+        convertedFiles.push(synthesizedEntry);
+        byLowerPath.set(targetOutputPath.toLowerCase(), synthesizedEntry);
+        synthesizedCount += 1;
+      }
+    }
   }
 
   return synthesizedCount;
@@ -2550,6 +2700,16 @@ export async function convertMod(
       sourcePath: "(native post-process)",
       outputPath: "(generated weight pairs)",
       reason: `Synthesized ${synthesizedWeightMeshes} missing weight-pair mesh counterpart(s) to improve in-game slider completeness.`,
+    });
+  }
+
+  const synthesizedSliderDataMeshes =
+    await synthesizeMissingOutfitSliderDataMeshes(outputDir, convertedFiles);
+  if (synthesizedSliderDataMeshes > 0) {
+    skippedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: "(generated outfit tri/osd companions)",
+      reason: `Synthesized ${synthesizedSliderDataMeshes} missing TRI/OSD companion mesh entr${synthesizedSliderDataMeshes === 1 ? "y" : "ies"} so vanilla-style outfits have per-outfit slider data files.`,
     });
   }
 

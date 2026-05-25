@@ -1,6 +1,6 @@
 {
   "name": "slidesmith",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "Desktop app to detect Skyrim mod body type and run native BodySlide asset conversions.",
   "type": "module",
   "main": "dist-main/main.js",

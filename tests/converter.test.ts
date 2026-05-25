@@ -2193,24 +2193,104 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    const sliderSetEntry = result.convertedFiles.find(
+    const synthesizedSliderSets = result.convertedFiles.filter(
       (file) =>
-        file.outputPath ===
-          "CalienteTools/BodySlide/SliderSets/3BA_AutoConverted.osp" &&
-        file.action === "synthesized",
+        file.outputPath.startsWith(
+          "CalienteTools/BodySlide/SliderSets/3BA_AutoConverted_",
+        ) && file.action === "synthesized",
     );
-    expect(sliderSetEntry).toBeDefined();
+    expect(synthesizedSliderSets).toHaveLength(2);
 
-    const sliderSetContent = await readFile(
-      join(outputDir, sliderSetEntry?.outputPath ?? ""),
+    const sliderSetContents = await Promise.all(
+      synthesizedSliderSets.map((file) =>
+        readFile(join(outputDir, file.outputPath), "utf8"),
+      ),
+    );
+    expect(
+      sliderSetContents.some((content) =>
+        content.includes('<SliderSet name="3BA Seta 3BA Cuirass">'),
+      ),
+    ).toBe(true);
+    expect(
+      sliderSetContents.some((content) =>
+        content.includes('<SliderSet name="3BA Setb 3BA Cuirass">'),
+      ),
+    ).toBe(true);
+    expect(
+      sliderSetContents.every(
+        (content) =>
+          !content.includes('<SliderSet name="3BA Seta 3BA Cuirass">') ||
+          !content.includes('<SliderSet name="3BA Setb 3BA Cuirass">'),
+      ),
+    ).toBe(true);
+  });
+
+  it("synthesizes missing TRI and OSD files for vanilla-style outfit meshes", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_vanilla_0.nif"),
+      "mesh payload",
       "utf8",
     );
-    expect(sliderSetContent).toContain(
-      '<SliderSet name="3BA Seta 3BA Cuirass">',
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
     );
-    expect(sliderSetContent).toContain(
-      '<SliderSet name="3BA Setb 3BA Cuirass">',
-    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "meshes/armor/3BA_0.tri" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "meshes/armor/3BA_1.tri" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "meshes/armor/3BA_0.osd" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === "meshes/armor/3BA_1.osd" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+            "CalienteTools/BodySlide/ShapeData/3BA/armor/3BA_1.tri" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+            "CalienteTools/BodySlide/ShapeData/3BA/armor/3BA_1.osd" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
   });
 
   it("does not synthesize a duplicate SliderGroup when one already exists in the source", async () => {
