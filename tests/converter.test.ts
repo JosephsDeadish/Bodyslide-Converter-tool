@@ -1199,6 +1199,97 @@ describe("convertMod", () => {
     ).toBe(false);
   });
 
+  it("routes .osp files to SliderSets even when source folder is SliderGroups", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "CBBE_WrongFolder.osp",
+      ),
+      '<SliderSetInfo><SliderSet name="CBBE Wrong Folder"></SliderSet></SliderSetInfo>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_WrongFolder.osp",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderGroups/3BA_WrongFolder.osp",
+      ),
+    ).toBe(false);
+  });
+
+  it("routes SliderGroups XML to SliderGroups even when source folder is SliderSets", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "CBBE_WrongFolder.xml",
+      ),
+      '<SliderGroups><Group name="CBBE Group">cbbe body</Group></SliderGroups>',
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderGroups/3BA_WrongFolder.xml",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_WrongFolder.xml" &&
+          file.action !== "synthesized",
+      ),
+    ).toBe(false);
+  });
+
   it("maps 3BA breast physics bones to BHUNP names without misaligning butt bones", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

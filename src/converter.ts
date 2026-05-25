@@ -133,6 +133,11 @@ function normalizeToMo2DataPath(
     }
   }
   const lower = forward.toLowerCase();
+  const isBodySlideProjectFile = extension === ".osp" || extension === ".xml";
+  const shapeDataSubpathForMesh =
+    extension === ".nif" || extension === ".tri" || extension === ".osd"
+      ? extractBodySlideSubpath(forward, BODYSLIDE_SHAPEDATA_PATH_MARKERS)
+      : null;
 
   // Installer packs sometimes nest canonical Data roots under option folders.
   // Preserve the canonical root segment rather than nesting under meshes/<wrapper>/...
@@ -146,6 +151,8 @@ function normalizeToMo2DataPath(
 
   // Already in a canonical data root — preserve path as-is.
   if (
+    !isBodySlideProjectFile &&
+    !shapeDataSubpathForMesh &&
     CANONICAL_DATA_PREFIXES.some((prefix) =>
       lower.startsWith(prefix.toLowerCase()),
     )
@@ -204,10 +211,9 @@ function normalizeToMo2DataPath(
 
   // .nif / .tri / .osd → armor/clothing/body meshes must live under meshes/
   if (extension === ".nif" || extension === ".tri" || extension === ".osd") {
-    const shapeDataSubpath = extractBodySlideSubpath(
-      forward,
-      BODYSLIDE_SHAPEDATA_PATH_MARKERS,
-    );
+    const shapeDataSubpath =
+      shapeDataSubpathForMesh ??
+      extractBodySlideSubpath(forward, BODYSLIDE_SHAPEDATA_PATH_MARKERS);
     if (shapeDataSubpath) {
       return `CalienteTools/BodySlide/ShapeData/${shapeDataSubpath}`;
     }
