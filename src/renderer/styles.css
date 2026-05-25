@@ -49,7 +49,7 @@ body {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .content {
@@ -77,6 +77,8 @@ body {
 .form-section {
   padding: 16px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .sidebar-footer {
@@ -804,4 +806,25 @@ body {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────── */
+/* Thin, theme-matched scrollbars for the form panel and content area.
+   Replaces the wide default OS-style bars that clutter the dark UI. */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
