@@ -148,7 +148,8 @@ export async function generateRepairArtifacts(
   );
   artifacts.push({
     relativePath: `_SlideSmith/repairs/${manifestFileName}`,
-    description: "Structured list of detected repair issues and stage coverage.",
+    description:
+      "Structured list of detected repair issues and stage coverage.",
   });
 
   const checklistFileName = "repair-checklist.txt";
@@ -169,7 +170,8 @@ export async function generateRepairArtifacts(
   );
   artifacts.push({
     relativePath: `_SlideSmith/repairs/${checklistFileName}`,
-    description: "Human-readable repair checklist for follow-up conversion runs.",
+    description:
+      "Human-readable repair checklist for follow-up conversion runs.",
   });
 
   if (issues.some((issue) => issue.id === "missing-nif-mesh")) {

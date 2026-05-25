@@ -13,7 +13,9 @@ async function makeTempDir(): Promise<string> {
   return dir;
 }
 
-function makeSummary(stages: PythonEngineRunSummary["stages"]): PythonEngineRunSummary {
+function makeSummary(
+  stages: PythonEngineRunSummary["stages"],
+): PythonEngineRunSummary {
   return {
     runId: "repair-run",
     backend: "python",
@@ -69,8 +71,11 @@ describe("repair artifact generation", () => {
           id: "corrective-smoothing",
           title: "Corrective smoothing",
           status: "attention",
-          summary: "Corrective smoothing skipped because no NIF mesh was found.",
-          details: ["Armpit, breast/chest, crotch, elbow, and knee zones could not be evaluated."],
+          summary:
+            "Corrective smoothing skipped because no NIF mesh was found.",
+          details: [
+            "Armpit, breast/chest, crotch, elbow, and knee zones could not be evaluated.",
+          ],
         },
       ]),
     });
@@ -85,9 +90,9 @@ describe("repair artifact generation", () => {
         "utf8",
       ),
     ) as { issues: Array<{ id: string }> };
-    expect(manifest.issues.some((issue) => issue.id === "missing-nif-mesh")).toBe(
-      true,
-    );
+    expect(
+      manifest.issues.some((issue) => issue.id === "missing-nif-mesh"),
+    ).toBe(true);
   });
 
   it("generates body metadata patch template for incomplete metadata warnings", async () => {
