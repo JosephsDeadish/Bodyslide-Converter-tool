@@ -42,5 +42,7 @@ try {
   });
   process.stdout.write("Copied python_deps/ into dist-main/python_deps/\n");
 } catch {
-  process.stdout.write("No python_deps/ directory found; skipping bundled Python deps copy.\n");
+  process.stdout.write(
+    "No python_deps/ directory found; skipping bundled Python deps copy.\n",
+  );
 }

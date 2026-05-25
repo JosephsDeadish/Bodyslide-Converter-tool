@@ -30,28 +30,28 @@ describe("python engine runtime paths", () => {
       resourcesPath: "/tmp/resources",
     });
 
-    it("includes python_deps candidates for bundled EXE resources", () => {
-      const candidates = getBundledDependencyPathCandidates(
-        "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
-        {
-          cwd: "/tmp/resources",
-          resourcesPath: "/tmp/resources",
-        },
-      );
-
-      expect(candidates).toContain(
-        "/tmp/resources/app.asar.unpacked/dist-main/python_deps",
-      );
-      expect(candidates).toContain("/tmp/resources/dist-main/python_deps");
-      expect(candidates).toContain("/tmp/resources/python_deps");
-    });
-
     expect(candidates).toContain(
       "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
     );
     expect(candidates[0]).toBe(
       "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
     );
+  });
+
+  it("includes python_deps candidates for bundled EXE resources", () => {
+    const candidates = getBundledDependencyPathCandidates(
+      "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
+      {
+        cwd: "/tmp/resources",
+        resourcesPath: "/tmp/resources",
+      },
+    );
+
+    expect(candidates).toContain(
+      "/tmp/resources/app.asar.unpacked/dist-main/python_deps",
+    );
+    expect(candidates).toContain("/tmp/resources/dist-main/python_deps");
+    expect(candidates).toContain("/tmp/resources/python_deps");
   });
 
   it("flags app.asar runner paths as non-runnable for external Python", () => {

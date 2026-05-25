@@ -1997,23 +1997,25 @@ const BODY_CONVERTIBLE_NIF_HINTS = [
   "sos",
 ];
 const NON_BODY_NIF_PATH_FRAGMENTS = [
-  "/meshes/weapons/",
-  "/meshes/architecture/",
-  "/meshes/clutter/",
-  "/meshes/landscape/",
-  "/meshes/terrain/",
-  "/meshes/trees/",
-  "/meshes/plants/",
-  "/meshes/furniture/",
-  "/meshes/effects/",
-  "/meshes/magic/",
-  "/meshes/lod/",
+  "meshes/weapons/",
+  "meshes/architecture/",
+  "meshes/clutter/",
+  "meshes/landscape/",
+  "meshes/terrain/",
+  "meshes/trees/",
+  "meshes/plants/",
+  "meshes/furniture/",
+  "meshes/effects/",
+  "meshes/magic/",
+  "meshes/lod/",
 ];
 
 function isLikelyBodyConvertibleNif(relativePath: string): boolean {
   const lower = relativePath.toLowerCase().replace(/\\/g, "/");
   if (!lower.endsWith(".nif")) return false;
-  if (NON_BODY_NIF_PATH_FRAGMENTS.some((fragment) => lower.includes(fragment))) {
+  if (
+    NON_BODY_NIF_PATH_FRAGMENTS.some((fragment) => lower.includes(fragment))
+  ) {
     return false;
   }
   if (isArmorOrClothingNif(relativePath)) {

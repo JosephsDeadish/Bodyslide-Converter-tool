@@ -245,9 +245,8 @@ export async function runPythonEngine(
       "Python runner script was not found. Rebuild with `npm run build:main` and ensure packaged assets include dist-main/python_engine.",
     );
   }
-  const bundledDependencyPaths = await resolveBundledPythonDependencyPaths(
-    runnerPath,
-  );
+  const bundledDependencyPaths =
+    await resolveBundledPythonDependencyPaths(runnerPath);
   const hasCompleteBundledDependencies =
     await hasCompleteBundledDependenciesInPaths(bundledDependencyPaths);
 
@@ -346,38 +345,38 @@ export function getRunnerPathCandidates(
     );
   }
 
-  export function getBundledDependencyPathCandidates(
-    runnerPath: string,
-    context: Partial<BundledDependencyPathContext> = {},
-  ): string[] {
-    const cwdValue = context.cwd ?? process.cwd();
-    const resourcesPathValue =
-      context.resourcesPath ??
-      (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
-
-    const candidates = [
-      join(dirname(runnerPath), "..", "python_deps"),
-      join(cwdValue, "dist-main", "python_deps"),
-      join(cwdValue, "python_deps"),
-    ];
-
-    if (resourcesPathValue) {
-      candidates.unshift(
-        join(resourcesPathValue, "app.asar.unpacked", "dist-main", "python_deps"),
-        join(resourcesPathValue, "dist-main", "python_deps"),
-        join(resourcesPathValue, "python_deps"),
-      );
-    }
-
-    return [...new Set(candidates)];
-  }
-
   candidates.push(
     join(dirnameValue, "..", "python_engine", "runner.py"),
     join(cwdValue, "dist-main", "python_engine", "runner.py"),
     join(cwdValue, "python_engine", "runner.py"),
     join(dirnameValue, "python_engine", "runner.py"),
   );
+
+  return [...new Set(candidates)];
+}
+
+export function getBundledDependencyPathCandidates(
+  runnerPath: string,
+  context: Partial<BundledDependencyPathContext> = {},
+): string[] {
+  const cwdValue = context.cwd ?? process.cwd();
+  const resourcesPathValue =
+    context.resourcesPath ??
+    (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+
+  const candidates = [
+    join(dirname(runnerPath), "..", "python_deps"),
+    join(cwdValue, "dist-main", "python_deps"),
+    join(cwdValue, "python_deps"),
+  ];
+
+  if (resourcesPathValue) {
+    candidates.unshift(
+      join(resourcesPathValue, "app.asar.unpacked", "dist-main", "python_deps"),
+      join(resourcesPathValue, "dist-main", "python_deps"),
+      join(resourcesPathValue, "python_deps"),
+    );
+  }
 
   return [...new Set(candidates)];
 }
@@ -636,7 +635,9 @@ function buildPythonPath(pathsToAdd: string[], currentPath?: string): string {
     .map((path) => path.trim())
     .filter((path) => path.length > 0);
   const existingPaths =
-    currentPath && currentPath.trim().length > 0 ? currentPath.split(delimiter) : [];
+    currentPath && currentPath.trim().length > 0
+      ? currentPath.split(delimiter)
+      : [];
   const merged = [
     ...normalizedPaths,
     ...existingPaths.filter((path) => path.trim().length > 0),
@@ -664,35 +665,38 @@ async function resolveBundledPythonDependencyPaths(
 
 async function containsAnyLibrary(path: string): Promise<boolean> {
   for (const library of REQUIRED_PYTHON_LIBRARIES) {
-    if (await isReadableFile(join(path, library)) || (await isReadableDirectory(join(path, library)))) {
-      return true;
-    }
-
-    async function hasCompleteBundledDependenciesInPaths(
-      paths: string[],
-    ): Promise<boolean> {
-      if (paths.length === 0) {
-        return false;
-      }
-      for (const library of REQUIRED_PYTHON_LIBRARIES) {
-        let found = false;
-        for (const path of paths) {
-          if (
-            (await isReadableFile(join(path, library))) ||
-            (await isReadableDirectory(join(path, library)))
-          ) {
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          return false;
-        }
-      }
+    if (
+      (await isReadableFile(join(path, library))) ||
+      (await isReadableDirectory(join(path, library)))
+    ) {
       return true;
     }
   }
   return false;
+}
+
+async function hasCompleteBundledDependenciesInPaths(
+  paths: string[],
+): Promise<boolean> {
+  if (paths.length === 0) {
+    return false;
+  }
+  for (const library of REQUIRED_PYTHON_LIBRARIES) {
+    let found = false;
+    for (const path of paths) {
+      if (
+        (await isReadableFile(join(path, library))) ||
+        (await isReadableDirectory(join(path, library)))
+      ) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      return false;
+    }
+  }
+  return true;
 }
 
 async function isReadableDirectory(path: string): Promise<boolean> {
