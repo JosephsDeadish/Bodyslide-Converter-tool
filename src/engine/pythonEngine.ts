@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
+import { constants } from "node:fs";
+import { access } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import type {
   BodyType,
   EngineQualityGate,
@@ -47,6 +49,8 @@ type PythonEngineEvent =
 type PythonEngineOptions = {
   onProgress?: (event: PythonEngineProgressEvent) => void;
 };
+
+const PYTHON_DEP_BOOTSTRAP_CACHE = new Map<string, Promise<void>>();
 
 function isStageReport(value: unknown): value is EngineStageReport {
   if (!value || typeof value !== "object") return false;
@@ -172,7 +176,14 @@ export async function runPythonEngine(
       })),
   };
 
-  const runnerPath = join(__dirname, "python_engine", "runner.py");
+  const runnerPath = await resolvePythonRunnerPath();
+  if (!runnerPath) {
+    return createFallbackRun(
+      runId,
+      "Python runner script was not found. Rebuild with `npm run build:main` and ensure packaged assets include dist-main/python_engine.",
+    );
+  }
+
   const interpreters: Array<{ command: string; args: string[] }> = [
     ...(process.env.SLIDESMITH_PYTHON
       ? [{ command: process.env.SLIDESMITH_PYTHON, args: [] }]
@@ -182,6 +193,7 @@ export async function runPythonEngine(
   ];
 
   for (const interpreter of interpreters) {
+    await ensurePythonDependencies(interpreter.command, runnerPath);
     const run = await tryInterpreter(
       interpreter.command,
       [...interpreter.args, runnerPath],
@@ -197,6 +209,117 @@ export async function runPythonEngine(
     runId,
     "Python interpreter not found. Install Python 3.11+ and set SLIDESMITH_PYTHON if needed.",
   );
+}
+
+type RunnerPathContext = {
+  dirname: string;
+  cwd: string;
+  resourcesPath?: string;
+};
+
+export function getRunnerPathCandidates(
+  context: Partial<RunnerPathContext> = {},
+): string[] {
+  const dirnameValue = context.dirname ?? __dirname;
+  const cwdValue = context.cwd ?? process.cwd();
+  const resourcesPathValue =
+    context.resourcesPath ??
+    (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+
+  const candidates = [
+    join(dirnameValue, "python_engine", "runner.py"),
+    join(dirnameValue, "..", "python_engine", "runner.py"),
+    join(cwdValue, "dist-main", "python_engine", "runner.py"),
+    join(cwdValue, "python_engine", "runner.py"),
+  ];
+
+  if (resourcesPathValue) {
+    candidates.push(
+      join(
+        resourcesPathValue,
+        "app.asar.unpacked",
+        "dist-main",
+        "python_engine",
+        "runner.py",
+      ),
+      join(resourcesPathValue, "dist-main", "python_engine", "runner.py"),
+      join(resourcesPathValue, "python_engine", "runner.py"),
+    );
+  }
+
+  return [...new Set(candidates)];
+}
+
+async function resolvePythonRunnerPath(): Promise<string | null> {
+  for (const candidate of getRunnerPathCandidates()) {
+    if (await isReadableFile(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+async function ensurePythonDependencies(
+  command: string,
+  runnerPath: string,
+): Promise<void> {
+  if (
+    process.env.VITEST ||
+    process.env.NODE_ENV === "test" ||
+    process.env.SLIDESMITH_SKIP_PYTHON_DEP_BOOTSTRAP === "1"
+  ) {
+    return;
+  }
+
+  const requirementsPath = join(dirname(runnerPath), "requirements.txt");
+  if (!(await isReadableFile(requirementsPath))) {
+    return;
+  }
+
+  const cacheKey = `${command}:${requirementsPath}`;
+  const cached = PYTHON_DEP_BOOTSTRAP_CACHE.get(cacheKey);
+  if (cached) {
+    await cached;
+    return;
+  }
+
+  const installPromise = new Promise<void>((resolve) => {
+    const child = spawn(
+      command,
+      [
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "-r",
+        requirementsPath,
+      ],
+      {
+        stdio: "ignore",
+        env: {
+          ...process.env,
+          PIP_DISABLE_PIP_VERSION_CHECK: "1",
+          PYTHONUNBUFFERED: "1",
+        },
+      },
+    );
+
+    child.on("error", () => resolve());
+    child.on("close", () => resolve());
+  });
+
+  PYTHON_DEP_BOOTSTRAP_CACHE.set(cacheKey, installPromise);
+  await installPromise;
+}
+
+async function isReadableFile(path: string): Promise<boolean> {
+  try {
+    await access(path, constants.R_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function tryInterpreter(

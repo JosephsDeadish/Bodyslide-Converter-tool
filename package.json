@@ -21,6 +21,9 @@
     "appId": "com.slidesmith.app",
     "productName": "SlideSmith",
     "artifactName": "SlideSmith-${version}.${ext}",
+    "asarUnpack": [
+      "dist-main/python_engine/**"
+    ],
     "directories": {
       "output": "release"
     },
