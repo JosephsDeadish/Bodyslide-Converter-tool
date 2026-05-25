@@ -2606,23 +2606,28 @@ export async function convertMod(
   const skippedFiles: ConversionResult["skippedFiles"] = [];
 
   for (const file of files) {
-    // Body-replacer NIFs (femalebody, malebody, etc.) must be kept at their
-    // original path.  Renaming them with a body-type alias would break the
-    // replacer since Skyrim looks for specific filenames at specific paths.
+    // Body-replacer NIFs (femalebody, malebody, etc.) use fixed runtime paths.
+    // Same-body conversions preserve them at original path; cross-body runs
+    // intentionally skip copying source body replacers because native mode does
+    // not reproject topology and copying would override the chosen target body.
     if (file.extension === ".nif" && isBodyReplacerNif(file.relativePath)) {
       const preservedPath = normalizeToMo2DataPath(
         file.relativePath.replace(/\\/g, "/"),
         file.extension,
         file.preview,
       );
-      const preservedAbsPath = join(outputDir, preservedPath);
-      await mkdir(dirname(preservedAbsPath), { recursive: true });
-      await copyFile(file.absolutePath, preservedAbsPath);
+      if (sourceBodyType === targetBodyType) {
+        const preservedAbsPath = join(outputDir, preservedPath);
+        await mkdir(dirname(preservedAbsPath), { recursive: true });
+        await copyFile(file.absolutePath, preservedAbsPath);
+      }
       skippedFiles.push({
         sourcePath: file.relativePath,
         outputPath: preservedPath,
         reason:
-          "Body replacer mesh — preserved at original path without body-type conversion.",
+          sourceBodyType === targetBodyType
+            ? "Body replacer mesh — preserved at original path without body-type conversion."
+            : `Body replacer mesh — skipped for ${sourceBodyType} → ${targetBodyType} conversion to avoid forcing source-body skin/shape over the selected target body.`,
       });
       continue;
     }

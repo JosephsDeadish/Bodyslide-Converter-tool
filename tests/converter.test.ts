@@ -2752,7 +2752,7 @@ describe("convertMod", () => {
     expect(physicsWeightCheck?.status).toBe("not-applicable");
   });
 
-  it("preserves body-replacer NIFs (femalebody, malebody) at original path without alias renaming", async () => {
+  it("skips cross-body body-replacer NIFs so source skin/body meshes are not forced into target output", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -2788,7 +2788,7 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    // Body replacer NIFs appear in skippedFiles with the preservation reason.
+    // Body replacer NIFs are explicitly skipped for cross-body conversions.
     const bodySkipped = result.skippedFiles.filter((f) =>
       f.reason.includes("Body replacer mesh"),
     );
@@ -2802,12 +2802,82 @@ describe("convertMod", () => {
     expect(
       skippedPaths.some((p) => p.toLowerCase().includes("femalebody_1.nif")),
     ).toBe(true);
+    expect(
+      bodySkipped.every((entry) =>
+        entry.reason.includes("skipped for cbbe → 3ba conversion"),
+      ),
+    ).toBe(true);
+
+    // Cross-body conversion should not copy source body-replacer meshes.
+    const outputFiles = await scanModFiles(outputDir);
+    expect(
+      outputFiles.some((f) =>
+        f.relativePath.toLowerCase().includes("femalebody_0.nif"),
+      ),
+    ).toBe(false);
+    expect(
+      outputFiles.some((f) =>
+        f.relativePath.toLowerCase().includes("femalebody_1.nif"),
+      ),
+    ).toBe(false);
 
     // Regular outfit IS renamed — 3BA prefix applied.
     const outfitMesh = result.convertedFiles.find(
       (f) => f.kind === "mesh" && f.outputPath.includes("3BA_outfit_0.nif"),
     );
     expect(outfitMesh).toBeDefined();
+  });
+
+  it("preserves same-body body-replacer NIFs at original path", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    const charAssetsDir = join(
+      inputDir,
+      "meshes",
+      "actors",
+      "character",
+      "character assets",
+    );
+    await mkdir(charAssetsDir, { recursive: true });
+
+    await writeFile(join(charAssetsDir, "femalebody_0.nif"), "cbbe body mesh");
+    await writeFile(
+      join(charAssetsDir, "femalebody_1.nif"),
+      "cbbe body mesh high",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "cbbe",
+    );
+
+    const bodySkipped = result.skippedFiles.filter((f) =>
+      f.reason.includes("Body replacer mesh"),
+    );
+    expect(bodySkipped.length).toBe(2);
+    expect(
+      bodySkipped.every((entry) =>
+        entry.reason.includes("preserved at original path"),
+      ),
+    ).toBe(true);
+
+    const outputFiles = await scanModFiles(outputDir);
+    expect(
+      outputFiles.some((f) =>
+        f.relativePath.toLowerCase().includes("femalebody_0.nif"),
+      ),
+    ).toBe(true);
+    expect(
+      outputFiles.some((f) =>
+        f.relativePath.toLowerCase().includes("femalebody_1.nif"),
+      ),
+    ).toBe(true);
   });
 
   it("preserves body-replacer NIFs identified by basename regardless of directory", async () => {
