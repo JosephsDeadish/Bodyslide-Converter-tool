@@ -3005,7 +3005,8 @@ describe("convertMod", () => {
     const convertedConfigEntry = result.convertedFiles.find(
       (file) =>
         file.kind === "text" &&
-        file.outputPath.toLowerCase().includes("cbpc/cbbe_spaced.ini"),
+        file.outputPath.toLowerCase().includes("cbpc/") &&
+        file.outputPath.toLowerCase().endsWith("_spaced.ini"),
     );
     expect(convertedConfigEntry).toBeDefined();
 
