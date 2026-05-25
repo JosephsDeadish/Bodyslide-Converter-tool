@@ -242,7 +242,7 @@ const CROSS_GENDER_NOTES = [
 
 const FAMILY_PATHS = {
   cbbe: {
-    label: "CBBE ↔ 3BA ↔ TBD",
+    label: "CBBE ↔ 3BA ↔ COCO ↔ TBD",
     namingNotes: [
       "Uses canonical CBBE-family output aliases in rewritten file names and BodySlide metadata.",
       "Applies automatic CBBE-family metadata harmonization for cleaner in-game fit defaults.",
@@ -368,6 +368,13 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "himbo body",
     "himbo-body",
     "himbo v5",
+    "himbo v4",
+    "himbo reduced",
+    "himbo beefy",
+    "himbo slim",
+    "himbo average",
+    "himbo physics",
+    "himbo smp",
     "himbo",
   ],
   bodytalk: [
@@ -375,8 +382,12 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "bodytalk v2",
     "bodytalkv3",
     "bodytalkv2",
+    "bt3 muscle solution",
+    "bodytalk muscle",
     "bodytalk body",
     "bodytalk_body",
+    "bodytalk physics",
+    "bodytalk smp",
     "bodytalk3",
     "bodytalk",
     "bt3",
@@ -387,6 +398,11 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "touchedbydibella",
     "tbd body",
     "tbd softbody",
+    "tbd 3bbb",
+    "tbd cbpc",
+    "tbd hdtsmp",
+    "tbd hdt-smp",
+    "tbd physics",
     "tbd_body",
     "tbd se",
     "tbd",
@@ -414,11 +430,17 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
   bhunp: [
     "bonehunger unp 3bbb",
     "bonehunger unp",
+    "baka haeun unp",
+    "bakahaeununp",
     "unp next generation",
     "bhunp 3bbb body",
     "bhunp 3bbb",
     "bhunp body",
     "bhunp softbody",
+    "bhunp cbpc",
+    "bhunp hdtsmp",
+    "bhunp hdt-smp",
+    "bhunp smp",
     "bhunp_body",
     "bhunp v3",
     "bhunp",
@@ -428,15 +450,25 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "unified unp",
     "uunp special",
     "uunp softbody",
+    "uunp tbbp",
+    "uunp bbp",
+    "uunp cbpc",
+    "uunp hdtsmp",
+    "uunp hdt-smp",
+    "uunp smp",
     "uunp body",
     "uunp_body",
     "uunp",
   ],
   ube: [
     "unified body enhancer",
+    "kofman ube",
     "ube body",
     "ube 2.0",
+    "ube 2.0 softbody",
     "ube softbody",
+    "ube tbbp",
+    "ube bbp",
     "ube physics",
     "uunp ube",
     "ube_body",
@@ -617,6 +649,10 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "NPC RBreastRoot": "NPC R Breast01",
       "NPC BellyRoot": "NPC Belly",
     },
+    // COCO uses the identical bone naming as 3BA — collapse 3BA-specific BreastRoot/BellyRoot
+    // that COCO also has (they are named the same, so no remapping needed for shared bones;
+    // BellyRoot → BellyRoot stays, so this map is effectively empty)
+    coco: {},
   },
   bhunp: {
     "3ba": {
@@ -662,6 +698,17 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
       "BHUNP Butt L": "NPC L Butt",
       "BHUNP Butt R": "NPC R Butt",
     },
+    // COCO uses NPC naming (same as 3BA) — rename BHUNP-prefixed bones to NPC-prefixed
+    coco: {
+      "BHUNP Breast L01": "NPC L Breast01",
+      "BHUNP Breast R01": "NPC R Breast01",
+      "BHUNP Breast L02": "NPC L Breast02",
+      "BHUNP Breast R02": "NPC R Breast02",
+      "BHUNP Breast L03": "NPC L Breast03",
+      "BHUNP Breast R03": "NPC R Breast03",
+      "BHUNP Butt L": "NPC L Butt",
+      "BHUNP Butt R": "NPC R Butt",
+    },
   },
   tbd: {
     bhunp: {
@@ -682,6 +729,8 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
     uunp: {},
     // UBE shares same NPC bone naming as TBD
     ube: {},
+    // COCO shares the same NPC bone naming as TBD/3BA
+    coco: {},
   },
   uunp: {
     // UUNP → BHUNP: rename NPC-prefixed bones to BHUNP-prefixed names
@@ -701,6 +750,8 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
     "3ba": {},
     // UBE: identical bone names to UUNP — no remapping needed
     ube: {},
+    // COCO: shares NPC bone naming (same as 3BA) — no remapping needed
+    coco: {},
   },
   ube: {
     // UBE → BHUNP: same remapping as UUNP (identical bone naming)
@@ -718,6 +769,53 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
     tbd: {},
     "3ba": {},
     uunp: {},
+    // COCO: shares NPC bone naming — no remapping needed
+    coco: {},
+  },
+  // COCO uses the identical physics bone set as 3BA (NPC L/R Breast01-03,
+  // NPC LBreastRoot/NPC RBreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot).
+  coco: {
+    // COCO → BHUNP: same mapping as 3BA → BHUNP
+    bhunp: {
+      "NPC L Breast01": "BHUNP Breast L01",
+      "NPC R Breast01": "BHUNP Breast R01",
+      "NPC L Breast02": "BHUNP Breast L02",
+      "NPC R Breast02": "BHUNP Breast R02",
+      "NPC L Breast03": "BHUNP Breast L03",
+      "NPC R Breast03": "BHUNP Breast R03",
+      "NPC LBreastRoot": "BHUNP Breast L01",
+      "NPC RBreastRoot": "BHUNP Breast R01",
+      "NPC L Butt": "BHUNP Butt L",
+      "NPC R Butt": "BHUNP Butt R",
+      "NPC BellyRoot": "NPC Belly",
+    },
+    // COCO → TBD: collapse BreastRoot/BellyRoot (same map as 3BA → TBD)
+    tbd: {
+      "NPC LBreastRoot": "NPC L Breast01",
+      "NPC RBreastRoot": "NPC R Breast01",
+      "NPC BellyRoot": "NPC Belly",
+    },
+    // COCO → UUNP: collapse BreastRoot/BellyRoot
+    uunp: {
+      "NPC LBreastRoot": "NPC L Breast01",
+      "NPC RBreastRoot": "NPC R Breast01",
+      "NPC BellyRoot": "NPC Belly",
+    },
+    // COCO → UBE: same as COCO → UUNP
+    ube: {
+      "NPC LBreastRoot": "NPC L Breast01",
+      "NPC RBreastRoot": "NPC R Breast01",
+      "NPC BellyRoot": "NPC Belly",
+    },
+    // COCO → 3BA: identical bone names — no remapping needed
+    "3ba": {},
+  },
+  // HIMBO and BodyTalk both use NPC L/R Pectoral — no bone name remapping needed
+  himbo: {
+    bodytalk: {},
+  },
+  bodytalk: {
+    himbo: {},
   },
 };
 
@@ -948,6 +1046,71 @@ const PHYSICS_BONE_SOURCE_ALIASES: Partial<
     "BHUNP Breast R03": ["BHUNPBreastR03"],
     "BHUNP Butt L": ["BHUNPButtL", "BHUNP Butt L01"],
     "BHUNP Butt R": ["BHUNPButtR", "BHUNP Butt R01"],
+  },
+  // COCO uses the identical bone naming as 3BA — share the same source aliases
+  coco: {
+    "NPC L Breast01": [
+      "NPC L Breast",
+      "NPC LBreast01",
+      "NPC L PreBreast",
+      "NPC L PreBreast01",
+      "NPC LPreBreast01",
+    ],
+    "NPC R Breast01": [
+      "NPC R Breast",
+      "NPC RBreast01",
+      "NPC R PreBreast",
+      "NPC R PreBreast01",
+      "NPC RPreBreast01",
+    ],
+    "NPC L Breast02": [
+      "NPC LBreast02",
+      "NPC L PreBreast02",
+      "NPC LPreBreast02",
+    ],
+    "NPC R Breast02": [
+      "NPC RBreast02",
+      "NPC R PreBreast02",
+      "NPC RPreBreast02",
+    ],
+    "NPC L Breast03": [
+      "NPC LBreast03",
+      "NPC L PreBreast03",
+      "NPC LPreBreast03",
+    ],
+    "NPC R Breast03": [
+      "NPC RBreast03",
+      "NPC R PreBreast03",
+      "NPC RPreBreast03",
+    ],
+    "NPC L Butt": [
+      "NPC LButt",
+      "NPC L Butt01",
+      "NPC LButt01",
+      "NPC L Butt02",
+      "NPC LButt02",
+    ],
+    "NPC R Butt": [
+      "NPC RButt",
+      "NPC R Butt01",
+      "NPC RButt01",
+      "NPC R Butt02",
+      "NPC RButt02",
+    ],
+    "NPC LBreastRoot": ["NPC L BreastRoot", "NPC L Breast Root"],
+    "NPC RBreastRoot": ["NPC R BreastRoot", "NPC R Breast Root"],
+    "NPC Belly": ["NPC Belly01", "NPC Belly 01"],
+    "NPC BellyRoot": ["NPC Belly Root", "NPC BellyRoot01", "NPC Belly Root01"],
+  },
+  // HIMBO uses NPC L/R Pectoral bones; no common variant naming to alias
+  himbo: {
+    "NPC L Pectoral": ["NPC LPectoral", "NPC L Pec", "NPC LPec"],
+    "NPC R Pectoral": ["NPC RPectoral", "NPC R Pec", "NPC RPec"],
+  },
+  // BodyTalk uses the same NPC L/R Pectoral naming as HIMBO
+  bodytalk: {
+    "NPC L Pectoral": ["NPC LPectoral", "NPC L Pec", "NPC LPec"],
+    "NPC R Pectoral": ["NPC RPectoral", "NPC R Pec", "NPC RPec"],
   },
 };
 
@@ -2233,10 +2396,6 @@ async function synthesizeMissingOutfitSliderDataMeshes(
   let synthesizedCount = 0;
 
   for (const groupBasePath of runtimeNifGroups) {
-    const candidateTemplates = {
-      _0: `${groupBasePath}_0.nif`,
-      _1: `${groupBasePath}_1.nif`,
-    };
     for (const weight of ["_0", "_1"] as const) {
       const otherWeight = weight === "_0" ? "_1" : "_0";
       for (const extension of [".tri", ".osd"] as const) {
@@ -2245,11 +2404,10 @@ async function synthesizeMissingOutfitSliderDataMeshes(
           continue;
         }
 
-        const sourceCandidates = [
-          `${groupBasePath}${otherWeight}${extension}`,
-          candidateTemplates[weight],
-          candidateTemplates[otherWeight],
-        ];
+        // Only copy TRI→TRI or OSD→OSD from the other weight variant.
+        // NIF files must never be used as sources for TRI/OSD synthesis
+        // because they use incompatible binary formats.
+        const sourceCandidates = [`${groupBasePath}${otherWeight}${extension}`];
         const sourcePath =
           sourceCandidates.find((candidate) =>
             knownOutputPaths.has(candidate),

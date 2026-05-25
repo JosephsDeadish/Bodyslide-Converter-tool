@@ -157,7 +157,7 @@
         "softbodySupported": true,
         "physicsLevel": "3bbb",
         "boneNamingConvention": "cbbe-3ba",
-        "notes": "Supports CBPC and HDT-SMP. 3BA Softbody variant enables per-vertex HDT-SMP deformation via NiSkinData partitions. NPC LBreastRoot/NPC RBreastRoot are 3BA-specific root control bones."
+        "notes": "Supports CBPC and HDT-SMP. NPC LBreastRoot/NPC RBreastRoot are 3BA-specific root control bones above the standard breast chain \u2014 they must be preserved for CBPC/HDT-SMP to work correctly. NPC BellyRoot extends the belly chain for the softbody belly simulation. 3BA Softbody variant enables per-vertex HDT-SMP deformation via NiSkinData partitions. COCO uses the identical physics bone set as 3BA; COCO \u2194 3BA physics conversion is lossless."
       }
     },
     "coco": {
@@ -251,7 +251,7 @@
         "softbodySupported": true,
         "physicsLevel": "3bbb",
         "boneNamingConvention": "cbbe-3ba",
-        "notes": "Uses the same bone naming convention as 3BA: NPC L/R Breast01-03, NPC LBreastRoot/NPC RBreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot. Standard CBBE-family CBPC configs with BreastRoot bones are compatible. COCOBody HDT-SMP XML required for softbody simulation."
+        "notes": "Uses identical bone naming to 3BA: NPC L/R Breast01-03, NPC LBreastRoot/NPC RBreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot. COCO \u2194 3BA conversion is near-lossless for physics configs. Standard CBBE-family CBPC configs with BreastRoot bones are directly compatible. COCOBody HDT-SMP XML (NickNak) required for softbody simulation."
       }
     },
     "himbo": {
@@ -305,7 +305,9 @@
         "leftHand": "NPC L Hand",
         "rightHand": "NPC R Hand",
         "leftFoot": "NPC L Foot",
-        "rightFoot": "NPC R Foot"
+        "rightFoot": "NPC R Foot",
+        "leftPectoral": "NPC L Pectoral",
+        "rightPectoral": "NPC R Pectoral"
       },
       "morphEquivalents": {
         "heavy": "HIMBO Bulk",
@@ -321,8 +323,8 @@
         "hdtSmpCompatible": true,
         "softbodySupported": false,
         "physicsLevel": "pectoral",
-        "boneNamingConvention": "himbo-pectoral",
-        "notes": "HIMBO Physics Addon (optional, HDT-SMP) uses NPC L/R Pectoral bones. Base HIMBO itself has no physics; the addon is a separate install. CBPC is not supported for pectoral physics."
+        "boneNamingConvention": "npc-pectoral",
+        "notes": "HIMBO Physics Addon (separate HDT-SMP install) adds optional pectoral motion via NPC L/R Pectoral bones. Base HIMBO has no physics \u2014 the addon is a separate esp/esm. CBPC is not supported for pectoral physics. Use the same NPC L/R Pectoral mapping when converting HIMBO Physics content to BodyTalk Physics and vice versa."
       }
     },
     "bodytalk": {
@@ -394,8 +396,8 @@
         "hdtSmpCompatible": true,
         "softbodySupported": false,
         "physicsLevel": "pectoral",
-        "boneNamingConvention": "bodytalk-pectoral",
-        "notes": "BodyTalk Physics variant (separate HDT-SMP addon) uses NPC L/R Pectoral bones. BT3 Muscle Solution is the most common physics-enabled variant. CBPC not supported for pectoral physics."
+        "boneNamingConvention": "npc-pectoral",
+        "notes": "BodyTalk Physics variant (separate HDT-SMP addon) adds pectoral motion via NPC L/R Pectoral bones \u2014 the identical bone naming used by the HIMBO Physics Addon. HIMBO \u2194 BodyTalk physics conversion is lossless. CBPC not supported for pectoral physics. BT3 Muscle Solution is the most common physics-enabled variant."
       }
     },
     "tbd": {
@@ -483,7 +485,7 @@
         "softbodySupported": true,
         "physicsLevel": "3bbb",
         "boneNamingConvention": "cbbe-standard",
-        "notes": "Uses CBBE-standard NPC L/R Breast01-03, L/R Butt, NPC Belly bone names. No BreastRoot bones. CBPC configs are interchangeable with standard CBBE-family physics setups. TBD 3BBB adds HDT-SMP softbody support."
+        "notes": "Uses CBBE-standard NPC L/R Breast01-03, L/R Butt, NPC Belly bone names \u2014 no BreastRoot bones. CBPC configs are interchangeable with standard CBBE-family physics setups. TBD 3BBB adds HDT-SMP softbody support via NiSkinData partitions. When converting from 3BA or COCO, BreastRoot/BellyRoot bone weights must be collapsed to the standard chain."
       }
     },
     "sos": {
@@ -553,7 +555,9 @@
         "leftHand": "NPC L Hand",
         "rightHand": "NPC R Hand",
         "leftFoot": "NPC L Foot",
-        "rightFoot": "NPC R Foot"
+        "rightFoot": "NPC R Foot",
+        "leftPectoral": "NPC L Pectoral",
+        "rightPectoral": "NPC R Pectoral"
       },
       "morphEquivalents": {
         "heavy": "SOS Bulk",
@@ -722,7 +726,7 @@
         "softbodySupported": true,
         "physicsLevel": "3bbb",
         "boneNamingConvention": "bhunp",
-        "notes": "BHUNP uses BHUNP-prefixed breast/butt bone names (BHUNP Breast L/R01-03, BHUNP Butt L/R). NPC Belly is shared with CBBE-family. CBPC config must reference BHUNP bone names specifically. BHUNP Softbody enables per-vertex HDT-SMP deformation."
+        "notes": "BHUNP uses BHUNP-prefixed breast/butt bone names (BHUNP Breast L/R01-03, BHUNP Butt L/R) which differ from the NPC-prefixed names used by all other female bodies. NPC Belly is shared with CBBE-family. CBPC config must reference BHUNP bone names specifically. BHUNP has no BreastRoot bones (unlike 3BA/COCO). BHUNP Softbody enables per-vertex HDT-SMP deformation."
       }
     },
     "uunp": {
@@ -928,7 +932,9 @@
         "leftHand": "NPC L Hand",
         "rightHand": "NPC R Hand",
         "leftFoot": "NPC L Foot",
-        "rightFoot": "NPC R Foot"
+        "rightFoot": "NPC R Foot",
+        "leftPectoral": "NPC L Pectoral",
+        "rightPectoral": "NPC R Pectoral"
       },
       "morphEquivalents": {
         "heavy": "SAM Bulk",
@@ -1459,6 +1465,106 @@
       "source": "uunp",
       "target": "7base",
       "profile": "female-legacy-physics-downgrade"
+    },
+    {
+      "source": "coco",
+      "target": "3ba",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "3ba",
+      "target": "coco",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "coco",
+      "target": "tbd",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "tbd",
+      "target": "coco",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "coco",
+      "target": "cbbe",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "coco",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "coco",
+      "target": "bhunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "coco",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "coco",
+      "target": "uunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "uunp",
+      "target": "coco",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "coco",
+      "target": "ube",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "ube",
+      "target": "coco",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "coco",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "unp",
+      "target": "coco",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "coco",
+      "target": "7base",
+      "profile": "female-legacy-cross-family"
+    },
+    {
+      "source": "7base",
+      "target": "coco",
+      "profile": "female-legacy-cross-family-physics-upgrade"
+    },
+    {
+      "source": "coco",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "coco",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "ube",
+      "target": "cbbe",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "ube",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
     }
   ]
 }

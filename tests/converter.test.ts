@@ -2291,6 +2291,106 @@ describe("convertMod", () => {
   });
 
   it("synthesizes missing TRI and OSD files for vanilla-style outfit meshes", async () => {
+    // When a _0 TRI/OSD exists alongside a NIF, the missing _1 TRI/OSD should be
+    // synthesized by copying from the existing _0 sibling — NOT from NIF content.
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_vanilla_0.nif"),
+      "mesh payload",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_vanilla_0.tri"),
+      "tri morph payload",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_vanilla_0.osd"),
+      "osd payload",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // The _0 TRI is converted (alias cbbe → 3BA rewritten in filename).
+    const triZeroFile = result.convertedFiles.find(
+      (file) =>
+        file.outputPath.endsWith("_0.tri") &&
+        (file.action === "converted" || file.action === "synthesized"),
+    );
+    expect(triZeroFile).toBeDefined();
+
+    // The _1 TRI is synthesized from the _0 sibling TRI (not from a NIF).
+    const triZeroBase = triZeroFile?.outputPath.replace(/_0\.tri$/, "");
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === `${triZeroBase}_1.tri` &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+
+    // The _0 OSD is converted.
+    const osdZeroFile = result.convertedFiles.find(
+      (file) =>
+        file.outputPath.endsWith("_0.osd") &&
+        (file.action === "converted" || file.action === "synthesized"),
+    );
+    expect(osdZeroFile).toBeDefined();
+
+    // The _1 OSD is synthesized from the _0 sibling OSD.
+    const osdZeroBase = osdZeroFile?.outputPath.replace(/_0\.osd$/, "");
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath === `${osdZeroBase}_1.osd` &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+
+    // Verify that the synthesized _1 TRI contains TRI content, not NIF content.
+    const synthesizedTriPath = `${triZeroBase}_1.tri`;
+    const triContent = await readFile(
+      join(outputDir, synthesizedTriPath),
+      "utf8",
+    );
+    expect(triContent).toBe("tri morph payload");
+    expect(triContent).not.toBe("mesh payload");
+
+    // ShapeData mirror: a _1 TRI counterpart is synthesized under CalienteTools.
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.startsWith("CalienteTools/BodySlide/ShapeData/") &&
+          file.outputPath.endsWith("_1.tri") &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath.startsWith("CalienteTools/BodySlide/ShapeData/") &&
+          file.outputPath.endsWith("_1.osd") &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+  });
+
+  it("does not synthesize TRI or OSD when no TRI/OSD source exists", async () => {
+    // When a mod ships only NIF files (no TRI/OSD at all), the converter must not
+    // create TRI/OSD files using NIF binary content as a source — that would produce
+    // corrupt sidecar files. Absence of TRI/OSD is valid; BodySlide works without them.
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -2311,51 +2411,16 @@ describe("convertMod", () => {
       "3ba",
     );
 
+    // NIF files are still converted/synthesized.
     expect(
-      result.convertedFiles.some(
-        (file) =>
-          file.outputPath === "meshes/armor/3BA_0.tri" &&
-          file.action === "synthesized",
-      ),
+      result.convertedFiles.some((file) => file.outputPath.endsWith(".nif")),
     ).toBe(true);
-    expect(
-      result.convertedFiles.some(
-        (file) =>
-          file.outputPath === "meshes/armor/3BA_1.tri" &&
-          file.action === "synthesized",
-      ),
-    ).toBe(true);
-    expect(
-      result.convertedFiles.some(
-        (file) =>
-          file.outputPath === "meshes/armor/3BA_0.osd" &&
-          file.action === "synthesized",
-      ),
-    ).toBe(true);
-    expect(
-      result.convertedFiles.some(
-        (file) =>
-          file.outputPath === "meshes/armor/3BA_1.osd" &&
-          file.action === "synthesized",
-      ),
-    ).toBe(true);
-
-    expect(
-      result.convertedFiles.some(
-        (file) =>
-          file.outputPath ===
-            "CalienteTools/BodySlide/ShapeData/armor/3BA_1.tri" &&
-          file.action === "synthesized",
-      ),
-    ).toBe(true);
-    expect(
-      result.convertedFiles.some(
-        (file) =>
-          file.outputPath ===
-            "CalienteTools/BodySlide/ShapeData/armor/3BA_1.osd" &&
-          file.action === "synthesized",
-      ),
-    ).toBe(true);
+    // No TRI or OSD files should be present in the output.
+    const triOsdFiles = result.convertedFiles.filter(
+      (file) =>
+        file.outputPath.endsWith(".tri") || file.outputPath.endsWith(".osd"),
+    );
+    expect(triOsdFiles).toHaveLength(0);
   });
 
   it("converts vanilla-detected armor to target body and keeps per-armor ShapeData folders", async () => {

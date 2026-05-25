@@ -114,7 +114,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "softbody partitions",
     ],
     conversionNotes:
-      "Converting TO 3BA: add physics-chain bone weighting to breast and butt areas; CBPC config must list those bones. NPC LBreastRoot / NPC RBreastRoot are 3BA-specific root control bones above the standard chain — they must be preserved for CBPC/HDT-SMP to work correctly. For 3BA Softbody, the NIF must use NiSkinData partitions and a matching HDT-SMP XML must be provided. Converting FROM 3BA to a non-physics body: collapse all physics-chain bone weights back to NPC Spine2 (breast) and NPC Pelvis (butt). NPC BellyRoot collapses to NPC Belly for non-3BA targets.",
+      "Converting TO 3BA: add physics-chain bone weighting to breast and butt areas; CBPC config must list those bones. NPC LBreastRoot / NPC RBreastRoot are 3BA-specific root control bones above the standard chain — they must be preserved for CBPC/HDT-SMP to work correctly. For 3BA Softbody, the NIF must use NiSkinData partitions and a matching HDT-SMP XML must be provided. Converting FROM 3BA to a non-physics body: collapse all physics-chain bone weights back to NPC Spine2 (breast) and NPC Pelvis (butt). NPC BellyRoot collapses to NPC Belly for non-3BA targets. COCO uses the identical physics bone set as 3BA — converting between 3BA and COCO is near-lossless; only BodySlide group labels and file naming need updating.",
   },
   coco: {
     displayName: "COCO Body – COCOBodySE",
@@ -171,7 +171,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "softbody partitions",
     ],
     conversionNotes:
-      "COCO uses CBBE topology and the same physics bone naming as 3BA (NPC L/R Breast01-03, NPC L/R BreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot). Converting between COCO and 3BA is a near-native same-topology conversion; only BodySlide group labels and file naming need updating. Converting TO COCO from CBBE: add NPC L/R BreastRoot weighting and the 3BBB belly chain; standard CBBE-family CBPC configs are compatible after adding the BreastRoot bones. COCOBody HDT-SMP XML must be included for softbody physics. Converting FROM COCO: same approach as converting from 3BA.",
+      "COCO uses CBBE topology and the identical physics bone naming as 3BA (NPC L/R Breast01-03, NPC L/R BreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot). Converting between COCO and 3BA is a near-native same-topology conversion — the physics bone sets are identical; only BodySlide group labels and file naming need updating. Converting TO COCO from CBBE: add NPC L/R BreastRoot weighting and the 3BBB belly chain; standard CBBE-family CBPC configs are compatible after adding the BreastRoot bones. COCOBody HDT-SMP XML must be included for softbody physics. Converting FROM COCO to TBD or UUNP: collapse NPC L/R BreastRoot into NPC L/R Breast01 and NPC BellyRoot into NPC Belly; no bone name remapping is needed for the shared NPC Breast01-03 bones. Converting FROM COCO to BHUNP: rename NPC-prefixed breast/butt bones to BHUNP-prefixed equivalents and collapse BreastRoot/BellyRoot.",
   },
   himbo: {
     displayName: "HIMBO – Highly Improved Male Body Overhaul",
@@ -216,7 +216,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "calves",
     ],
     conversionNotes:
-      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Prioritize BodySlide preview and in-game checks for chest and shoulder fit extremes. For HIMBO V5+ physics, the optional HIMBO Physics Addon is a separate install that adds HDT-SMP pectoral motion via NPC L/R Pectoral bones; enable that after the base BodySlide conversion and ensure the SMP XML config is included. CBPC is not used for HIMBO pectoral physics.",
+      "Converting female armor to HIMBO requires significant mesh projection because shoulder, chest, and pelvis proportions differ substantially. Prioritize BodySlide preview and in-game checks for chest and shoulder fit extremes. For HIMBO V5+ physics, the optional HIMBO Physics Addon is a separate install that adds HDT-SMP pectoral motion via NPC L/R Pectoral bones (the same bones used by the BodyTalk Physics addon); enable that after the base BodySlide conversion and ensure the SMP XML config is included. Converting HIMBO ↔ BodyTalk is a near-native male conversion since both bodies use the same NPC L/R Pectoral bone naming for physics; only BodySlide group labels and file naming need updating. CBPC is not used for HIMBO pectoral physics.",
   },
   bodytalk: {
     displayName: "BodyTalk – High-Poly Male Body Replacer",
@@ -256,7 +256,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "thigh mass",
     ],
     conversionNotes:
-      "BodyTalk projects behave similarly to other male slider sets but keep distinct naming. Converting to or from BodyTalk should preserve male asset paths while retargeting BodySlide metadata to BodyTalk aliases. BT3 (BodyTalk V3) is the most common modern variant. The BodyTalk Physics addon adds HDT-SMP pectoral physics via NPC L/R Pectoral bones; ensure the SMP XML config is included when converting physics-enabled BT3 content.",
+      "BodyTalk projects behave similarly to other male slider sets but keep distinct naming. Converting to or from BodyTalk should preserve male asset paths while retargeting BodySlide metadata to BodyTalk aliases. BT3 (BodyTalk V3) is the most common modern variant. Converting HIMBO ↔ BodyTalk is a near-native male conversion — both bodies use the same NPC L/R Pectoral bone naming for physics, so no bone remapping is needed; only BodySlide group labels and file naming need updating. The BodyTalk Physics addon adds HDT-SMP pectoral physics via NPC L/R Pectoral bones; ensure the SMP XML config is included when converting physics-enabled BT3 content.",
   },
   tbd: {
     displayName: "TBD – Touched by Dibella",
@@ -438,7 +438,7 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
       "softbody partitions",
     ],
     conversionNotes:
-      "Similar conversion path to 3BA but uses different physics bone names for breast chains (BHUNP Breast L/R01-03 vs NPC L/R Breast01-03) and butt bones (BHUNP Butt L/R vs NPC L/R Butt). Belly physics uses the shared NPC Belly bone. BHUNP does NOT use BreastRoot bones — those are 3BA-specific. CBPC config must reference BHUNP bone names specifically. For BHUNP Softbody, include the HDT-SMP XML config alongside the NIF. When converting 3BA content to BHUNP, remap all NPC L/R Breast01-03 → BHUNP Breast L/R01-03 and NPC L/R Butt → BHUNP Butt L/R.",
+      "Similar conversion path to 3BA but uses different physics bone names for breast chains (BHUNP Breast L/R01-03 vs NPC L/R Breast01-03) and butt bones (BHUNP Butt L/R vs NPC L/R Butt). Belly physics uses the shared NPC Belly bone. BHUNP does NOT use BreastRoot bones — those are 3BA/COCO-specific. CBPC config must reference BHUNP bone names specifically. For BHUNP Softbody, include the HDT-SMP XML config alongside the NIF. When converting 3BA or COCO content to BHUNP, remap all NPC L/R Breast01-03 → BHUNP Breast L/R01-03, NPC L/R Butt → BHUNP Butt L/R, and collapse NPC L/R BreastRoot / NPC BellyRoot (neither exists in BHUNP). When converting BHUNP to 3BA or COCO, rename BHUNP-prefixed bones back to NPC-prefixed equivalents.",
   },
   uunp: {
     displayName: "UUNP – Unified UNP",
