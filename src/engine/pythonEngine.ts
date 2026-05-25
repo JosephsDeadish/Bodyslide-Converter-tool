@@ -59,6 +59,12 @@ const REQUIRED_PYTHON_LIBRARIES = [
   "trimesh",
   "pyvista",
 ] as const;
+const BUNDLED_DEPENDENCY_PROBE_SNIPPET = [
+  "import importlib.util, sys",
+  "mods = ['pyffi','numpy','scipy','trimesh','pyvista']",
+  "missing = [m for m in mods if importlib.util.find_spec(m) is None]",
+  "sys.exit(1 if missing else 0)",
+].join("; ");
 
 function isStageReport(value: unknown): value is EngineStageReport {
   if (!value || typeof value !== "object") return false;
@@ -148,6 +154,16 @@ export function buildDependencyPackageBootstrapCommand(
   return {
     command,
     args,
+  };
+}
+
+export function buildBundledDependencyProbeCommand(
+  command: string,
+  commandArgs: string[],
+): { command: string; args: string[] } {
+  return {
+    command,
+    args: [...commandArgs, "-c", BUNDLED_DEPENDENCY_PROBE_SNIPPET],
   };
 }
 
@@ -311,6 +327,17 @@ export async function runPythonEngine(
       interpreter.command,
       interpreter.args,
     );
+    const bundledDependencyProbePath = buildPythonPath(
+      bundledDependencyPaths,
+      process.env.PYTHONPATH,
+    );
+    const bundledDependenciesAreUsable =
+      hasCompleteBundledDependencies &&
+      (await canImportRequiredLibraries(
+        interpreter.command,
+        interpreter.args,
+        bundledDependencyProbePath,
+      ));
     const pythonPath = buildPythonPath(
       [dependencyTargetPath, ...bundledDependencyPaths],
       process.env.PYTHONPATH,
@@ -321,7 +348,7 @@ export async function runPythonEngine(
       runnerPath,
       dependencyTargetPath,
       pythonPath,
-      hasCompleteBundledDependencies,
+      bundledDependenciesAreUsable,
     );
     const run = await tryInterpreter(
       interpreter.command,
@@ -617,6 +644,26 @@ async function runBootstrapCommand(
 
     child.on("error", () => resolve());
     child.on("close", () => resolve());
+  });
+}
+
+async function canImportRequiredLibraries(
+  command: string,
+  commandArgs: string[],
+  pythonPath: string,
+): Promise<boolean> {
+  const probe = buildBundledDependencyProbeCommand(command, commandArgs);
+  return new Promise<boolean>((resolve) => {
+    const child = spawn(probe.command, probe.args, {
+      stdio: "ignore",
+      env: {
+        ...process.env,
+        PYTHONPATH: pythonPath,
+        PYTHONUNBUFFERED: "1",
+      },
+    });
+    child.on("error", () => resolve(false));
+    child.on("close", (code) => resolve(code === 0));
   });
 }
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildBundledDependencyProbeCommand,
   buildDependencyBootstrapCommand,
   buildDependencyPackageBootstrapCommand,
   buildPipToolchainBootstrapCommand,
@@ -266,6 +267,17 @@ describe("python dependency bootstrap command", () => {
         "/home/user/.slidesmith/python-deps/abc123",
       ],
     });
+  });
+
+  it("builds a bundled dependency probe command with interpreter args preserved", () => {
+    const probe = buildBundledDependencyProbeCommand("py", ["-3.12"]);
+
+    expect(probe.command).toBe("py");
+    expect(probe.args[0]).toBe("-3.12");
+    expect(probe.args[1]).toBe("-c");
+    expect(probe.args[2]).toContain("import importlib.util");
+    expect(probe.args[2]).toContain("pyffi");
+    expect(probe.args[2]).toContain("pyvista");
   });
 });
 
