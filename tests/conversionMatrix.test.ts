@@ -188,7 +188,9 @@ describe("conversion matrix coverage", () => {
             BODY_TYPE_INFO[target].physicsBones[0] ?? "",
           );
         } else {
-          await expect(readFile(synthesizedPhysicsStubPath, "utf8")).rejects.toThrow();
+          await expect(
+            readFile(synthesizedPhysicsStubPath, "utf8"),
+          ).rejects.toThrow();
         }
       }
     }
