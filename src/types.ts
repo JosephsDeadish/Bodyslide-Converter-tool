@@ -27,6 +27,11 @@ export type DetectionResult = {
   bodyType: BodyType | "unknown";
   confidence: number;
   scores: Record<BodyType, number>;
+  packaging: {
+    fomod: boolean;
+    mo2: boolean;
+    vortex: boolean;
+  };
   rankedCandidates: Array<{
     bodyType: BodyType;
     score: number;

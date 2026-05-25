@@ -21,6 +21,10 @@ export function WelcomeScreen() {
             ✓ Rewrites BodySlide text assets for supported native conversions
           </li>
           <li>
+            ✓ Recognizes FOMOD, MO2, and Vortex packaging signals and keeps
+            installer-friendly output structure
+          </li>
+          <li>
             ✓ Writes <code>conversion-summary.txt</code> and{" "}
             <code>conversion-report.json</code> to <code>_SlideSmith/</code>{" "}
             inside the output (kept separate from game assets)

@@ -333,6 +333,19 @@ describe("detectBodyType", () => {
     expect(uunpDetection.bodyType).toBe("uunp");
   });
 
+  it("recognizes FOMOD, MO2, and Vortex packaging markers", () => {
+    const detection = detectBodyType([
+      file("fomod/ModuleConfig.xml", "<config></config>"),
+      file("meta.ini", "[General]\nmodorganizer=1"),
+      file("vortex.deployment.json", '{"managedBy":"vortex"}'),
+      file("meshes/armor/cbbe_armor_0.nif", "caliente cbbe"),
+    ]);
+
+    expect(detection.packaging.fomod).toBe(true);
+    expect(detection.packaging.mo2).toBe(true);
+    expect(detection.packaging.vortex).toBe(true);
+  });
+
   it("classifies .osd files as mesh evidence", () => {
     const detection = detectBodyType([
       file(
@@ -466,6 +479,30 @@ describe("createConversionPlan", () => {
         warning.includes("Skyrim SE expects paired _0/_1 meshes"),
       ),
     ).toBe(true);
+  });
+
+  it("adds packaging guidance warnings when installer metadata is detected", () => {
+    const detection = detectBodyType([
+      file("fomod/ModuleConfig.xml", "<config></config>"),
+      file("meta.ini", "[General]\nmodorganizer=1"),
+      file("vortex.deployment.json", '{"managedBy":"vortex"}'),
+      file("meshes/armor/cbbe_outfit_0.nif", "caliente cbbe"),
+    ]);
+    const plan = createConversionPlan(detection, "3ba", [
+      file("meshes/armor/cbbe_outfit_0.nif"),
+    ]);
+
+    expect(plan.warnings.some((warning) => warning.includes("FOMOD"))).toBe(
+      true,
+    );
+    expect(
+      plan.warnings.some((warning) =>
+        warning.includes("Mod Organizer 2 ready"),
+      ),
+    ).toBe(true);
+    expect(plan.warnings.some((warning) => warning.includes("Vortex"))).toBe(
+      true,
+    );
   });
 });
 

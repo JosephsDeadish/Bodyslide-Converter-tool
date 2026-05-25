@@ -729,6 +729,75 @@ describe("convertMod", () => {
     ).toBe(true);
   });
 
+  it("normalizes embedded data roots inside installer option folders", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "00 Core", "Data", "meshes", "armor"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "00 Core", "Data", "meshes", "armor", "cbbe_gloves_0.nif"),
+      "caliente cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) => file.outputPath === "meshes/armor/3BA_gloves_0.nif",
+      ),
+    ).toBe(true);
+  });
+
+  it("preserves FOMOD installer xml files without body alias rewrites", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "fomod"), { recursive: true });
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "fomod", "ModuleConfig.xml"),
+      "<config><name>CBBE Installer</name></config>",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_boots_0.nif"),
+      "caliente cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const fomodFile = result.convertedFiles.find(
+      (file) => file.outputPath === "fomod/ModuleConfig.xml",
+    );
+    expect(fomodFile).toBeDefined();
+    expect(fomodFile?.action).toBe("copied");
+
+    const outputContent = await readFile(
+      join(outputDir, "fomod", "ModuleConfig.xml"),
+      "utf8",
+    );
+    expect(outputContent).toContain("CBBE Installer");
+    expect(outputContent).not.toContain("3BA Installer");
+  });
+
   it("normalizes OSD files to meshes/ prefix", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

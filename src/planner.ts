@@ -254,11 +254,28 @@ export function createConversionPlan(
 ): ConversionPlan {
   const warnings: string[] = [];
   const sourceType = detection.bodyType;
+  const packaging = detection.packaging;
 
   // Unknown source
   if (sourceType === "unknown") {
     warnings.push(
       "Body type detection returned 'unknown'. Manually verify the source body type before applying any conversion outputs.",
+    );
+  }
+
+  if (packaging.fomod) {
+    warnings.push(
+      "FOMOD installer structure detected. SlideSmith keeps installer metadata and remaps embedded Data roots for direct MO2/Vortex deployment.",
+    );
+  }
+  if (packaging.mo2) {
+    warnings.push(
+      "MO2 metadata detected. Output stays in canonical Data-root paths so the converted mod remains Mod Organizer 2 ready.",
+    );
+  }
+  if (packaging.vortex) {
+    warnings.push(
+      "Vortex metadata detected. Output uses canonical Skyrim Data layout so converted assets remain Vortex deployment friendly.",
     );
   }
 

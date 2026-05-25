@@ -569,6 +569,25 @@ body {
   color: var(--warn);
 }
 
+.detected-packaging-row {
+  margin-top: 8px;
+}
+
+.detected-packaging-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.packaging-tag {
+  background: var(--surface);
+  border: 1px solid #365f8d;
+  border-radius: 12px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: #8ec4ff;
+}
+
 /* ── Utilities ───────────────────────────────────────────────── */
 .hidden {
   display: none;

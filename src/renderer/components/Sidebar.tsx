@@ -53,6 +53,13 @@ export function Sidebar({
   const showDetect = Boolean(inputPath);
   const detectedType = detectResult?.bodyType;
   const confPct = detectResult ? Math.round(detectResult.confidence * 100) : 0;
+  const packagingTags = detectResult
+    ? [
+        detectResult.packaging.fomod ? "FOMOD" : null,
+        detectResult.packaging.mo2 ? "MO2" : null,
+        detectResult.packaging.vortex ? "Vortex" : null,
+      ].filter((tag): tag is string => tag !== null)
+    : [];
 
   return (
     <aside className="sidebar">
@@ -107,6 +114,18 @@ export function Sidebar({
                 </span>
               )}
             </div>
+            {packagingTags.length > 0 && (
+              <div className="detected-packaging-row">
+                <span className="field-label">Detected packaging</span>
+                <div className="detected-packaging-tags">
+                  {packagingTags.map((tag) => (
+                    <span key={tag} className="packaging-tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="field-label" style={{ marginTop: "0.6rem" }}>
               Override Source Body
             </div>

@@ -92,6 +92,11 @@ function DetectionCard({
 }) {
   const confPct = Math.round(detection.confidence * 100);
   const signals = (detection.matchedSignals ?? []).slice(0, 5);
+  const packagingTags = [
+    detection.packaging.fomod ? "FOMOD" : null,
+    detection.packaging.mo2 ? "MO2" : null,
+    detection.packaging.vortex ? "Vortex" : null,
+  ].filter((tag): tag is string => tag !== null);
 
   return (
     <>
@@ -125,6 +130,17 @@ function DetectionCard({
       <div style={{ marginTop: "10px", fontSize: "12px", color: "#8888b8" }}>
         Files scanned: {filesAnalyzed}
       </div>
+
+      {packagingTags.length > 0 && (
+        <>
+          <div className="result-section-title">Detected packaging</div>
+          <div className="result-stats">
+            {packagingTags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
+        </>
+      )}
 
       {signals.length > 0 && (
         <>

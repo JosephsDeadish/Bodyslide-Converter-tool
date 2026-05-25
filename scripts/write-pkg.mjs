@@ -9,6 +9,8 @@ const DIST_MAIN = join(ROOT, "dist-main");
 const DEST_PKG = join(ROOT, "dist-main", "package.json");
 const SRC_PYTHON_ENGINE = join(ROOT, "python_engine");
 const DEST_PYTHON_ENGINE = join(DIST_MAIN, "python_engine");
+const SRC_BUILD_ASSETS = join(ROOT, "build");
+const DEST_BUILD_ASSETS = join(DIST_MAIN, "build");
 
 await mkdir(DIST_MAIN, { recursive: true });
 await writeFile(
@@ -23,3 +25,9 @@ await cp(SRC_PYTHON_ENGINE, DEST_PYTHON_ENGINE, {
   force: true,
 });
 process.stdout.write("Copied python_engine/ into dist-main/python_engine/\n");
+
+await cp(SRC_BUILD_ASSETS, DEST_BUILD_ASSETS, {
+  recursive: true,
+  force: true,
+});
+process.stdout.write("Copied build/ into dist-main/build/\n");

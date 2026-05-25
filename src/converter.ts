@@ -37,6 +37,7 @@ const CANONICAL_DATA_PREFIXES: readonly string[] = [
   "facegen/",
 ];
 const DATA_CONTAINER_PREFIXES: readonly string[] = ["data/", "data files/"];
+const FOMOD_METADATA_PREFIX = "fomod/";
 
 // BodySlide XML slider-group files contain one of these markers at the top.
 const BODYSLIDE_SLIDERGROUP_XML_MARKERS: readonly string[] = [
@@ -80,7 +81,28 @@ function normalizeToMo2DataPath(
     if (!matchingPrefix) break;
     forward = forward.slice(matchingPrefix.length);
   }
+
+  // Strip embedded Data/ roots inside installer option folders
+  // (for example "00 Core/Data/meshes/...").
+  for (const prefix of DATA_CONTAINER_PREFIXES) {
+    const marker = `/${prefix.toLowerCase()}`;
+    const markerIndex = forward.toLowerCase().indexOf(marker);
+    if (markerIndex >= 0) {
+      forward = forward.slice(markerIndex + marker.length);
+      break;
+    }
+  }
   const lower = forward.toLowerCase();
+
+  // Installer packs sometimes nest canonical Data roots under option folders.
+  // Preserve the canonical root segment rather than nesting under meshes/<wrapper>/...
+  for (const prefix of CANONICAL_DATA_PREFIXES) {
+    const canonicalMarker = `/${prefix.toLowerCase()}`;
+    const canonicalIndex = lower.indexOf(canonicalMarker);
+    if (canonicalIndex >= 0) {
+      return forward.slice(canonicalIndex + 1);
+    }
+  }
 
   // Already in a canonical data root — preserve path as-is.
   if (
@@ -1678,6 +1700,21 @@ export async function convertMod(
     await mkdir(dirname(outputPath), { recursive: true });
 
     if (TEXT_EXTENSIONS.has(file.extension)) {
+      const sourcePathLower = file.relativePath.toLowerCase().replace(/\\/g, "/");
+      if (
+        sourcePathLower.startsWith(FOMOD_METADATA_PREFIX) ||
+        sourcePathLower.includes(`/${FOMOD_METADATA_PREFIX}`)
+      ) {
+        await copyFile(file.absolutePath, outputPath);
+        convertedFiles.push({
+          sourcePath: file.relativePath,
+          outputPath: rewrittenRelativePath,
+          kind: "text",
+          action: "copied",
+        });
+        continue;
+      }
+
       const content = await readFile(file.absolutePath, "utf8");
       const nextContent = replaceAliases(
         replacePhysicsReferences(

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { constants } from "node:fs";
 import {
   app,
   BrowserWindow,
@@ -28,6 +29,7 @@ import type {
 import { BODY_TYPES } from "./types.js";
 
 const PATREON_SUPPORT_URL = "https://www.patreon.com/cw/DeadOnTheInside";
+const ICON_CANDIDATES = ["build/icon.ico", "build/icon.icns", "build/icon.png"];
 
 type ScanResult = {
   detection: Awaited<ReturnType<typeof detectBodyType>>;
@@ -49,8 +51,25 @@ type JobStatus = {
   progress: number;
 };
 
-function createWindow(): BrowserWindow {
-  const win = new BrowserWindow({
+async function resolveAppIconPath(): Promise<string | null> {
+  const roots = [process.cwd(), __dirname, resolve(__dirname, "..")];
+  for (const root of roots) {
+    for (const relativeIconPath of ICON_CANDIDATES) {
+      const absoluteIconPath = resolve(root, relativeIconPath);
+      try {
+        await access(absoluteIconPath, constants.R_OK);
+        return absoluteIconPath;
+      } catch {
+        // Continue through candidate list.
+      }
+    }
+  }
+  return null;
+}
+
+async function createWindow(): Promise<BrowserWindow> {
+  const iconPath = await resolveAppIconPath();
+  const windowOptions: Record<string, unknown> = {
     width: 1100,
     height: 750,
     minWidth: 900,
@@ -64,7 +83,11 @@ function createWindow(): BrowserWindow {
     title: "SlideSmith",
     backgroundColor: "#0d0d1a",
     show: false,
-  });
+  };
+  if (iconPath) {
+    windowOptions.icon = iconPath;
+  }
+  const win = new BrowserWindow(windowOptions);
 
   win.once("ready-to-show", () => {
     win.show();
@@ -77,11 +100,11 @@ function createWindow(): BrowserWindow {
 
 app
   .whenReady()
-  .then(() => {
-    createWindow();
+  .then(async () => {
+    await createWindow();
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
+        void createWindow();
       }
     });
   })

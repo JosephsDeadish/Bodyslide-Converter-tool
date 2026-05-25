@@ -100,6 +100,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Cross-gender adaptation also rewrites common gendered asset markers such as `femalebody`/`malebody` and first-person hand paths so generated outputs line up with the selected target gender.
 - The CLI summary, JSON report, and desktop app all include the generated conversion path metadata plus structured conversion-plan operations for manual follow-up.
 - Generated outputs now apply automatic naming, gender-marker, and physics-reference harmonization; use BodySlide preview plus in-game checks for high-risk topology/cross-gender cases.
+- Installer-style layouts are now handled more safely: embedded `Data/` roots inside option folders are normalized to canonical game paths, while `fomod/` installer metadata files are preserved without body-alias rewrites.
 - Native conversion now auto-synthesizes missing `_0`/`_1` `.nif` weight-pair meshes when only one side exists, improving in-game weight-slider completeness.
 - Native conversion now auto-synthesizes a BodySlide SliderSet `.osp` file when mesh outputs exist but no project file was provided, so converted outfits still appear directly in BodySlide without manual project setup.
 - Reports now include a structured conversion audit that checks extracted mesh/slider assets, BodySlide slider-set generation, topology risk, and target physics-config coverage (including 3BA belly-chain validation).
@@ -110,6 +111,8 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
 - Physics remapping now also recognizes modern softbody alias chains found in some 3BA/UUNP/UBE configs (for example `NPC L/R PreBreast01-03`, `NPC Belly01`, and `NPC L/R UBE Breast 01-03`) so conversions preserve breast/belly physics data more reliably.
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
+- Detection now surfaces FOMOD, MO2, and Vortex packaging signals in planning/UI so deployment context is visible before conversion.
 - The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
+- Packaged Windows builds now use `build/icon.ico` as the executable/taskbar icon; runtime window icon also resolves from `build/icon.*` candidates.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact bundle (`slidesmith-release`) for workflow-run approval and testing.
 - Packaging remains standard `electron-builder` output (no obfuscation/self-extractors/UPX). For production release trust, add Windows code signing in your release pipeline.
