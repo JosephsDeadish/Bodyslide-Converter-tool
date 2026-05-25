@@ -14,6 +14,7 @@ import {
 } from "electron";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { listBodyTypeOptions } from "./bodyTypes.js";
+import { filterFilesForMalePass } from "./conversionScope.js";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
 import { runPythonEngine } from "./engine/pythonEngine.js";
@@ -316,25 +317,40 @@ async function executeConversion(
       message: "Running male body conversion pass.",
       progress: 75,
     });
-    const maleDetection = { ...detection, bodyType: maleSource as BodyType };
-    const maleResult = await convertMod(
-      input,
-      output,
-      files,
-      maleDetection,
-      maleTarget as BodyType,
-    );
-    result.convertedFiles = [
-      ...result.convertedFiles,
-      ...maleResult.convertedFiles,
-    ];
-    result.skippedFiles = [...result.skippedFiles, ...maleResult.skippedFiles];
-    result.warnings = [
-      ...new Set([...result.warnings, ...maleResult.warnings]),
-    ];
-    result.namingNotes = [
-      ...new Set([...result.namingNotes, ...maleResult.namingNotes]),
-    ];
+    const maleSourceType = maleSource as BodyType;
+    const maleTargetType = maleTarget as BodyType;
+    const maleFiles = filterFilesForMalePass(files, maleSourceType);
+    if (maleFiles.length > 0) {
+      const maleDetection = { ...detection, bodyType: maleSourceType };
+      const maleResult = await convertMod(
+        input,
+        output,
+        maleFiles,
+        maleDetection,
+        maleTargetType,
+      );
+      result.convertedFiles = [
+        ...result.convertedFiles,
+        ...maleResult.convertedFiles,
+      ];
+      result.skippedFiles = [
+        ...result.skippedFiles,
+        ...maleResult.skippedFiles,
+      ];
+      result.warnings = [
+        ...new Set([...result.warnings, ...maleResult.warnings]),
+      ];
+      result.namingNotes = [
+        ...new Set([...result.namingNotes, ...maleResult.namingNotes]),
+      ];
+    } else {
+      result.warnings = [
+        ...new Set([
+          ...result.warnings,
+          `Mixed-gender male pass skipped: no assets matched male-source hints for ${maleSourceType.toUpperCase()}.`,
+        ]),
+      ];
+    }
   }
   // ─────────────────────────────────────────────────────────────────────────
 
