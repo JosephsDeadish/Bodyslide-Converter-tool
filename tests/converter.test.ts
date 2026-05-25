@@ -1284,7 +1284,7 @@ describe("convertMod", () => {
       result.convertedFiles.some(
         (file) =>
           file.outputPath ===
-          "CalienteTools/BodySlide/SliderSets/3BA_WrongFolder.xml" &&
+            "CalienteTools/BodySlide/SliderSets/3BA_WrongFolder.xml" &&
           file.action !== "synthesized",
       ),
     ).toBe(false);
