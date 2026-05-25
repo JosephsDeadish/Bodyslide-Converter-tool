@@ -234,6 +234,39 @@ const SIGNALS = {
         [/meshes[/\\]actors[/\\]character[/\\]character assets[/\\]malebody/, 2.2],
     ],
 };
+function detectPackagingSignals(files) {
+    let fomod = false;
+    let mo2 = false;
+    let vortex = false;
+    for (const file of files) {
+        const normalizedPath = file.relativePath.toLowerCase().replace(/\\/g, "/");
+        const base = file.basename.toLowerCase();
+        const preview = file.preview.toLowerCase();
+        if (normalizedPath.startsWith("fomod/") ||
+            normalizedPath.includes("/fomod/") ||
+            base === "moduleconfig.xml") {
+            fomod = true;
+        }
+        if (base === "meta.ini" ||
+            base === "modorganizer.ini" ||
+            normalizedPath.endsWith("/meta.ini") ||
+            normalizedPath.includes("/modorganizer/")) {
+            mo2 = true;
+        }
+        if (base === "vortex.deployment.json" ||
+            base === "__folder_managed_by_vortex" ||
+            normalizedPath.includes("/vortex/")) {
+            vortex = true;
+        }
+        if (!mo2 && base === "meta.ini" && preview.includes("mod organizer")) {
+            mo2 = true;
+        }
+        if (!vortex && preview.includes("vortex")) {
+            vortex = true;
+        }
+    }
+    return { fomod, mo2, vortex };
+}
 function normalizeKeywordText(value) {
     return value
         .toLowerCase()
@@ -404,6 +437,7 @@ function scoreFileForType(file, patterns, bodyType) {
     return Math.max(score, 0);
 }
 export function detectBodyType(files) {
+    const packaging = detectPackagingSignals(files);
     const scores = BODY_TYPES.reduce((acc, bodyType) => {
         acc[bodyType] = 0;
         return acc;
@@ -444,6 +478,7 @@ export function detectBodyType(files) {
             bodyType: "unknown",
             confidence: 0,
             scores,
+            packaging,
             rankedCandidates: [],
             matchedSignals: [],
         };
@@ -455,6 +490,7 @@ export function detectBodyType(files) {
             bodyType: "unknown",
             confidence: 0,
             scores,
+            packaging,
             rankedCandidates: [],
             matchedSignals: [],
         };
@@ -472,6 +508,7 @@ export function detectBodyType(files) {
         bodyType: bestType,
         confidence,
         scores,
+        packaging,
         rankedCandidates,
         matchedSignals: [...matchedSignals].slice(0, 30),
     };

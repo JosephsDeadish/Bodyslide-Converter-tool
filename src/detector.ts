@@ -241,7 +241,9 @@ const SIGNALS: Record<BodyType, WeightedSignal[]> = {
   ],
 };
 
-function detectPackagingSignals(files: ScannedFile[]): DetectionResult["packaging"] {
+function detectPackagingSignals(
+  files: ScannedFile[],
+): DetectionResult["packaging"] {
   let fomod = false;
   let mo2 = false;
   let vortex = false;

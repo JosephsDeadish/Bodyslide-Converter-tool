@@ -1700,7 +1700,9 @@ export async function convertMod(
     await mkdir(dirname(outputPath), { recursive: true });
 
     if (TEXT_EXTENSIONS.has(file.extension)) {
-      const sourcePathLower = file.relativePath.toLowerCase().replace(/\\/g, "/");
+      const sourcePathLower = file.relativePath
+        .toLowerCase()
+        .replace(/\\/g, "/");
       if (
         sourcePathLower.startsWith(FOMOD_METADATA_PREFIX) ||
         sourcePathLower.includes(`/${FOMOD_METADATA_PREFIX}`)
