@@ -2,9 +2,11 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { BODY_TYPE_INFO } from "../src/bodyTypeInfo.js";
 import { convertMod } from "../src/converter.js";
 import { detectBodyType } from "../src/detector.js";
 import { scanModFiles } from "../src/scanner.js";
+import { BODY_TYPES, type BodyType } from "../src/types.js";
 
 const tempDirs: string[] = [];
 
@@ -2805,6 +2807,63 @@ describe("convertMod", () => {
     expect(stubContent).toContain("Auto-generated CBPC physics stub for UBE");
     expect(stubContent).toContain("NPC L Breast01=0.600");
     expect(stubContent).toContain("NPC Belly=0.300");
+  });
+
+  it("synthesizes placeholder-safe physics stubs for every physics-capable target", async () => {
+    const physicsTargets = BODY_TYPES.filter(
+      (bodyType) => BODY_TYPE_INFO[bodyType].physicsSupport,
+    );
+
+    for (const target of physicsTargets) {
+      const inputDir = await makeTempDir();
+      const outputDir = await makeTempDir();
+      const source: BodyType =
+        BODY_TYPE_INFO[target].gender === "male" ? "himbo" : "uunp";
+
+      await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), {
+        recursive: true,
+      });
+      await writeFile(
+        join(inputDir, "SKSE", "Plugins", "CBPC", `${source}_placeholder.ini`),
+        "; placeholder config\n; no active assignments\n",
+        "utf8",
+      );
+      await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+      await writeFile(
+        join(inputDir, "meshes", "armor", `${source}_outfit_0.nif`),
+        source,
+      );
+
+      const files = await scanModFiles(inputDir);
+      const detection = detectBodyType(files);
+      const result = await convertMod(
+        inputDir,
+        outputDir,
+        files,
+        detection,
+        target,
+      );
+
+      const targetAlias = result.preferredOutputAlias;
+      const synthStub = result.convertedFiles.find(
+        (file) =>
+          file.outputPath ===
+            `SKSE/Plugins/CBPC/${targetAlias}_PhysicsStub.ini` &&
+          file.action === "synthesized",
+      );
+      expect(synthStub, `expected placeholder-safe stub for ${target}`).toBeDefined();
+
+      const stubContent = await readFile(
+        join(outputDir, synthStub?.outputPath ?? ""),
+        "utf8",
+      );
+      expect(stubContent).toContain(
+        `Auto-generated CBPC physics stub for ${targetAlias}`,
+      );
+      expect(stubContent).toContain(
+        BODY_TYPE_INFO[target].physicsBones[0] ?? "",
+      );
+    }
   });
 
   it("throws a user-friendly error when input and output directories are the same", async () => {

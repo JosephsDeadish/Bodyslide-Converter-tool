@@ -14,6 +14,7 @@ const MALE_GENERAL_HINTS = [
 const FEMALE_BODY_HINTS = [
   "cbbe",
   "3ba",
+  "coco",
   "tbd",
   "unp",
   "bhunp",
@@ -26,6 +27,7 @@ const FEMALE_BODY_HINTS = [
 const MALE_BODY_HINTS: Record<BodyType, string[]> = {
   cbbe: [],
   "3ba": [],
+  coco: [],
   himbo: ["himbo", "highly improved male body overhaul"],
   bodytalk: ["bodytalk", "bt3", "bt2"],
   tbd: [],
