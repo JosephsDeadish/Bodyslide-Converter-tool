@@ -204,6 +204,13 @@ function normalizeToMo2DataPath(
 
   // .nif / .tri / .osd → armor/clothing/body meshes must live under meshes/
   if (extension === ".nif" || extension === ".tri" || extension === ".osd") {
+    const shapeDataSubpath = extractBodySlideSubpath(
+      forward,
+      BODYSLIDE_SHAPEDATA_PATH_MARKERS,
+    );
+    if (shapeDataSubpath) {
+      return `CalienteTools/BodySlide/ShapeData/${shapeDataSubpath}`;
+    }
     return `meshes/${forward}`;
   }
 
@@ -1506,6 +1513,44 @@ async function synthesizeMissingShapeDataMeshes(
       kind: "mesh",
       action: "synthesized",
     });
+
+    const basePath = meshFile.outputPath.replace(/\.nif$/i, "");
+    const sourceCompanions = [".tri", ".osd"]
+      .map((extension) => `${basePath}${extension}`)
+      .map((outputPath) =>
+        convertedFiles.find(
+          (candidate) =>
+            candidate.kind === "mesh" &&
+            candidate.outputPath.toLowerCase() === outputPath.toLowerCase(),
+        ),
+      )
+      .filter((value): value is (typeof convertedFiles)[number] => Boolean(value));
+
+    for (const companion of sourceCompanions) {
+      const companionShapeDataPath = toShapeDataPath(
+        companion.outputPath,
+        targetAlias,
+      );
+      if (knownOutputPaths.has(companionShapeDataPath)) {
+        continue;
+      }
+
+      const companionSourceAbs = join(outputDir, companion.outputPath);
+      if (!(await pathExists(companionSourceAbs))) {
+        continue;
+      }
+
+      const companionShapeDataAbs = join(outputDir, companionShapeDataPath);
+      await mkdir(dirname(companionShapeDataAbs), { recursive: true });
+      await copyFile(companionSourceAbs, companionShapeDataAbs);
+      knownOutputPaths.add(companionShapeDataPath);
+      convertedFiles.push({
+        sourcePath: companion.sourcePath,
+        outputPath: companionShapeDataPath,
+        kind: "mesh",
+        action: "synthesized",
+      });
+    }
   }
 
   return outputPathMap;

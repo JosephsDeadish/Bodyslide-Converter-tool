@@ -134,6 +134,37 @@ describe("convertMod", () => {
     expect(rewritten).toContain("3BA");
   });
 
+  it("normalizes BodySlide ShapeData mesh assets into CalienteTools", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "BodySlide", "ShapeData", "CBBE", "Armor"), {
+      recursive: true,
+    });
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "BodySlide", "ShapeData", "CBBE", "Armor", "cbbe_demo_0.tri"),
+      Buffer.alloc(24),
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_demo_0.nif"),
+      "caliente cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(inputDir, outputDir, files, detection, "3ba");
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.sourcePath.includes("BodySlide/ShapeData") &&
+          file.outputPath ===
+            "CalienteTools/BodySlide/ShapeData/3BA/Armor/3BA_demo_0.tri",
+      ),
+    ).toBe(true);
+  });
+
   it("remaps known physics bone references in text configs", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -1766,6 +1797,16 @@ describe("convertMod", () => {
       join(inputDir, "meshes", "armor", "cbbe_plated_0.nif"),
       "caliente cbbe",
     );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_plated_0.tri"),
+      "tri payload",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_plated_0.osd"),
+      "osd payload",
+      "utf8",
+    );
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
@@ -1812,6 +1853,32 @@ describe("convertMod", () => {
       "utf8",
     );
     expect(shapeDataMesh).toBe("caliente cbbe");
+    const shapeDataTri = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "3BA",
+        "armor",
+        "3BA_plated_1.tri",
+      ),
+      "utf8",
+    );
+    expect(shapeDataTri).toBe("tri payload");
+    const shapeDataOsd = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "3BA",
+        "armor",
+        "3BA_plated_1.osd",
+      ),
+      "utf8",
+    );
+    expect(shapeDataOsd).toBe("osd payload");
     expect(sliderSetContent).toContain('<Group name="3BA Outfits"/>');
     expect(sliderSetContent).toContain("<Sliders/>");
 
