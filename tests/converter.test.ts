@@ -1791,11 +1791,24 @@ describe("convertMod", () => {
     );
     expect(sliderSetContent).toContain('<SliderSet name="3BA Plated">');
     expect(sliderSetContent).toContain(
-      "<OutputPath>meshes/armor/</OutputPath>",
+      "<OutputPath>CalienteTools/BodySlide/ShapeData/3BA/armor/</OutputPath>",
     );
     expect(sliderSetContent).toContain(
       "<OutputFile>3BA_plated_1.nif</OutputFile>",
     );
+    const shapeDataMesh = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "3BA",
+        "armor",
+        "3BA_plated_1.nif",
+      ),
+      "utf8",
+    );
+    expect(shapeDataMesh).toBe("caliente cbbe");
     expect(sliderSetContent).toContain('<Group name="3BA Outfits"/>');
     expect(sliderSetContent).toContain("<Sliders/>");
 

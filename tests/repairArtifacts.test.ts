@@ -24,6 +24,7 @@ function makeSummary(
     warnings: [],
     libraries: {
       pynifly: true,
+      pyffi: true,
       numpy: true,
       scipy: true,
       trimesh: true,

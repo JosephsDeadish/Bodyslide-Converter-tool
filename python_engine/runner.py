@@ -210,6 +210,14 @@ def missing_libraries(libraries: dict[str, bool], *names: str) -> list[str]:
     return [name for name in names if not libraries.get(name, False)]
 
 
+def has_nif_io_support(libraries: dict[str, bool]) -> bool:
+    return libraries.get("pynifly", False) or libraries.get("pyffi", False)
+
+
+def missing_nif_io_support(libraries: dict[str, bool]) -> list[str]:
+    return [] if has_nif_io_support(libraries) else ["pynifly-or-pyffi"]
+
+
 def mapping_snapshot(req: dict[str, Any], db: dict[str, Any]) -> dict[str, Any]:
     source = req.get("sourceBodyType")
     target = req.get("targetBodyType")
@@ -314,9 +322,10 @@ def stage_status(
         )
 
     if stage_id == "surface-reprojection":
-        required_libraries = missing_libraries(
-            libraries, "pynifly", "numpy", "scipy", "trimesh"
-        )
+        required_libraries = [
+            *missing_nif_io_support(libraries),
+            *missing_libraries(libraries, "numpy", "scipy", "trimesh"),
+        ]
         if has_nif and not missing_reference_maps and not required_libraries:
             return (
                 "pass",
@@ -344,9 +353,10 @@ def stage_status(
 
     if stage_id == "weight-transfer":
         bone_pairs = mappings["bonePairs"]
-        required_libraries = missing_libraries(
-            libraries, "pynifly", "numpy", "scipy", "trimesh"
-        )
+        required_libraries = [
+            *missing_nif_io_support(libraries),
+            *missing_libraries(libraries, "numpy", "scipy", "trimesh"),
+        ]
         if has_nif and bone_pairs and not missing_reference_maps and not required_libraries:
             return (
                 "pass",
@@ -420,7 +430,10 @@ def stage_status(
         )
 
     if stage_id == "mesh-cleanup":
-        required_libraries = missing_libraries(libraries, "pynifly", "trimesh", "pyvista")
+        required_libraries = [
+            *missing_nif_io_support(libraries),
+            *missing_libraries(libraries, "trimesh", "pyvista"),
+        ]
         if has_nif and not required_libraries:
             return ("pass", "Normals/tangents cleanup stage prepared.", ["Mesh validation checks queued."])
         details = ["Mesh validation checks queued."]
@@ -441,7 +454,7 @@ def stage_status(
                 "Physics preservation is not required for this body pair.",
                 ["No physics chains detected in metadata."],
             )
-        required_libraries = missing_libraries(libraries, "pynifly")
+        required_libraries = missing_nif_io_support(libraries)
         if not has_nif:
             return (
                 "attention",
@@ -669,6 +682,7 @@ def process(req: dict[str, Any]) -> dict[str, Any]:
     db = load_reference_db()
     libraries = {
         "pynifly": optional_import("pynifly"),
+        "pyffi": optional_import("pyffi"),
         "numpy": optional_import("numpy"),
         "scipy": optional_import("scipy"),
         "trimesh": optional_import("trimesh"),
@@ -699,9 +713,9 @@ def process(req: dict[str, Any]) -> dict[str, Any]:
         )
 
     warnings: list[str] = []
-    if not libraries["pynifly"]:
+    if not has_nif_io_support(libraries):
         warnings.append(
-            "PyNifly is not installed in the active Python environment; full NIF IO fallback mode is active."
+            "Neither PyNifly nor PyFFI is installed in the active Python environment; full NIF IO fallback mode is active."
         )
     if not libraries["numpy"]:
         warnings.append(

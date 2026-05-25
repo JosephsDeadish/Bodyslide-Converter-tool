@@ -84,17 +84,23 @@ High-risk pairs (cross-topology/physics-partition mismatches) should also define
 python -m pip install -r python_engine/requirements.txt
 ```
 
-`PyNifly`, `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
+`PyNifly`/`PyFFI` (NIF IO), `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
 
 ### Bundle Python dependencies inside the EXE build
 
-To ship those Python packages with the packaged app, preinstall them into a local `python_deps/` folder before `npm run package:win`:
+`npm run build:main` automatically attempts to install Python requirements into a local `python_deps/` folder and then copies it into `dist-main/python_deps`:
+
+```bash
+npm run build:main
+```
+
+You can still preseed manually if preferred:
 
 ```bash
 python -m pip install -r python_engine/requirements.txt --target python_deps
 ```
 
-`npm run build:main` now copies `python_deps/` into `dist-main/python_deps` (when present), and the packaged runtime adds that folder to `PYTHONPATH` before falling back to runtime pip bootstrap.
+The packaged runtime adds bundled `python_deps` paths to `PYTHONPATH` before falling back to runtime pip bootstrap.
 
 If Python is not on `PATH`, set:
 

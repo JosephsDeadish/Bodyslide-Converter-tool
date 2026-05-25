@@ -53,6 +53,7 @@ type PythonEngineOptions = {
 
 const PYTHON_DEP_BOOTSTRAP_CACHE = new Map<string, Promise<void>>();
 const REQUIRED_PYTHON_LIBRARIES = [
+  "pyffi",
   "numpy",
   "scipy",
   "trimesh",
@@ -171,6 +172,7 @@ function createFallbackRun(
     warnings: [warning],
     libraries: {
       pynifly: false,
+      pyffi: false,
       numpy: false,
       scipy: false,
       trimesh: false,

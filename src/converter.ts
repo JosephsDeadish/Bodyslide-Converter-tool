@@ -1225,17 +1225,22 @@ function collectSliderSetMeshGroups(
 ): SliderSetMeshGroup[] {
   const groups = new Map<string, SliderSetMeshGroup>();
   for (const file of convertedFiles) {
+    const lowerOutputPath = file.outputPath.toLowerCase().replace(/\\/g, "/");
     if (
       file.kind !== "mesh" ||
-      !file.outputPath.toLowerCase().endsWith(".nif") ||
-      !isArmorOrClothingNif(file.outputPath)
+      !lowerOutputPath.endsWith(".nif") ||
+      !isArmorOrClothingNif(file.outputPath) ||
+      /(^|\/)calientetools\/bodyslide\/shapedata\//.test(lowerOutputPath)
     ) {
       continue;
     }
-    const lower = file.outputPath.toLowerCase();
-    const lowMatch = lower.match(/^(.*)_0\.nif$/);
-    const highMatch = lower.match(/^(.*)_1\.nif$/);
-    const key = (lowMatch?.[1] ?? highMatch?.[1] ?? lower).toLowerCase();
+    const lowMatch = lowerOutputPath.match(/^(.*)_0\.nif$/);
+    const highMatch = lowerOutputPath.match(/^(.*)_1\.nif$/);
+    const key = (
+      lowMatch?.[1] ??
+      highMatch?.[1] ??
+      lowerOutputPath
+    ).toLowerCase();
     const group = groups.get(key) ?? {
       key: file.outputPath.replace(/_0\.nif$/i, "").replace(/_1\.nif$/i, ""),
       lowWeightPath: null,
@@ -1265,6 +1270,7 @@ async function synthesizeMissingSliderSetProject(
   outputDir: string,
   targetBodyType: BodyType,
   convertedFiles: ConversionResult["convertedFiles"],
+  shapeDataMeshMap: ReadonlyMap<string, string>,
 ): Promise<number> {
   const projectFiles = convertedFiles.filter(
     (f) =>
@@ -1321,13 +1327,16 @@ async function synthesizeMissingSliderSetProject(
       // that is the convention used by real BodySlide project files.
       const primaryPath = group.highWeightPath ?? group.lowWeightPath;
       if (!primaryPath) return "";
+      const sliderSourcePath = shapeDataMeshMap.get(primaryPath) ?? primaryPath;
       // Split into directory (with trailing slash) and filename so that
       // BodySlide can parse OutputPath + OutputFile correctly.
-      const slashIndex = primaryPath.lastIndexOf("/");
+      const slashIndex = sliderSourcePath.lastIndexOf("/");
       const nifDir =
-        slashIndex >= 0 ? primaryPath.slice(0, slashIndex + 1) : "";
+        slashIndex >= 0 ? sliderSourcePath.slice(0, slashIndex + 1) : "";
       const nifFile =
-        slashIndex >= 0 ? primaryPath.slice(slashIndex + 1) : primaryPath;
+        slashIndex >= 0
+          ? sliderSourcePath.slice(slashIndex + 1)
+          : sliderSourcePath;
       const groupName = `${targetAlias} Outfits`;
       return [
         `  <SliderSet name="${escapeXml(displayName)}">`,
@@ -1379,6 +1388,64 @@ async function synthesizeMissingSliderSetProject(
   });
 
   return sliderSetEntries.length;
+}
+
+function toShapeDataPath(meshPath: string, targetAlias: string): string {
+  const normalized = meshPath.replace(/\\/g, "/");
+  const slashIndex = normalized.lastIndexOf("/");
+  const fileName =
+    slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
+  const meshDir = slashIndex >= 0 ? normalized.slice(0, slashIndex) : "";
+  const relativeMeshDir = meshDir.replace(/^meshes\//i, "");
+  const outputDir = relativeMeshDir
+    ? `CalienteTools/BodySlide/ShapeData/${targetAlias}/${relativeMeshDir}`
+    : `CalienteTools/BodySlide/ShapeData/${targetAlias}`;
+  return `${outputDir}/${fileName}`;
+}
+
+async function synthesizeMissingShapeDataMeshes(
+  outputDir: string,
+  targetBodyType: BodyType,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<Map<string, string>> {
+  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+  const outputPathMap = new Map<string, string>();
+  const knownOutputPaths = new Set(
+    convertedFiles.map((file) => file.outputPath),
+  );
+  const meshCandidates = convertedFiles.filter(
+    (file) =>
+      file.kind === "mesh" &&
+      file.outputPath.toLowerCase().endsWith(".nif") &&
+      isArmorOrClothingNif(file.outputPath),
+  );
+
+  for (const meshFile of meshCandidates) {
+    const shapeDataPath = toShapeDataPath(meshFile.outputPath, targetAlias);
+    outputPathMap.set(meshFile.outputPath, shapeDataPath);
+    if (knownOutputPaths.has(shapeDataPath)) {
+      continue;
+    }
+
+    const sourceAbs = join(outputDir, meshFile.outputPath);
+    const shapeDataAbs = join(outputDir, shapeDataPath);
+    if (await pathExists(shapeDataAbs)) {
+      knownOutputPaths.add(shapeDataPath);
+      continue;
+    }
+
+    await mkdir(dirname(shapeDataAbs), { recursive: true });
+    await copyFile(sourceAbs, shapeDataAbs);
+    knownOutputPaths.add(shapeDataPath);
+    convertedFiles.push({
+      sourcePath: meshFile.sourcePath,
+      outputPath: shapeDataPath,
+      kind: "mesh",
+      action: "synthesized",
+    });
+  }
+
+  return outputPathMap;
 }
 
 /**
@@ -2172,10 +2239,24 @@ export async function convertMod(
     });
   }
 
+  const shapeDataMeshes = await synthesizeMissingShapeDataMeshes(
+    outputDir,
+    targetBodyType,
+    convertedFiles,
+  );
+  if (shapeDataMeshes.size > 0) {
+    skippedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: "(generated bodyslide shapedata)",
+      reason: `Synthesized ${shapeDataMeshes.size} BodySlide ShapeData mesh entr${shapeDataMeshes.size === 1 ? "y" : "ies"} for SliderSet SourceFile/OutputPath compatibility.`,
+    });
+  }
+
   const synthesizedSliderSets = await synthesizeMissingSliderSetProject(
     outputDir,
     targetBodyType,
     convertedFiles,
+    shapeDataMeshes,
   );
   if (synthesizedSliderSets > 0) {
     skippedFiles.push({

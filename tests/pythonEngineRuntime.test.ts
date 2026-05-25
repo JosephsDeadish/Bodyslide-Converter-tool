@@ -114,6 +114,7 @@ describe("python engine run scoring", () => {
       warnings: [],
       libraries: {
         pynifly: true,
+        pyffi: true,
         numpy: true,
         scipy: true,
         trimesh: true,
@@ -145,6 +146,7 @@ describe("python engine run scoring", () => {
       ],
       libraries: {
         pynifly: false,
+        pyffi: false,
         numpy: false,
         scipy: false,
         trimesh: false,
