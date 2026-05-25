@@ -53,7 +53,6 @@ type PythonEngineOptions = {
 
 const PYTHON_DEP_BOOTSTRAP_CACHE = new Map<string, Promise<void>>();
 const REQUIRED_PYTHON_LIBRARIES = [
-  "pynifly",
   "numpy",
   "scipy",
   "trimesh",
