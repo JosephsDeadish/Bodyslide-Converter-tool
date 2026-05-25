@@ -62,7 +62,7 @@ const REQUIRED_PYTHON_LIBRARIES = [
 const SUPPORTED_PYTHON_VERSION_RANGE = {
   major: 3,
   minMinor: 10,
-  maxMinor: 12,
+  maxMinor: 13,
 } as const;
 const BUNDLED_DEPENDENCY_PROBE_SNIPPET = [
   "import importlib.util, sys",
@@ -137,6 +137,27 @@ export function buildPipToolchainBootstrapCommand(
   return {
     command,
     args,
+  };
+}
+
+export function buildPipSelfUpgradeCommand(
+  command: string,
+  commandArgs: string[],
+): { command: string; args: string[] } {
+  return {
+    command,
+    args: [
+      ...commandArgs,
+      "-m",
+      "pip",
+      "install",
+      "--disable-pip-version-check",
+      "--no-input",
+      "--upgrade",
+      "pip",
+      "setuptools",
+      "wheel",
+    ],
   };
 }
 
@@ -412,7 +433,7 @@ export async function runPythonEngine(
 
   return createFallbackRun(
     runId,
-    "No supported Python interpreter found. Install Python 3.10-3.12 (64-bit) and set SLIDESMITH_PYTHON if needed.",
+    "No supported Python interpreter found. Install Python 3.10-3.13 (64-bit) and set SLIDESMITH_PYTHON if needed.",
   );
 }
 
@@ -508,15 +529,18 @@ export function getPythonInterpreterCandidates(
 
   if (platformValue === "win32") {
     candidates.push(
+      { command: "py", args: ["-3.13"] },
       { command: "py", args: ["-3.12"] },
       { command: "py", args: ["-3.11"] },
       { command: "py", args: ["-3.10"] },
+      { command: "python3.13", args: [] },
       { command: "python3.12", args: [] },
       { command: "python3.11", args: [] },
       { command: "python3.10", args: [] },
     );
   } else {
     candidates.push(
+      { command: "python3.13", args: [] },
       { command: "python3.12", args: [] },
       { command: "python3.11", args: [] },
       { command: "python3.10", args: [] },
@@ -637,6 +661,13 @@ async function ensurePythonDependencies(
     };
 
     void (async () => {
+      await runBootstrapCommand(
+        buildPipSelfUpgradeCommand(command, commandArgs),
+        {
+          ...env,
+          PYTHONPATH: process.env.PYTHONPATH,
+        },
+      );
       await runBootstrapCommand(
         buildPipToolchainBootstrapCommand(
           command,

@@ -3,6 +3,7 @@ import {
   buildBundledDependencyProbeCommand,
   buildDependencyBootstrapCommand,
   buildDependencyPackageBootstrapCommand,
+  buildPipSelfUpgradeCommand,
   buildPipToolchainBootstrapCommand,
   buildPythonVersionProbeCommand,
   getBundledDependencyPathCandidates,
@@ -94,8 +95,11 @@ describe("python engine interpreter candidates", () => {
       command: "C:\\Python312\\python.exe",
       args: [],
     });
+
+    expect(interpreters).toContainEqual({ command: "py", args: ["-3.13"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.12"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.11"] });
+    expect(interpreters).toContainEqual({ command: "python3.13", args: [] });
     expect(interpreters).toContainEqual({ command: "python3.12", args: [] });
     expect(interpreters).toContainEqual({ command: "python3", args: [] });
     expect(interpreters).toContainEqual({ command: "python", args: [] });
@@ -242,6 +246,26 @@ describe("python dependency bootstrap command", () => {
         "wheel",
         "--target",
         "C:\\Users\\tester\\.slidesmith\\python-deps\\abc123",
+      ],
+    });
+  });
+
+  it("builds pip self-upgrade command in the active interpreter environment", () => {
+    const bootstrap = buildPipSelfUpgradeCommand("py", ["-3.12"]);
+
+    expect(bootstrap).toEqual({
+      command: "py",
+      args: [
+        "-3.12",
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--upgrade",
+        "pip",
+        "setuptools",
+        "wheel",
       ],
     });
   });
