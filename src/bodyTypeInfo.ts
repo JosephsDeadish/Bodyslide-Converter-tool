@@ -116,6 +116,63 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     conversionNotes:
       "Converting TO 3BA: add physics-chain bone weighting to breast and butt areas; CBPC config must list those bones. NPC LBreastRoot / NPC RBreastRoot are 3BA-specific root control bones above the standard chain — they must be preserved for CBPC/HDT-SMP to work correctly. For 3BA Softbody, the NIF must use NiSkinData partitions and a matching HDT-SMP XML must be provided. Converting FROM 3BA to a non-physics body: collapse all physics-chain bone weights back to NPC Spine2 (breast) and NPC Pelvis (butt). NPC BellyRoot collapses to NPC Belly for non-3BA targets.",
   },
+  coco: {
+    displayName: "COCO Body – COCOBodySE",
+    description:
+      "CBBE-family female body for Skyrim SE/AE by NickNak with enhanced proportions and full 3BBB physics support (CBPC + HDT-SMP). Uses the same NPC breast/butt/belly bone naming as standard CBBE-family bodies (NPC L/R Breast01-03, NPC L/R Butt, NPC Belly) and adds BreastRoot control bones identical to 3BA. COCO also ships with a dedicated COCOBody HDT-SMP XML preset for softbody simulation. The body is BodySlide-compatible and uses a 'COCO Body' group label in slider sets. Widely used in SE/AE modlists as a physics-enhanced CBBE alternative.",
+    gender: "female",
+    family: "cbbe",
+    topology: "cbbe",
+    physicsSupport: true,
+    skeletonProfile: "XPMSSE / XP32 Extended required",
+    skeletonNotes:
+      "COCO uses the same XPMSSE-compatible physics node layout as 3BA (NPC L/R BreastRoot plus standard breast/butt/belly chains). An HDT-SMP XML (COCOBody.xml or equivalent) is required for SMP softbody; CBPC works with standard CBBE-family CBPC configs that list NPC L/R Breast01-03 and NPC L/R Butt.",
+    referenceProject: "COCOBodySE by NickNak (Nexusmods SE mod 62052)",
+    aliases: [
+      "COCO",
+      "COCO Body",
+      "COCOBody",
+      "COCOBodySE",
+      "COCO Body SE",
+      "COCO SE",
+      "COCO AE",
+      "COCO Body AE",
+      "NickNak COCO",
+    ],
+    commonVariants: [
+      "COCO Body Physics",
+      "COCO Softbody",
+      "COCO 3BBB",
+      "COCO Body SMP",
+      "COCO CBPC",
+      "COCO HDT-SMP",
+      "COCOBody Physics",
+    ],
+    physicsBones: [
+      "NPC L Breast01",
+      "NPC R Breast01",
+      "NPC L Breast02",
+      "NPC R Breast02",
+      "NPC L Breast03",
+      "NPC R Breast03",
+      "NPC LBreastRoot",
+      "NPC RBreastRoot",
+      "NPC L Butt",
+      "NPC R Butt",
+      "NPC Belly",
+      "NPC BellyRoot",
+    ],
+    adaptationFocus: [
+      "breast volume",
+      "BreastRoot chain",
+      "butt volume",
+      "belly weighting",
+      "physics groups",
+      "softbody partitions",
+    ],
+    conversionNotes:
+      "COCO uses CBBE topology and the same physics bone naming as 3BA (NPC L/R Breast01-03, NPC L/R BreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot). Converting between COCO and 3BA is a near-native same-topology conversion; only BodySlide group labels and file naming need updating. Converting TO COCO from CBBE: add NPC L/R BreastRoot weighting and the 3BBB belly chain; standard CBBE-family CBPC configs are compatible after adding the BreastRoot bones. COCOBody HDT-SMP XML must be included for softbody physics. Converting FROM COCO: same approach as converting from 3BA.",
+  },
   himbo: {
     displayName: "HIMBO – Highly Improved Male Body Overhaul",
     description:

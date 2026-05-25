@@ -3439,4 +3439,149 @@ describe("convertMod", () => {
       "<OutputPath>meshes/armor/seta/</OutputPath>",
     );
   });
+
+  it("strips known body-alias root from <SourceFile> paths so BodySlide can resolve ShapeData", async () => {
+    // When source ShapeData is organised as ShapeData/<BodyAlias>/<folder>/mesh.nif,
+    // normalizeToMo2DataPath strips the alias segment (placing the file at
+    // ShapeData/<folder>/mesh.nif), but replaceAliases rewrites the <SourceFile>
+    // token to <TargetAlias>/<folder>/mesh.nif — causing a mismatch.
+    // normalizeBodySlideSourceFileRoots must strip the alias prefix from the
+    // rewritten <SourceFile> value so BodySlide resolves it correctly.
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "ShapeData", "CBBE", "Armor"),
+      { recursive: true },
+    );
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
+      { recursive: true },
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "CBBE",
+        "Armor",
+        "cbbe_cuirass_0.nif",
+      ),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_cuirass.osp",
+      ),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Cuirass">',
+        "    <OutputPath>meshes/armor/</OutputPath>",
+        "    <OutputFile>cbbe_cuirass_0.nif</OutputFile>",
+        "    <SourceFile>CBBE/Armor/cbbe_cuirass_0.nif</SourceFile>",
+        '    <Groups><Group name="CBBE Outfits"/></Groups>',
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const ospEntry = result.convertedFiles.find((f) =>
+      f.outputPath.endsWith(".osp") && f.action === "rewritten",
+    );
+    expect(ospEntry).toBeDefined();
+
+    const ospContent = await readFile(
+      join(outputDir, ospEntry?.outputPath ?? ""),
+      "utf8",
+    );
+
+    // The <SourceFile> must NOT start with the target alias "3BA/" — it should
+    // be stripped to match the ShapeData location after normalizeToMo2DataPath.
+    expect(ospContent).not.toContain("<SourceFile>3BA/Armor/");
+    expect(ospContent).not.toContain("<SourceFile>CBBE/Armor/");
+    // The remaining relative path segment must still be present.
+    expect(ospContent).toMatch(/<SourceFile>Armor\/3BA_cuirass_0\.nif<\/SourceFile>/i);
+  });
+
+  it("converts CBBE mods to COCO and rewrites body aliases correctly", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(
+      join(inputDir, "CalienteTools", "BodySlide", "SliderSets"),
+      { recursive: true },
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_gown_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_gown.osp",
+      ),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Gown">',
+        "    <OutputPath>meshes/armor/</OutputPath>",
+        "    <OutputFile>cbbe_gown_0.nif</OutputFile>",
+        "    <SourceFile>Gown/cbbe_gown_0.nif</SourceFile>",
+        '    <Groups><Group name="CBBE Outfits"/></Groups>',
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "coco",
+    );
+
+    expect(result.convertedFiles.length).toBeGreaterThan(0);
+    const ospEntry = result.convertedFiles.find(
+      (f) => f.outputPath.endsWith(".osp") && f.action === "rewritten",
+    );
+    expect(ospEntry).toBeDefined();
+    const ospContent = await readFile(
+      join(outputDir, ospEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    // Body alias "CBBE" replaced with "COCO" in the SliderSet name.
+    expect(ospContent).toContain("COCO Gown");
+    // NIF file reference renamed from cbbe_ to COCO_.
+    expect(ospContent).toMatch(/COCO_gown_0\.nif/i);
+    // Converted NIF file must exist.
+    const nifEntry = result.convertedFiles.find((f) =>
+      f.outputPath.endsWith(".nif"),
+    );
+    expect(nifEntry).toBeDefined();
+  });
 });

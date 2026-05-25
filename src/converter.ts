@@ -267,6 +267,7 @@ const FAMILY_PATHS = {
 const BODY_TYPE_OUTPUT_ALIASES: Record<BodyType, string> = {
   cbbe: "CBBE",
   "3ba": "3BA",
+  coco: "COCO",
   himbo: "HIMBO",
   bodytalk: "BodyTalk",
   tbd: "TBD",
@@ -336,6 +337,28 @@ const BODY_TYPE_LEGACY_ALIASES: Record<BodyType, string[]> = {
     "3ba body amazing",
     "3bbb",
     "3ba",
+  ],
+  coco: [
+    "cocobodyphysics",
+    "cocobodysoftbody",
+    "coco body physics",
+    "coco body softbody",
+    "coco body 3bbb",
+    "cocobodysmp",
+    "coco body smp",
+    "cocobodycbpc",
+    "coco body cbpc",
+    "cocobodysе",
+    "nicknakcoco",
+    "nicknakcocobody",
+    "cocos body",
+    "cocosbody",
+    "cocobody",
+    "coco body",
+    "cocoplus",
+    "coco se",
+    "coco ae",
+    "coco",
   ],
   himbo: [
     "highly improved male body overhaul",
@@ -2280,19 +2303,54 @@ function rewriteRelativePath(
     .join("/");
 }
 
+/**
+ * Strips a known body-alias first segment from a BodySlide <SourceFile> path.
+ *
+ * normalizeToMo2DataPath calls stripKnownBodyAliasRoot on ShapeData paths, so
+ * files that were organised as ShapeData/<BodyAlias>/<folder>/mesh.nif end up
+ * at ShapeData/<folder>/mesh.nif in the output.  replaceAliases rewrites the
+ * alias token inside the <SourceFile> value (CBBE → 3BA, etc.) but preserves
+ * the path structure, leaving the SourceFile pointing to
+ * <TargetAlias>/<folder>/mesh.nif while the file actually lives at
+ * <folder>/mesh.nif — causing BodySlide to be unable to find the ShapeData.
+ *
+ * This function strips the alias prefix from every <SourceFile> value whose
+ * first path segment is exactly a known canonical output alias so that the
+ * SourceFile always matches the stripped ShapeData location.
+ */
+function normalizeBodySlideSourceFileRoots(content: string): string {
+  return content.replace(
+    /<SourceFile>\s*([^<]*?)\s*<\/SourceFile>/gi,
+    (_match, rawValue: string) => {
+      const value = rawValue.trim();
+      if (!value) return _match;
+      const segments = value.replace(/\\/g, "/").split("/").filter(Boolean);
+      if (
+        segments.length > 1 &&
+        KNOWN_OUTPUT_ALIASES.has((segments[0] ?? "").toLowerCase())
+      ) {
+        return `<SourceFile>${segments.slice(1).join("/")}</SourceFile>`;
+      }
+      return `<SourceFile>${value}</SourceFile>`;
+    },
+  );
+}
+
 function rewriteBodyMetadataContent(
   content: string,
   source: BodyType,
   target: BodyType,
 ): string {
-  return replaceAliases(
-    replacePhysicsReferences(
-      rewriteGenderMarkers(content, source, target),
+  return normalizeBodySlideSourceFileRoots(
+    replaceAliases(
+      replacePhysicsReferences(
+        rewriteGenderMarkers(content, source, target),
+        source,
+        target,
+      ),
       source,
       target,
     ),
-    source,
-    target,
   );
 }
 

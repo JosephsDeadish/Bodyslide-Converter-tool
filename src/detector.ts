@@ -68,6 +68,28 @@ const SIGNALS: Record<BodyType, WeightedSignal[]> = {
     [/bodyslide[/\\]slidersets[/\\][^/\\]*3b/, 2.5],
     [/bodyslide[/\\]shapedata[/\\][^/\\]*3b/, 2.5],
   ],
+  coco: [
+    [/\bcoco\b/, 2.2],
+    [/\bcocobody\b|\bcoco[_ -]?body\b/, 2.8],
+    [/cocobodysе|cocobodysе/, 2.5],
+    [/coco[_ -]?se|coco[_ -]?ae/, 2.2],
+    [/nicknakcoco|nicknakcocobody/, 2.5],
+    [/nicknakbody/, 2],
+    [/cocos[_ -]?body/, 2.2],
+    [/cocoplus/, 2],
+    // COCO uses 3BBB-style physics bones (same names as 3BA)
+    [/npc lbreastroot/, 1.5],
+    [/npc rbreastroot/, 1.5],
+    [/npc l breast0[123]/, 1],
+    [/npc r breast0[123]/, 1],
+    [/npc bellyroot/, 1.2],
+    // BodySlide project files
+    [/bodyslide[/\\]slidersets[/\\][^/\\]*coco/, 2.8],
+    [/bodyslide[/\\]shapedata[/\\][^/\\]*coco/, 2.8],
+    // COCO HDT-SMP XML
+    [/cocobody\.xml/, 2.5],
+    [/coco[_ -]?body\.xml/, 2.5],
+  ],
   himbo: [
     [/\bhimbo\b/, 2.5],
     [/himbo[_ -]?se/, 2.2],
@@ -339,10 +361,16 @@ const FALSE_POSITIVE_PENALTIES: Record<BodyType, Array<[RegExp, number]>> = {
     [/\btbd\b|touched by dibella/, 0.8],
     [/\bbhunp\b|\buunp\b|\b7base\b/, 0.7],
     [/\bhimbo\b|\bbodytalk\b|\bsamlight\b|shape atlas for men/, 1.2],
+    [/\bcocobody\b|\bcoco[_ -]?body\b/, 1],
   ],
   "3ba": [
     [/\bbhunp\b|\buunp\b|\b7base\b/, 0.9],
     [/bonehunger|bhunp breast/, 1.2],
+    [/\bcocobody\b|\bcoco[_ -]?body\b/, 0.8],
+  ],
+  coco: [
+    [/\b3ba\b|\b3bbb\b|cbbe[_ -]?3ba|cbbe[_ -]?3bbb/, 0.9],
+    [/\bbhunp\b|\buunp\b|\b7base\b/, 0.7],
   ],
   himbo: [
     [/\bbodytalk\b|bt3\b|schlongs of skyrim/, 0.6],

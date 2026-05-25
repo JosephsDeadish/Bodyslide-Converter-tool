@@ -134,6 +134,15 @@ const alternateNameCases = [
       ),
     ],
   },
+  {
+    bodyType: "coco",
+    files: [
+      file(
+        "CalienteTools/BodySlide/SliderSets/COCO_Body_Armor.osp",
+        "coco body se nicknakcoco",
+      ),
+    ],
+  },
 ] satisfies Array<{ bodyType: BodyType; files: ScannedFile[] }>;
 
 describe("detectBodyType", () => {
