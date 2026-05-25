@@ -17,6 +17,9 @@ interface SidebarProps {
   detecting: boolean;
   detectResult: DetectionResult | null;
   sourceOverride: string;
+  mixedGender: boolean;
+  maleSource: string;
+  maleTarget: string;
   status: Status;
   canConvert: boolean;
   onBrowseInput(): void;
@@ -25,6 +28,9 @@ interface SidebarProps {
   onClearOutput(): void;
   onTargetChange(value: string): void;
   onSourceOverrideChange(value: string): void;
+  onMixedGenderChange(value: boolean): void;
+  onMaleSourceChange(value: string): void;
+  onMaleTargetChange(value: string): void;
   onConvert(): void;
   onPatreon(): void;
 }
@@ -54,6 +60,56 @@ function pathBasename(p: string): string {
   return p.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? p;
 }
 
+function BodySelect({
+  value,
+  placeholder,
+  femaleOptions,
+  maleOptions,
+  otherOptions,
+  onChange,
+}: {
+  value: string;
+  placeholder: string;
+  femaleOptions: BodyTypeOption[];
+  maleOptions: BodyTypeOption[];
+  otherOptions: BodyTypeOption[];
+  onChange(v: string): void;
+}) {
+  return (
+    <select
+      className="select-control"
+      style={{ marginTop: "4px" }}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      <option value="">{placeholder}</option>
+      <optgroup label="♀ Female Bodies">
+        {femaleOptions.map((t) => (
+          <option key={t.value} value={t.value}>
+            {t.label}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="♂ Male Bodies">
+        {maleOptions.map((t) => (
+          <option key={t.value} value={t.value}>
+            {t.label}
+          </option>
+        ))}
+      </optgroup>
+      {otherOptions.length > 0 && (
+        <optgroup label="Other">
+          {otherOptions.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </optgroup>
+      )}
+    </select>
+  );
+}
+
 export function Sidebar({
   inputPath,
   outputPath,
@@ -64,6 +120,9 @@ export function Sidebar({
   detecting,
   detectResult,
   sourceOverride,
+  mixedGender,
+  maleSource,
+  maleTarget,
   status,
   canConvert,
   onBrowseInput,
@@ -72,10 +131,12 @@ export function Sidebar({
   onClearOutput,
   onTargetChange,
   onSourceOverrideChange,
+  onMixedGenderChange,
+  onMaleSourceChange,
+  onMaleTargetChange,
   onConvert,
   onPatreon,
 }: SidebarProps) {
-  const showDetect = Boolean(inputPath);
   const detectedType = detectResult?.bodyType;
   const confPct = detectResult ? Math.round(detectResult.confidence * 100) : 0;
   const packagingTags = detectResult
@@ -111,7 +172,7 @@ export function Sidebar({
           text={
             canConvert
               ? "All systems go! This will analyze your mod, remap BodySlide assets, rewrite physics configs, and generally perform miracles. 🚀"
-              : "Fill in the source folder, pick a target body, and set an output folder first. Three fields. You can do this. I believe in you."
+              : "Fill in the source folder, pick the body types, and set an output folder first."
           }
         >
           <button
@@ -180,165 +241,6 @@ export function Sidebar({
           <div className="path-basename">{pathBasename(inputPath)}</div>
         )}
 
-        {/* ── Detected Source Body ── */}
-        {showDetect && (
-          <div className="source-detect-section">
-            <Tooltip
-              dir="right"
-              text="We dug through your mod files and made an educated guess about the source body type. Confidence % included because we're honest about our limitations."
-            >
-              <div className="field-label" style={{ marginTop: "0.3rem" }}>
-                Detected Source Body
-              </div>
-            </Tooltip>
-            <div className="source-detect-status">
-              {detecting ? (
-                <span className="source-detect-value source-detect-scanning">
-                  Scanning…
-                </span>
-              ) : detectedType === "unknown" ? (
-                <Tooltip
-                  dir="right"
-                  text="Couldn't identify a body type. The mod may have unusual file paths, no BodySlide projects, or be wearing a disguise. Use the override below."
-                >
-                  <span className="source-detect-value source-detect-unknown">
-                    Unknown — no body signals found
-                  </span>
-                </Tooltip>
-              ) : detectedType !== undefined ? (
-                <Tooltip
-                  dir="right"
-                  text={`Detected as ${detectedType.toUpperCase()} with ${confPct}% confidence. Anything above 70% is basically a sure thing. Below 50% and it's more of a vibe.`}
-                >
-                  <span className="source-detect-value source-detect-found">
-                    {detectedType.toUpperCase()} — {confPct}% confidence
-                  </span>
-                </Tooltip>
-              ) : (
-                <span className="source-detect-value source-detect-unknown">
-                  Detection failed
-                </span>
-              )}
-            </div>
-            {packagingTags.length > 0 && (
-              <div className="detected-packaging-row">
-                <Tooltip
-                  dir="right"
-                  text="We found packaging metadata (FOMOD/MO2/Vortex). SlideSmith will preserve these installer structures in the output like a very careful archaeologist."
-                >
-                  <span className="field-label">Detected packaging</span>
-                </Tooltip>
-                <div className="detected-packaging-tags">
-                  {packagingTags.map((tag) => (
-                    <span key={tag} className="packaging-tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            <Tooltip
-              dir="right"
-              text="Auto-detect confidently wrong? Pick the actual source body here. No judgment — even the best AI has a bad day sometimes."
-            >
-              <div className="field-label" style={{ marginTop: "0.6rem" }}>
-                Override Source Body
-              </div>
-            </Tooltip>
-            <div className="field-hint">
-              App recommendation is used by default — change only if detection
-              is wrong
-            </div>
-            <Tooltip
-              dir="right"
-              text="If the detected body type above is wrong, manually select the correct one here. We promise not to bring it up later."
-            >
-              <select
-                className="select-control"
-                style={{ marginTop: "4px" }}
-                value={sourceOverride}
-                onChange={(e) => onSourceOverrideChange(e.target.value)}
-              >
-                <option value="">Use auto-detected</option>
-                <optgroup label="♀ Female Bodies">
-                  {femaleOptions.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="♂ Male Bodies">
-                  {maleOptions.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </optgroup>
-                {otherOptions.length > 0 && (
-                  <optgroup label="Other">
-                    {otherOptions.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
-            </Tooltip>
-          </div>
-        )}
-
-        {/* ── Convert To ── */}
-        <div style={{ marginTop: "1rem" }}>
-          <Tooltip
-            dir="right"
-            text="The body type you want the converted output to target. Pick wisely — re-converting is totally fine, but why do it twice?"
-          >
-            <div className="field-label">Convert To — Output Body Type</div>
-          </Tooltip>
-          <div className="field-hint">
-            Select which body type you want the mod converted to
-          </div>
-        </div>
-        <Tooltip
-          dir="right"
-          text="Physics-capable bodies (3BA, BHUNP, TBD, UUNP, etc.) get bonus physics bone remapping. The info box below tells you everything you need to know about your chosen body."
-        >
-          <select
-            className="select-control"
-            style={{ marginTop: "4px" }}
-            value={targetBodyType}
-            onChange={(e) => onTargetChange(e.target.value)}
-          >
-            <option value="">— Select output body —</option>
-            <optgroup label="♀ Female Bodies">
-              {femaleOptions.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="♂ Male Bodies">
-              {maleOptions.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </optgroup>
-            {otherOptions.length > 0 && (
-              <optgroup label="Other">
-                {otherOptions.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
-                  </option>
-                ))}
-              </optgroup>
-            )}
-          </select>
-        </Tooltip>
-
-        {bodyTypeInfo !== null && <BodyInfoBox info={bodyTypeInfo} />}
-
         {/* ── Output Folder ── */}
         <Tooltip
           dir="right"
@@ -393,6 +295,169 @@ export function Sidebar({
         </div>
         {outputPath && (
           <div className="path-basename">{pathBasename(outputPath)}</div>
+        )}
+
+        {/* ── Source Body Type (required) ── */}
+        <div style={{ marginTop: "1rem" }}>
+          <Tooltip
+            dir="right"
+            text="Select the body type this mod was built for. This is the body you are converting FROM. Always required — auto-detection is shown as a hint only."
+          >
+            <div className="field-label">
+              ♀ Source Body Type{" "}
+              <span style={{ color: "var(--color-error, #e55)" }}>*</span>
+            </div>
+          </Tooltip>
+          <div className="field-hint">
+            Pick the body type you are converting FROM
+          </div>
+          {inputPath && (
+            <div className="source-detect-status" style={{ marginTop: "4px" }}>
+              {detecting ? (
+                <span className="source-detect-value source-detect-scanning">
+                  Detecting…
+                </span>
+              ) : detectedType && detectedType !== "unknown" ? (
+                <Tooltip
+                  dir="right"
+                  text={`Hint: auto-detected as ${detectedType.toUpperCase()} with ${confPct}% confidence. Confirm by selecting it below.`}
+                >
+                  <span className="source-detect-value source-detect-found">
+                    Hint: {detectedType.toUpperCase()} — {confPct}% confidence
+                  </span>
+                </Tooltip>
+              ) : detectedType === "unknown" ? (
+                <span className="source-detect-value source-detect-unknown">
+                  Hint: no body signals detected — select manually
+                </span>
+              ) : null}
+            </div>
+          )}
+          {packagingTags.length > 0 && (
+            <div className="detected-packaging-row">
+              <div className="detected-packaging-tags">
+                {packagingTags.map((tag) => (
+                  <span key={tag} className="packaging-tag">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        <BodySelect
+          value={sourceOverride}
+          placeholder="— Select source body (required) —"
+          femaleOptions={femaleOptions}
+          maleOptions={maleOptions}
+          otherOptions={otherOptions}
+          onChange={onSourceOverrideChange}
+        />
+
+        {/* ── Female Convert To ── */}
+        <div style={{ marginTop: "1rem" }}>
+          <Tooltip
+            dir="right"
+            text="The body type you want the converted output to target. Pick wisely — re-converting is totally fine, but why do it twice?"
+          >
+            <div className="field-label">
+              ♀ Convert To — Female Target Body{" "}
+              <span style={{ color: "var(--color-error, #e55)" }}>*</span>
+            </div>
+          </Tooltip>
+          <div className="field-hint">
+            Select which female body type to convert to
+          </div>
+        </div>
+        <BodySelect
+          value={targetBodyType}
+          placeholder="— Select female target body —"
+          femaleOptions={femaleOptions}
+          maleOptions={maleOptions}
+          otherOptions={otherOptions}
+          onChange={onTargetChange}
+        />
+
+        {bodyTypeInfo !== null && <BodyInfoBox info={bodyTypeInfo} />}
+
+        {/* ── Mixed-gender mod toggle ── */}
+        <div style={{ marginTop: "1rem" }}>
+          <Tooltip
+            dir="right"
+            text="Enable this if the mod contains both male and female outfits (e.g. Toast's Guro, mixed-gender armor packs). SlideSmith will run a separate male conversion pass."
+          >
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={mixedGender}
+                onChange={(e) => onMixedGenderChange(e.target.checked)}
+              />
+              <span className="field-label" style={{ marginTop: 0 }}>
+                Mixed-gender mod (♀ female + ♂ male outfits)
+              </span>
+            </label>
+          </Tooltip>
+          <div className="field-hint">
+            Enable to also convert male fits in the same mod
+          </div>
+        </div>
+
+        {/* ── Male Source + Target (conditional) ── */}
+        {mixedGender && (
+          <>
+            <div style={{ marginTop: "1rem" }}>
+              <Tooltip
+                dir="right"
+                text="The body type the male outfits in this mod were built for. This is the male body you are converting FROM."
+              >
+                <div className="field-label">
+                  ♂ Male Source Body{" "}
+                  <span style={{ color: "var(--color-error, #e55)" }}>*</span>
+                </div>
+              </Tooltip>
+              <div className="field-hint">
+                Pick the male body type you are converting FROM
+              </div>
+            </div>
+            <BodySelect
+              value={maleSource}
+              placeholder="— Select male source body —"
+              femaleOptions={femaleOptions}
+              maleOptions={maleOptions}
+              otherOptions={otherOptions}
+              onChange={onMaleSourceChange}
+            />
+
+            <div style={{ marginTop: "1rem" }}>
+              <Tooltip
+                dir="right"
+                text="The male body type you want the converted output to target."
+              >
+                <div className="field-label">
+                  ♂ Convert To — Male Target Body{" "}
+                  <span style={{ color: "var(--color-error, #e55)" }}>*</span>
+                </div>
+              </Tooltip>
+              <div className="field-hint">
+                Select which male body type to convert to
+              </div>
+            </div>
+            <BodySelect
+              value={maleTarget}
+              placeholder="— Select male target body —"
+              femaleOptions={femaleOptions}
+              maleOptions={maleOptions}
+              otherOptions={otherOptions}
+              onChange={onMaleTargetChange}
+            />
+          </>
         )}
       </div>
 

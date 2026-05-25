@@ -154,6 +154,8 @@ export type ConversionRunArgs = {
   target: BodyType;
   output: string;
   sourceOverride?: BodyType;
+  maleSource?: BodyType;
+  maleTarget?: BodyType;
 };
 
 export type ConversionJobEvent =

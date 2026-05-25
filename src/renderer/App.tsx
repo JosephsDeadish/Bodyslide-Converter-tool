@@ -30,6 +30,9 @@ export function App() {
     null,
   );
   const [sourceOverride, setSourceOverride] = useState("");
+  const [mixedGender, setMixedGender] = useState(false);
+  const [maleSource, setMaleSource] = useState("");
+  const [maleTarget, setMaleTarget] = useState("");
   const [screen, setScreen] = useState<Screen>("welcome");
   const [status, setStatus] = useState<Status>("idle");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -106,6 +109,9 @@ export function App() {
     setInputPath("");
     setDetectResult(null);
     setSourceOverride("");
+    setMixedGender(false);
+    setMaleSource("");
+    setMaleTarget("");
     if (outputPathAuto) {
       setOutputPath("");
       setOutputPathAuto(false);
@@ -128,7 +134,8 @@ export function App() {
   }
 
   async function handleConvert() {
-    if (!inputPath || !outputPath || !targetBodyType) return;
+    if (!inputPath || !outputPath || !targetBodyType || !sourceOverride) return;
+    if (mixedGender && (!maleSource || !maleTarget)) return;
     setScreen("loading");
     setStatus("scanning");
     setLoadingMessage("Starting conversion job…");
@@ -139,9 +146,13 @@ export function App() {
         input: inputPath,
         target: targetBodyType as BodyType,
         output: outputPath,
-        sourceOverride: sourceOverride
-          ? (sourceOverride as BodyType)
-          : undefined,
+        sourceOverride: sourceOverride as BodyType,
+        ...(mixedGender && maleSource && maleTarget
+          ? {
+              maleSource: maleSource as BodyType,
+              maleTarget: maleTarget as BodyType,
+            }
+          : {}),
       });
       setActiveJobId(jobId);
     } catch (err) {
@@ -187,8 +198,17 @@ export function App() {
         detecting={detecting}
         detectResult={detectResult}
         sourceOverride={sourceOverride}
+        mixedGender={mixedGender}
+        maleSource={maleSource}
+        maleTarget={maleTarget}
         status={status}
-        canConvert={Boolean(inputPath && outputPath && targetBodyType)}
+        canConvert={Boolean(
+          inputPath &&
+            outputPath &&
+            targetBodyType &&
+            sourceOverride &&
+            (!mixedGender || (maleSource && maleTarget)),
+        )}
         onBrowseInput={() => {
           void handleBrowseInput();
         }}
@@ -201,6 +221,9 @@ export function App() {
           void handleTargetChange(v);
         }}
         onSourceOverrideChange={setSourceOverride}
+        onMixedGenderChange={setMixedGender}
+        onMaleSourceChange={setMaleSource}
+        onMaleTargetChange={setMaleTarget}
         onConvert={() => {
           void handleConvert();
         }}

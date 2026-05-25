@@ -246,7 +246,8 @@ async function executeConversion(
   args: ConversionRunArgs,
   onStatus?: (status: JobStatus) => void,
 ): Promise<ScanResult> {
-  const { input, target, output, sourceOverride } = args;
+  const { input, target, output, sourceOverride, maleSource, maleTarget } =
+    args;
 
   if (resolve(input) === resolve(output)) {
     throw new Error(
@@ -307,6 +308,35 @@ async function executeConversion(
 
   const result = await convertMod(input, output, files, detection, target);
   applyPythonSummaryToAudit(result, pythonSummary);
+
+  // ── Male conversion pass (mixed-gender mods) ─────────────────────────────
+  if (maleSource && maleTarget) {
+    onStatus?.({
+      stage: "conversion",
+      message: "Running male body conversion pass.",
+      progress: 75,
+    });
+    const maleDetection = { ...detection, bodyType: maleSource as BodyType };
+    const maleResult = await convertMod(
+      input,
+      output,
+      files,
+      maleDetection,
+      maleTarget as BodyType,
+    );
+    result.convertedFiles = [
+      ...result.convertedFiles,
+      ...maleResult.convertedFiles,
+    ];
+    result.skippedFiles = [...result.skippedFiles, ...maleResult.skippedFiles];
+    result.warnings = [
+      ...new Set([...result.warnings, ...maleResult.warnings]),
+    ];
+    result.namingNotes = [
+      ...new Set([...result.namingNotes, ...maleResult.namingNotes]),
+    ];
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   onStatus?.({
     stage: "reports",
