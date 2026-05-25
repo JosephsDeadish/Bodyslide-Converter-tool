@@ -2664,7 +2664,7 @@ describe("convertMod", () => {
     );
     await writeFile(
       join(inputDir, "SKSE", "Plugins", "hdtSMP64", "hdtConfigs.xml"),
-      '<hdtPhysicsExtensions><constraints /></hdtPhysicsExtensions>',
+      "<hdtPhysicsExtensions><constraints /></hdtPhysicsExtensions>",
       "utf8",
     );
 
