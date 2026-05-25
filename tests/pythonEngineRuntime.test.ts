@@ -53,6 +53,20 @@ describe("python engine runtime paths", () => {
     expect(candidates[0]).toBe(
       "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
     );
+    expect(candidates).toContain(
+      "/tmp/resources/app.asar.unpacked/python_engine/runner.py",
+    );
+  });
+
+  it("includes app.asar.unpacked mirror path when dirname points inside app.asar", () => {
+    const candidates = getRunnerPathCandidates({
+      dirname: "/tmp/resources/app.asar/dist-main/engine",
+      cwd: "/tmp/resources",
+    });
+
+    expect(candidates).toContain(
+      "/tmp/resources/app.asar.unpacked/dist-main/python_engine/runner.py",
+    );
   });
 
   it("includes python_deps candidates for bundled EXE resources", () => {
@@ -99,16 +113,13 @@ describe("python engine interpreter candidates", () => {
       args: [],
     });
 
+    expect(interpreters).toContainEqual({ command: "py", args: ["-3.13"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.12"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.11"] });
+    expect(interpreters).toContainEqual({ command: "python3.13", args: [] });
     expect(interpreters).toContainEqual({ command: "python3.12", args: [] });
     expect(interpreters).toContainEqual({ command: "python3", args: [] });
     expect(interpreters).toContainEqual({ command: "python", args: [] });
-    expect(interpreters).not.toContainEqual({ command: "py", args: ["-3.13"] });
-    expect(interpreters).not.toContainEqual({
-      command: "python3.13",
-      args: [],
-    });
   });
 });
 
@@ -135,7 +146,7 @@ describe("python runtime error classification", () => {
 });
 
 describe("python interpreter validation", () => {
-  it("accepts only 64-bit Python 3.10-3.12 interpreters", () => {
+  it("accepts only 64-bit Python 3.10-3.13 interpreters", () => {
     expect(
       isSupportedPythonInterpreter({
         major: 3,
@@ -165,7 +176,7 @@ describe("python interpreter validation", () => {
         prefix: "/python313",
         basePrefix: "/python313",
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 });
 

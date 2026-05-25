@@ -67,7 +67,7 @@ const REQUIRED_PYTHON_LIBRARIES = [
 const SUPPORTED_PYTHON_VERSION_RANGE = {
   major: 3,
   minMinor: 10,
-  maxMinor: 12,
+  maxMinor: 13,
 } as const;
 const BUNDLED_DEPENDENCY_PROBE_SNIPPET = [
   "import importlib.util, sys",
@@ -452,7 +452,7 @@ export async function runPythonEngine(
   return createFallbackRun(
     runId,
     bootstrapWarnings[0] ??
-      "No supported Python interpreter found. Install Python 3.10-3.12 (64-bit), avoid broken virtual environments, and set SLIDESMITH_PYTHON if needed.",
+      "No supported Python interpreter found. Install Python 3.10-3.13 (64-bit), avoid broken virtual environments, and set SLIDESMITH_PYTHON if needed.",
   );
 }
 
@@ -503,6 +503,23 @@ export function getRunnerPathCandidates(
       ),
       join(resourcesPathValue, "dist-main", "python_engine", "runner.py"),
       join(resourcesPathValue, "python_engine", "runner.py"),
+      join(
+        resourcesPathValue,
+        "app.asar.unpacked",
+        "python_engine",
+        "runner.py",
+      ),
+    );
+  }
+
+  if (dirnameValue.includes("app.asar")) {
+    candidates.push(
+      join(
+        dirnameValue.replace("app.asar", "app.asar.unpacked"),
+        "..",
+        "python_engine",
+        "runner.py",
+      ),
     );
   }
 
@@ -557,15 +574,18 @@ export function getPythonInterpreterCandidates(
 
   if (platformValue === "win32") {
     candidates.push(
+      { command: "py", args: ["-3.13"] },
       { command: "py", args: ["-3.12"] },
       { command: "py", args: ["-3.11"] },
       { command: "py", args: ["-3.10"] },
+      { command: "python3.13", args: [] },
       { command: "python3.12", args: [] },
       { command: "python3.11", args: [] },
       { command: "python3.10", args: [] },
     );
   } else {
     candidates.push(
+      { command: "python3.13", args: [] },
       { command: "python3.12", args: [] },
       { command: "python3.11", args: [] },
       { command: "python3.10", args: [] },
@@ -741,6 +761,10 @@ async function ensurePythonDependencies(
         buildPythonSubprocessEnv(process.env, { inheritPythonPath: true }),
       );
       if (!selfUpgrade.ok) {
+        if (isMissingPythonRuntimeError(selfUpgrade.output)) {
+          resolve([]);
+          return;
+        }
         warnings.push(
           formatBootstrapFailureWarning(
             "pip/setuptools/wheel self-upgrade",
@@ -759,6 +783,10 @@ async function ensurePythonDependencies(
         env,
       );
       if (!toolchain.ok) {
+        if (isMissingPythonRuntimeError(toolchain.output)) {
+          resolve([]);
+          return;
+        }
         warnings.push(
           formatBootstrapFailureWarning(
             "pip/setuptools/wheel target install",

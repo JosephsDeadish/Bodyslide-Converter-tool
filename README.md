@@ -115,7 +115,7 @@ If Python is not on `PATH`, set:
 SLIDESMITH_PYTHON=/absolute/path/to/python
 ```
 
-Use Python **3.10-3.12 (64-bit)**. Avoid 32-bit interpreters and broken/partial virtual environments; the runtime bootstrap intentionally ignores unsupported interpreters.
+Use Python **3.10-3.13 (64-bit)**. Avoid 32-bit interpreters and broken/partial virtual environments; the runtime bootstrap intentionally ignores unsupported interpreters.
 
 ## Notes
 

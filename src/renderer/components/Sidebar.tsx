@@ -104,6 +104,26 @@ export function Sidebar({
       </div>
 
       <div className="form-section">
+        {/* ── Convert Button ── */}
+        <Tooltip
+          dir="right"
+          block
+          text={
+            canConvert
+              ? "All systems go! This will analyze your mod, remap BodySlide assets, rewrite physics configs, and generally perform miracles. 🚀"
+              : "Fill in the source folder, pick a target body, and set an output folder first. Three fields. You can do this. I believe in you."
+          }
+        >
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!canConvert}
+            onClick={onConvert}
+          >
+            ▶ Convert
+          </button>
+        </Tooltip>
+
         {/* ── Source Mod Folder ── */}
         <Tooltip
           dir="right"
@@ -375,25 +395,6 @@ export function Sidebar({
           <div className="path-basename">{pathBasename(outputPath)}</div>
         )}
 
-        {/* ── Convert Button ── */}
-        <Tooltip
-          dir="right"
-          block
-          text={
-            canConvert
-              ? "All systems go! This will analyze your mod, remap BodySlide assets, rewrite physics configs, and generally perform miracles. 🚀"
-              : "Fill in the source folder, pick a target body, and set an output folder first. Three fields. You can do this. I believe in you."
-          }
-        >
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={!canConvert}
-            onClick={onConvert}
-          >
-            ▶ Convert
-          </button>
-        </Tooltip>
       </div>
 
       <div className="sidebar-footer">
