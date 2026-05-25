@@ -64,6 +64,26 @@ function isStageReport(value: unknown): value is EngineStageReport {
   );
 }
 
+export function buildDependencyBootstrapCommand(
+  command: string,
+  commandArgs: string[],
+  requirementsPath: string,
+): { command: string; args: string[] } {
+  return {
+    command,
+    args: [
+      ...commandArgs,
+      "-m",
+      "pip",
+      "install",
+      "--disable-pip-version-check",
+      "--no-input",
+      "-r",
+      requirementsPath,
+    ],
+  };
+}
+
 function isQualityGate(value: unknown): value is EngineQualityGate {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Record<string, unknown>;
@@ -189,7 +209,11 @@ export async function runPythonEngine(
   let bestRun: PythonEngineRunSummary | null = null;
 
   for (const [index, interpreter] of interpreters.entries()) {
-    await ensurePythonDependencies(interpreter.command, runnerPath);
+    await ensurePythonDependencies(
+      interpreter.command,
+      interpreter.args,
+      runnerPath,
+    );
     const run = await tryInterpreter(
       interpreter.command,
       [...interpreter.args, runnerPath],
@@ -358,6 +382,7 @@ function isIdealPythonEngineRun(run: PythonEngineRunSummary): boolean {
 
 async function ensurePythonDependencies(
   command: string,
+  commandArgs: string[],
   runnerPath: string,
 ): Promise<void> {
   if (
@@ -373,7 +398,7 @@ async function ensurePythonDependencies(
     return;
   }
 
-  const cacheKey = `${command}:${requirementsPath}`;
+  const cacheKey = `${command} ${commandArgs.join(" ")}:${requirementsPath}`;
   const cached = PYTHON_DEP_BOOTSTRAP_CACHE.get(cacheKey);
   if (cached) {
     await cached;
@@ -381,26 +406,19 @@ async function ensurePythonDependencies(
   }
 
   const installPromise = new Promise<void>((resolve) => {
-    const child = spawn(
+    const bootstrap = buildDependencyBootstrapCommand(
       command,
-      [
-        "-m",
-        "pip",
-        "install",
-        "--disable-pip-version-check",
-        "--no-input",
-        "-r",
-        requirementsPath,
-      ],
-      {
-        stdio: "ignore",
-        env: {
-          ...process.env,
-          PIP_DISABLE_PIP_VERSION_CHECK: "1",
-          PYTHONUNBUFFERED: "1",
-        },
-      },
+      commandArgs,
+      requirementsPath,
     );
+    const child = spawn(bootstrap.command, bootstrap.args, {
+      stdio: "ignore",
+      env: {
+        ...process.env,
+        PIP_DISABLE_PIP_VERSION_CHECK: "1",
+        PYTHONUNBUFFERED: "1",
+      },
+    });
 
     child.on("error", () => resolve());
     child.on("close", () => resolve());

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDependencyBootstrapCommand,
   getPythonInterpreterCandidates,
   getRunnerPathCandidates,
   isPythonRunnerPathRunnable,
@@ -136,5 +137,29 @@ describe("python engine run scoring", () => {
     expect(scorePythonEngineRun(completeRun)).toBeGreaterThan(
       scorePythonEngineRun(fallbackRun),
     );
+  });
+});
+
+describe("python dependency bootstrap command", () => {
+  it("preserves interpreter arguments when building pip install command", () => {
+    const bootstrap = buildDependencyBootstrapCommand(
+      "py",
+      ["-3.12"],
+      "C:\\app\\dist-main\\python_engine\\requirements.txt",
+    );
+
+    expect(bootstrap).toEqual({
+      command: "py",
+      args: [
+        "-3.12",
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "-r",
+        "C:\\app\\dist-main\\python_engine\\requirements.txt",
+      ],
+    });
   });
 });
