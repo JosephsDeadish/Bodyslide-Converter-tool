@@ -1062,10 +1062,20 @@ describe("convertMod", () => {
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
-    await convertMod(inputDir, outputDir, files, detection, "ube");
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "ube",
+    );
 
+    const rewrittenEntry = result.convertedFiles.find((file) =>
+      file.outputPath.endsWith("_cuirass_0.osd"),
+    );
+    expect(rewrittenEntry).toBeDefined();
     const rewritten = await readFile(
-      join(outputDir, "meshes", "armor", "UBE_cuirass_0.osd"),
+      join(outputDir, ...(rewrittenEntry?.outputPath ?? "").split("/")),
       "utf8",
     );
     expect(rewritten).toContain("UBE");
@@ -1087,10 +1097,20 @@ describe("convertMod", () => {
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
-    await convertMod(inputDir, outputDir, files, detection, "ube");
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "ube",
+    );
 
+    const copiedEntry = result.convertedFiles.find((file) =>
+      file.outputPath.endsWith("_cuirass_0.osd"),
+    );
+    expect(copiedEntry).toBeDefined();
     const copied = await readFile(
-      join(outputDir, "meshes", "armor", "UBE_cuirass_0.osd"),
+      join(outputDir, ...(copiedEntry?.outputPath ?? "").split("/")),
     );
     expect(copied.equals(binaryPayload)).toBe(true);
   });

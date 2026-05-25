@@ -2198,7 +2198,11 @@ function rewriteBodyMetadataContent(
   target: BodyType,
 ): string {
   return replaceAliases(
-    replacePhysicsReferences(rewriteGenderMarkers(content, source, target), source, target),
+    replacePhysicsReferences(
+      rewriteGenderMarkers(content, source, target),
+      source,
+      target,
+    ),
     source,
     target,
   );
@@ -2208,7 +2212,8 @@ function isLikelyUtf8Text(buffer: Buffer): boolean {
   if (buffer.length === 0) return true;
   if (buffer.includes(0)) return false;
   const decoded = buffer.toString("utf8");
-  const replacementCount = (decoded.match(UTF8_REPLACEMENT_CHAR_RE) ?? []).length;
+  const replacementCount = (decoded.match(UTF8_REPLACEMENT_CHAR_RE) ?? [])
+    .length;
   return replacementCount <= Math.max(3, Math.floor(decoded.length * 0.01));
 }
 
