@@ -166,8 +166,8 @@ describe("conversion matrix coverage", () => {
           "utf8",
         );
         expect(synthesizedSliderSet).toContain(`${targetAlias} Outfit`);
-        expect(synthesizedSliderSet).toContain(`${targetAlias}_outfit_0.nif`);
         expect(synthesizedSliderSet).toContain(`${targetAlias}_outfit_1.nif`);
+        expect(synthesizedSliderSet).toContain("<Groups>");
 
         const synthesizedPhysicsStubPath = join(
           outputDir,

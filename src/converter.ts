@@ -1288,14 +1288,29 @@ async function synthesizeMissingSliderSetProject(
       const displayName = needsContext
         ? buildSliderSetDisplayName(group.key, targetAlias, true)
         : baseDisplayName;
-      const lowPath = group.lowWeightPath ?? group.highWeightPath;
-      const highPath = group.highWeightPath ?? group.lowWeightPath;
-      if (!lowPath || !highPath) return "";
+      // Prefer the high-weight (_1) NIF as the BodySlide output file since
+      // that is the convention used by real BodySlide project files.
+      const primaryPath = group.highWeightPath ?? group.lowWeightPath;
+      if (!primaryPath) return "";
+      // Split into directory (with trailing slash) and filename so that
+      // BodySlide can parse OutputPath + OutputFile correctly.
+      const slashIndex = primaryPath.lastIndexOf("/");
+      const nifDir =
+        slashIndex >= 0 ? primaryPath.slice(0, slashIndex + 1) : "";
+      const nifFile =
+        slashIndex >= 0 ? primaryPath.slice(slashIndex + 1) : primaryPath;
+      const groupName = `${targetAlias} Outfits`;
       return [
         `  <SliderSet name="${escapeXml(displayName)}">`,
-        `    <OutputPath>${escapeXml(lowPath)}</OutputPath>`,
-        `    <OutputPathLow>${escapeXml(lowPath)}</OutputPathLow>`,
-        `    <OutputPathHigh>${escapeXml(highPath)}</OutputPathHigh>`,
+        `    <OutputPath>${escapeXml(nifDir)}</OutputPath>`,
+        `    <OutputFile>${escapeXml(nifFile)}</OutputFile>`,
+        `    <SourceFile>${escapeXml(nifFile)}</SourceFile>`,
+        `    <ShapeCount>1</ShapeCount>`,
+        `    <DefaultWeight>1</DefaultWeight>`,
+        `    <Groups>`,
+        `      <Group name="${escapeXml(groupName)}"/>`,
+        `    </Groups>`,
+        `    <Sliders/>`,
         "  </SliderSet>",
       ].join("\n");
     })
@@ -1426,6 +1441,72 @@ function cbpcDefaultWeight(boneName: string): string {
   if (lower.includes("scrotum")) return CBPC_SCROTUM_DEFAULT;
   if (lower.includes("genitals")) return CBPC_GENITALS_DEFAULT;
   return CBPC_BREAST_DEFAULT;
+}
+
+/**
+ * Returns true when `content` + its output path look like a CBPC physics INI
+ * (bone=weight lines under a CBPC-related path, or with bone references in
+ * the content itself).  Used to gate physics-bone patching so we don't append
+ * CBPC lines to unrelated INI files.
+ */
+function looksLikeCbpcConfig(content: string, outputPath: string): boolean {
+  const lowerPath = outputPath.toLowerCase().replace(/\\/g, "/");
+  const pathIsCbpc =
+    lowerPath.includes("cbpc") ||
+    lowerPath.includes("hdt") ||
+    lowerPath.includes("physics");
+  if (!pathIsCbpc) return false;
+  // Confirm the content contains at least one bone=weight assignment so we
+  // don't misidentify an empty or comment-only INI as a config file.
+  return /^[A-Za-z][^\n=]*=[0-9.]+/m.test(content.slice(0, 8192));
+}
+
+/**
+ * When converting to a physics-capable target body the source mod may contain
+ * a physics config that covers only a subset of the bones required by the
+ * target.  This function appends any missing required bones (with sensible
+ * default weights) so the converted config is complete.
+ *
+ * It is a no-op for non-physics targets and for files that don't look like
+ * CBPC configs.
+ */
+function ensureTargetPhysicsBonesPresent(
+  content: string,
+  outputPath: string,
+  target: BodyType,
+): string {
+  const targetInfo = BODY_TYPE_INFO[target];
+  if (!targetInfo.physicsSupport || targetInfo.physicsBones.length === 0) {
+    return content;
+  }
+  if (extname(outputPath).toLowerCase() !== ".ini") {
+    return content;
+  }
+  if (!looksLikeCbpcConfig(content, outputPath)) {
+    return content;
+  }
+  const lowerContent = content.toLowerCase();
+  // Only patch when at least one target-body physics bone is already present
+  // in the converted content.  If a cross-family fallback replaced all
+  // physics bones with generic skeleton bones (e.g. 3BA→SOS remaps breast
+  // chains to NPC Spine2/Pelvis) there would be no target-specific bones to
+  // complement, so we leave the content untouched.
+  const hasAnyTargetBone = targetInfo.physicsBones.some((bone) =>
+    lowerContent.includes(bone.toLowerCase()),
+  );
+  if (!hasAnyTargetBone) return content;
+  const missingBones = targetInfo.physicsBones.filter(
+    (bone) => !lowerContent.includes(bone.toLowerCase()),
+  );
+  if (missingBones.length === 0) return content;
+  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[target];
+  const patch = [
+    "",
+    `; Missing physics chain bones added by SlideSmith (required for ${targetAlias})`,
+    ...missingBones.map((bone) => `${bone}=${cbpcDefaultWeight(bone)}`),
+    "",
+  ].join("\n");
+  return content.trimEnd() + "\n" + patch;
 }
 
 /**
@@ -1787,6 +1868,48 @@ function createWarnings(
   return warnings;
 }
 
+// ── Body-replacer NIF detection ───────────────────────────────────────────────
+// These are the canonical body-mesh filenames Skyrim uses for character bodies
+// (as opposed to armor/clothing outfits).  NIFs that match are preserved in
+// place rather than renamed with a body-type alias prefix.
+const BODY_REPLACER_BASENAMES = new Set([
+  "femalebody",
+  "malebody",
+  "femalehands",
+  "malehands",
+  "femalefeet",
+  "malefeet",
+  "femalehead",
+  "malehead",
+  "1stpersonfemalehands",
+  "1stpersonmalehands",
+]);
+
+const BODY_ASSET_PATH_FRAGMENTS = [
+  "actors/character/character assets/",
+  "actors/character/character assets female/",
+  "actors/character/character assets male/",
+];
+
+/**
+ * Returns true when `relativePath` refers to a body-replacer NIF — i.e. a
+ * mesh that replaces the player/NPC body itself rather than an outfit or
+ * piece of armor.  Such files must be preserved at their original location
+ * and must NOT be renamed with a body-type alias prefix.
+ */
+function isBodyReplacerNif(relativePath: string): boolean {
+  const lower = relativePath.toLowerCase().replace(/\\/g, "/");
+  if (!lower.endsWith(".nif")) return false;
+  // Path-based: any NIF under the standard character assets directories.
+  if (BODY_ASSET_PATH_FRAGMENTS.some((frag) => lower.includes(frag))) {
+    return true;
+  }
+  // Name-based: canonical body mesh filenames regardless of directory.
+  const filename = lower.split("/").at(-1) ?? lower;
+  const baseName = filename.replace(/_[01]\.nif$/, "").replace(/\.nif$/, "");
+  return BODY_REPLACER_BASENAMES.has(baseName);
+}
+
 export async function convertMod(
   _inputDir: string,
   outputDir: string,
@@ -1809,6 +1932,27 @@ export async function convertMod(
   const skippedFiles: ConversionResult["skippedFiles"] = [];
 
   for (const file of files) {
+    // Body-replacer NIFs (femalebody, malebody, etc.) must be kept at their
+    // original path.  Renaming them with a body-type alias would break the
+    // replacer since Skyrim looks for specific filenames at specific paths.
+    if (file.extension === ".nif" && isBodyReplacerNif(file.relativePath)) {
+      const preservedPath = normalizeToMo2DataPath(
+        file.relativePath.replace(/\\/g, "/"),
+        file.extension,
+        file.preview,
+      );
+      const preservedAbsPath = join(outputDir, preservedPath);
+      await mkdir(dirname(preservedAbsPath), { recursive: true });
+      await copyFile(file.absolutePath, preservedAbsPath);
+      skippedFiles.push({
+        sourcePath: file.relativePath,
+        outputPath: preservedPath,
+        reason:
+          "Body replacer mesh — preserved at original path without body-type conversion.",
+      });
+      continue;
+    }
+
     const rewrittenRelativePath = normalizeToMo2DataPath(
       rewriteRelativePath(file.relativePath, sourceBodyType, targetBodyType),
       file.extension,
@@ -1836,13 +1980,17 @@ export async function convertMod(
       }
 
       const content = await readFile(file.absolutePath, "utf8");
-      const nextContent = replaceAliases(
-        replacePhysicsReferences(
-          rewriteGenderMarkers(content, sourceBodyType, targetBodyType),
+      const nextContent = ensureTargetPhysicsBonesPresent(
+        replaceAliases(
+          replacePhysicsReferences(
+            rewriteGenderMarkers(content, sourceBodyType, targetBodyType),
+            sourceBodyType,
+            targetBodyType,
+          ),
           sourceBodyType,
           targetBodyType,
         ),
-        sourceBodyType,
+        rewrittenRelativePath,
         targetBodyType,
       );
       await writeFile(outputPath, nextContent, "utf8");

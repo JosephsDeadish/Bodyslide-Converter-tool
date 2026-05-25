@@ -364,9 +364,18 @@ describe("convertMod", () => {
 
     expect(
       result.convertedFiles.some((file) =>
-        file.outputPath.endsWith("character assets/malebody_0.nif"),
+        file.outputPath.toLowerCase().includes("cbbe_cuirass_1.nif") ||
+        file.outputPath.toLowerCase().includes("himbo_cuirass_1.nif"),
       ),
     ).toBe(true);
+
+    // Body-replacer NIFs are now preserved at their original path in
+    // skippedFiles rather than being renamed with a gender/alias prefix.
+    const bodyNifSkipped = result.skippedFiles.find((file) =>
+      file.outputPath.toLowerCase().includes("femalebody_0.nif"),
+    );
+    expect(bodyNifSkipped).toBeDefined();
+    expect(bodyNifSkipped?.reason).toContain("Body replacer mesh");
   });
 
   it("rewrites compact alias naming variants in files and text metadata", async () => {
@@ -1778,8 +1787,14 @@ describe("convertMod", () => {
       "utf8",
     );
     expect(sliderSetContent).toContain('<SliderSet name="3BA Plated">');
-    expect(sliderSetContent).toContain("meshes/armor/3BA_plated_0.nif");
-    expect(sliderSetContent).toContain("meshes/armor/3BA_plated_1.nif");
+    expect(sliderSetContent).toContain(
+      "<OutputPath>meshes/armor/</OutputPath>",
+    );
+    expect(sliderSetContent).toContain(
+      "<OutputFile>3BA_plated_1.nif</OutputFile>",
+    );
+    expect(sliderSetContent).toContain('<Group name="3BA Outfits"/>');
+    expect(sliderSetContent).toContain("<Sliders/>");
 
     const sliderGroupEntry = result.convertedFiles.find(
       (file) =>
@@ -2159,5 +2174,151 @@ describe("convertMod", () => {
     );
     expect(physicsWeightCheck).toBeDefined();
     expect(physicsWeightCheck?.status).toBe("not-applicable");
+  });
+
+  it("preserves body-replacer NIFs (femalebody, malebody) at original path without alias renaming", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    const charAssetsDir = join(
+      inputDir,
+      "meshes",
+      "actors",
+      "character",
+      "character assets",
+    );
+    await mkdir(charAssetsDir, { recursive: true });
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+
+    // Body-replacer NIFs — must NOT be renamed.
+    await writeFile(join(charAssetsDir, "femalebody_0.nif"), "cbbe body mesh");
+    await writeFile(
+      join(charAssetsDir, "femalebody_1.nif"),
+      "cbbe body mesh high",
+    );
+    // Regular outfit NIF — should be renamed with target alias.
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe outfit mesh",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // Body replacer NIFs appear in skippedFiles with the preservation reason.
+    const bodySkipped = result.skippedFiles.filter((f) =>
+      f.reason.includes("Body replacer mesh"),
+    );
+    expect(bodySkipped.length).toBeGreaterThanOrEqual(2);
+
+    // The original paths are preserved — no body-type alias prefix added.
+    const skippedPaths = bodySkipped.map((f) => f.outputPath);
+    expect(
+      skippedPaths.some((p) => p.toLowerCase().includes("femalebody_0.nif")),
+    ).toBe(true);
+    expect(
+      skippedPaths.some((p) => p.toLowerCase().includes("femalebody_1.nif")),
+    ).toBe(true);
+
+    // Regular outfit IS renamed — 3BA prefix applied.
+    const outfitMesh = result.convertedFiles.find(
+      (f) => f.kind === "mesh" && f.outputPath.includes("3BA_outfit_0.nif"),
+    );
+    expect(outfitMesh).toBeDefined();
+  });
+
+  it("preserves body-replacer NIFs identified by basename regardless of directory", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    // malebody_0.nif placed in a non-standard directory — still body-replacer.
+    await mkdir(join(inputDir, "meshes", "actors", "custom"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "actors", "custom", "malebody_0.nif"),
+      "malebody mesh",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "himbo",
+    );
+
+    const bodySkipped = result.skippedFiles.filter((f) =>
+      f.reason.includes("Body replacer mesh"),
+    );
+    expect(bodySkipped.length).toBe(1);
+    expect(bodySkipped[0]?.outputPath.toLowerCase()).toContain(
+      "malebody_0.nif",
+    );
+  });
+
+  it("appends missing required physics chain bones to a partial source CBPC config", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe mesh",
+    );
+
+    // Partial config: has some breast bones but is missing belly/butt/root bones.
+    const partialConfig = [
+      "NPC L Breast01=0.500",
+      "NPC R Breast01=0.500",
+      "NPC L Breast02=0.400",
+      "NPC R Breast02=0.400",
+    ].join("\n");
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbbe_armor.ini"),
+      partialConfig,
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    // The converted config should now contain 3BA's full set of physics bones.
+    const convertedConfigEntry = result.convertedFiles.find(
+      (f) =>
+        f.kind === "text" &&
+        f.outputPath.toLowerCase().includes("cbpc") &&
+        f.outputPath.toLowerCase().endsWith(".ini"),
+    );
+    expect(convertedConfigEntry).toBeDefined();
+
+    const { readFile: rf } = await import("node:fs/promises");
+    const convertedConfig = await rf(
+      join(outputDir, convertedConfigEntry?.outputPath ?? ""),
+      "utf8",
+    );
+
+    // All 3BA physics bones must now be present in the converted config.
+    const { BODY_TYPE_INFO: bti } = await import("../src/bodyTypeInfo.js");
+    for (const bone of bti["3ba"].physicsBones) {
+      expect(convertedConfig.toLowerCase()).toContain(bone.toLowerCase());
+    }
   });
 });
