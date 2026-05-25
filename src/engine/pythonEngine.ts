@@ -62,7 +62,7 @@ const REQUIRED_PYTHON_LIBRARIES = [
 const SUPPORTED_PYTHON_VERSION_RANGE = {
   major: 3,
   minMinor: 10,
-  maxMinor: 13,
+  maxMinor: 12,
 } as const;
 const BUNDLED_DEPENDENCY_PROBE_SNIPPET = [
   "import importlib.util, sys",
@@ -71,8 +71,8 @@ const BUNDLED_DEPENDENCY_PROBE_SNIPPET = [
   "sys.exit(1 if missing else 0)",
 ].join("; ");
 const PYTHON_VERSION_PROBE_SNIPPET = [
-  "import json,sys",
-  "print(json.dumps({'major':sys.version_info.major,'minor':sys.version_info.minor}))",
+  "import json,struct,sys",
+  "print(json.dumps({'major':sys.version_info.major,'minor':sys.version_info.minor,'bits':struct.calcsize('P') * 8,'executable':sys.executable,'prefix':sys.prefix,'basePrefix':getattr(sys,'base_prefix',sys.prefix)}))",
 ].join("; ");
 const MISSING_RUNTIME_ERROR_PATTERNS = [
   /No runtime installed that matches/i,
@@ -377,13 +377,7 @@ export async function runPythonEngine(
       interpreter.command,
       interpreter.args,
     );
-    if (
-      interpreterVersion &&
-      !isSupportedPythonVersion(
-        interpreterVersion.major,
-        interpreterVersion.minor,
-      )
-    ) {
+    if (interpreterVersion && !isSupportedPythonInterpreter(interpreterVersion)) {
       continue;
     }
     const dependencyTargetPath = getPythonDependencyTargetPath(
@@ -442,7 +436,7 @@ export async function runPythonEngine(
 
   return createFallbackRun(
     runId,
-    "No supported Python interpreter found. Install Python 3.10-3.13 (64-bit) and set SLIDESMITH_PYTHON if needed.",
+    "No supported Python interpreter found. Install Python 3.10-3.12 (64-bit), avoid broken virtual environments, and set SLIDESMITH_PYTHON if needed.",
   );
 }
 
@@ -460,6 +454,15 @@ type BundledDependencyPathContext = {
 type InterpreterContext = {
   platform: NodeJS.Platform;
   env: NodeJS.ProcessEnv;
+};
+
+type PythonInterpreterProbe = {
+  major: number;
+  minor: number;
+  bits: number;
+  executable: string;
+  prefix: string;
+  basePrefix: string;
 };
 
 export function getRunnerPathCandidates(
@@ -538,18 +541,15 @@ export function getPythonInterpreterCandidates(
 
   if (platformValue === "win32") {
     candidates.push(
-      { command: "py", args: ["-3.13"] },
       { command: "py", args: ["-3.12"] },
       { command: "py", args: ["-3.11"] },
       { command: "py", args: ["-3.10"] },
-      { command: "python3.13", args: [] },
       { command: "python3.12", args: [] },
       { command: "python3.11", args: [] },
       { command: "python3.10", args: [] },
     );
   } else {
     candidates.push(
-      { command: "python3.13", args: [] },
       { command: "python3.12", args: [] },
       { command: "python3.11", args: [] },
       { command: "python3.10", args: [] },
@@ -568,6 +568,44 @@ export function getPythonInterpreterCandidates(
       ]),
     ).values(),
   ];
+}
+
+export function buildPythonSubprocessEnv(
+  baseEnv: NodeJS.ProcessEnv = process.env,
+  options: Partial<{
+    pythonPath: string;
+    inheritPythonPath: boolean;
+  }> = {},
+): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(baseEnv)) {
+    if (typeof value !== "string") {
+      continue;
+    }
+    const normalizedKey = key.toUpperCase();
+    if (
+      normalizedKey.startsWith("NPM_") ||
+      normalizedKey.startsWith("ELECTRON_") ||
+      normalizedKey === "NODE_OPTIONS" ||
+      normalizedKey === "INIT_CWD" ||
+      normalizedKey === "VIRTUAL_ENV" ||
+      normalizedKey === "PYTHONHOME" ||
+      normalizedKey === "PYTHONEXECUTABLE" ||
+      normalizedKey === "__PYVENV_LAUNCHER__"
+    ) {
+      continue;
+    }
+    if (normalizedKey === "PYTHONPATH" && !options.inheritPythonPath) {
+      continue;
+    }
+    env[key] = value;
+  }
+  if (options.pythonPath) {
+    env.PYTHONPATH = options.pythonPath;
+  }
+  env.PYTHONUNBUFFERED = "1";
+  env.PIP_DISABLE_PIP_VERSION_CHECK = "1";
+  return env;
 }
 
 export function isPythonRunnerPathRunnable(path: string): boolean {
@@ -663,19 +701,13 @@ async function ensurePythonDependencies(
 
   const installPromise = new Promise<void>((resolve) => {
     const env = {
-      ...process.env,
-      PYTHONPATH: pythonPath,
-      PIP_DISABLE_PIP_VERSION_CHECK: "1",
-      PYTHONUNBUFFERED: "1",
+      ...buildPythonSubprocessEnv(process.env, { pythonPath }),
     };
 
     void (async () => {
       await runBootstrapCommand(
         buildPipSelfUpgradeCommand(command, commandArgs),
-        {
-          ...env,
-          PYTHONPATH: process.env.PYTHONPATH,
-        },
+        buildPythonSubprocessEnv(process.env, { inheritPythonPath: true }),
       );
       await runBootstrapCommand(
         buildPipToolchainBootstrapCommand(
@@ -751,11 +783,7 @@ async function canImportRequiredLibraries(
   return new Promise<boolean>((resolve) => {
     const child = spawn(probe.command, probe.args, {
       stdio: "ignore",
-      env: {
-        ...process.env,
-        PYTHONPATH: pythonPath,
-        PYTHONUNBUFFERED: "1",
-      },
+      env: buildPythonSubprocessEnv(process.env, { pythonPath }),
     });
     child.on("error", () => resolve(false));
     child.on("close", (code) => resolve(code === 0));
@@ -773,15 +801,12 @@ function isSupportedPythonVersion(major: number, minor: number): boolean {
 async function probePythonVersion(
   command: string,
   commandArgs: string[],
-): Promise<null | { major: number; minor: number }> {
+): Promise<null | PythonInterpreterProbe> {
   const probe = buildPythonVersionProbeCommand(command, commandArgs);
-  return new Promise<null | { major: number; minor: number }>((resolve) => {
+  return new Promise<null | PythonInterpreterProbe>((resolve) => {
     const child = spawn(probe.command, probe.args, {
       stdio: ["ignore", "pipe", "ignore"],
-      env: {
-        ...process.env,
-        PYTHONUNBUFFERED: "1",
-      },
+      env: buildPythonSubprocessEnv(process.env),
     });
 
     let output = "";
@@ -794,12 +819,27 @@ async function probePythonVersion(
         const parsed = JSON.parse(output.trim()) as {
           major?: unknown;
           minor?: unknown;
+          bits?: unknown;
+          executable?: unknown;
+          prefix?: unknown;
+          basePrefix?: unknown;
         };
         if (
           typeof parsed.major === "number" &&
-          typeof parsed.minor === "number"
+          typeof parsed.minor === "number" &&
+          typeof parsed.bits === "number" &&
+          typeof parsed.executable === "string" &&
+          typeof parsed.prefix === "string" &&
+          typeof parsed.basePrefix === "string"
         ) {
-          resolve({ major: parsed.major, minor: parsed.minor });
+          resolve({
+            major: parsed.major,
+            minor: parsed.minor,
+            bits: parsed.bits,
+            executable: parsed.executable,
+            prefix: parsed.prefix,
+            basePrefix: parsed.basePrefix,
+          });
           return;
         }
       } catch {}
@@ -816,6 +856,12 @@ export function isMissingPythonRuntimeError(message: string): boolean {
   return MISSING_RUNTIME_ERROR_PATTERNS.some((pattern) =>
     pattern.test(normalizedMessage),
   );
+}
+
+export function isSupportedPythonInterpreter(
+  probe: PythonInterpreterProbe,
+): boolean {
+  return isSupportedPythonVersion(probe.major, probe.minor) && probe.bits === 64;
 }
 
 async function isReadableFile(path: string): Promise<boolean> {
@@ -837,11 +883,7 @@ async function tryInterpreter(
   return new Promise<PythonEngineRunSummary | null>((resolve) => {
     const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
-      env: {
-        ...process.env,
-        PYTHONPATH: pythonPath,
-        PYTHONUNBUFFERED: "1",
-      },
+      env: buildPythonSubprocessEnv(process.env, { pythonPath }),
     });
 
     let stdoutBuffer = "";

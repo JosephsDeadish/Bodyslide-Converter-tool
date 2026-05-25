@@ -88,9 +88,16 @@ python -m pip install -r python_engine/requirements.txt
 
 ### Bundle Python dependencies inside the EXE build
 
-`npm run build:main` automatically attempts to install Python requirements into a local `python_deps/` folder and then copies it into `dist-main/python_deps`:
+The Electron build and Python dependency bundle steps are intentionally separate. Build the Electron main process first:
 
 ```bash
+npm run build:main
+```
+
+Then, if you want bundled Python wheels copied into the package payload, run:
+
+```bash
+npm run bundle:python-deps
 npm run build:main
 ```
 
@@ -107,6 +114,8 @@ If Python is not on `PATH`, set:
 ```bash
 SLIDESMITH_PYTHON=/absolute/path/to/python
 ```
+
+Use Python **3.10-3.12 (64-bit)**. Avoid 32-bit interpreters and broken/partial virtual environments; the runtime bootstrap intentionally ignores unsupported interpreters.
 
 ## Notes
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPythonSubprocessEnv,
   buildBundledDependencyProbeCommand,
   buildDependencyBootstrapCommand,
   buildDependencyPackageBootstrapCommand,
@@ -11,6 +12,7 @@ import {
   getPythonInterpreterCandidates,
   getRunnerPathCandidates,
   isMissingPythonRuntimeError,
+  isSupportedPythonInterpreter,
   isPythonRunnerPathRunnable,
   scorePythonEngineRun,
 } from "../src/engine/pythonEngine.js";
@@ -97,13 +99,13 @@ describe("python engine interpreter candidates", () => {
       args: [],
     });
 
-    expect(interpreters).toContainEqual({ command: "py", args: ["-3.13"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.12"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.11"] });
-    expect(interpreters).toContainEqual({ command: "python3.13", args: [] });
     expect(interpreters).toContainEqual({ command: "python3.12", args: [] });
     expect(interpreters).toContainEqual({ command: "python3", args: [] });
     expect(interpreters).toContainEqual({ command: "python", args: [] });
+    expect(interpreters).not.toContainEqual({ command: "py", args: ["-3.13"] });
+    expect(interpreters).not.toContainEqual({ command: "python3.13", args: [] });
   });
 });
 
@@ -126,6 +128,67 @@ describe("python runtime error classification", () => {
       isMissingPythonRuntimeError("ModuleNotFoundError: No module named numpy"),
     ).toBe(false);
     expect(isMissingPythonRuntimeError("Python engine crashed")).toBe(false);
+  });
+});
+
+describe("python interpreter validation", () => {
+  it("accepts only 64-bit Python 3.10-3.12 interpreters", () => {
+    expect(
+      isSupportedPythonInterpreter({
+        major: 3,
+        minor: 12,
+        bits: 64,
+        executable: "/python312/python",
+        prefix: "/python312",
+        basePrefix: "/python312",
+      }),
+    ).toBe(true);
+    expect(
+      isSupportedPythonInterpreter({
+        major: 3,
+        minor: 12,
+        bits: 32,
+        executable: "/python312-32/python",
+        prefix: "/python312-32",
+        basePrefix: "/python312-32",
+      }),
+    ).toBe(false);
+    expect(
+      isSupportedPythonInterpreter({
+        major: 3,
+        minor: 13,
+        bits: 64,
+        executable: "/python313/python",
+        prefix: "/python313",
+        basePrefix: "/python313",
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("python subprocess environment", () => {
+  it("removes npm/electron and broken venv variables while keeping Python path overrides", () => {
+    const env = buildPythonSubprocessEnv(
+      {
+        PATH: "/usr/bin",
+        PYTHONPATH: "/existing/pythonpath",
+        npm_config_user_agent: "npm",
+        ELECTRON_RUN_AS_NODE: "1",
+        NODE_OPTIONS: "--trace-warnings",
+        VIRTUAL_ENV: "/broken/venv",
+      } as NodeJS.ProcessEnv,
+      {
+        pythonPath: "/managed/pythonpath",
+      },
+    );
+
+    expect(env.PATH).toBe("/usr/bin");
+    expect(env.PYTHONPATH).toBe("/managed/pythonpath");
+    expect(env.PYTHONUNBUFFERED).toBe("1");
+    expect(env.npm_config_user_agent).toBeUndefined();
+    expect(env.ELECTRON_RUN_AS_NODE).toBeUndefined();
+    expect(env.NODE_OPTIONS).toBeUndefined();
+    expect(env.VIRTUAL_ENV).toBeUndefined();
   });
 });
 
@@ -362,6 +425,7 @@ describe("python dependency bootstrap command", () => {
     expect(probe.args[1]).toBe("-c");
     expect(probe.args[2]).toContain("version_info.major");
     expect(probe.args[2]).toContain("version_info.minor");
+    expect(probe.args[2]).toContain("calcsize('P') * 8");
   });
 });
 
