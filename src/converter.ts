@@ -608,8 +608,21 @@ const PHYSICS_BONE_SOURCE_ALIASES: Partial<
     "NPC R Breast02": ["NPC RBreast02"],
     "NPC L Breast03": ["NPC LBreast03"],
     "NPC R Breast03": ["NPC RBreast03"],
-    "NPC L Butt": ["NPC LButt", "NPC L Butt01", "NPC LButt01"],
-    "NPC R Butt": ["NPC RButt", "NPC R Butt01", "NPC RButt01"],
+    "NPC L Butt": [
+      "NPC LButt",
+      "NPC L Butt01",
+      "NPC LButt01",
+      "NPC L UUNP Glute 01",
+      "NPC LUUNPGlute01",
+    ],
+    "NPC R Butt": [
+      "NPC RButt",
+      "NPC R Butt01",
+      "NPC RButt01",
+      "NPC R UUNP Glute 01",
+      "NPC RUUNPGlute01",
+    ],
+    "NPC Belly": ["NPC Belly01", "NPC Belly 01"],
   },
   bhunp: {
     "BHUNP Breast L01": ["BHUNP Breast L", "BHUNPBreastL01"],

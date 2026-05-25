@@ -125,6 +125,65 @@ def adapter_profile(db: dict[str, Any], source: Any, target: Any) -> str:
     return "default"
 
 
+def physics_enabled(metadata: Any) -> bool:
+    if not isinstance(metadata, dict):
+        return False
+    physics_bones = metadata.get("physicsBones")
+    if isinstance(physics_bones, list) and any(
+        is_non_empty_string(bone) for bone in physics_bones
+    ):
+        return True
+    physics_config = metadata.get("physicsConfig")
+    if isinstance(physics_config, dict):
+        return bool(
+            physics_config.get("cbpcCompatible")
+            or physics_config.get("hdtSmpCompatible")
+            or physics_config.get("softbodySupported")
+        )
+    return False
+
+
+def physics_naming_convention(metadata: Any) -> str:
+    if not isinstance(metadata, dict):
+        return ""
+    physics_config = metadata.get("physicsConfig")
+    if not isinstance(physics_config, dict):
+        return ""
+    convention = physics_config.get("boneNamingConvention")
+    return convention.strip().lower() if is_non_empty_string(convention) else ""
+
+
+def requires_explicit_adapter_profile(
+    source_meta: Any, target_meta: Any, profile: str
+) -> bool:
+    if profile != "default":
+        return False
+    if not isinstance(source_meta, dict) or not isinstance(target_meta, dict):
+        return False
+
+    source_topology = source_meta.get("topology")
+    target_topology = target_meta.get("topology")
+    if source_topology != target_topology:
+        return True
+
+    source_partition = source_meta.get("partitionProfile")
+    target_partition = target_meta.get("partitionProfile")
+    if source_partition != target_partition:
+        return True
+
+    source_physics = physics_enabled(source_meta)
+    target_physics = physics_enabled(target_meta)
+    if source_physics != target_physics:
+        return True
+
+    source_naming = physics_naming_convention(source_meta)
+    target_naming = physics_naming_convention(target_meta)
+    if source_naming and target_naming and source_naming != target_naming:
+        return True
+
+    return False
+
+
 def body_metadata_issues(body_name: Any, metadata: Any) -> list[str]:
     if not isinstance(metadata, dict):
         return [f"{body_name} body metadata is missing from the reference database."]
@@ -210,6 +269,17 @@ def stage_status(
 
     if stage_id == "reference-body":
         if not reference_issues:
+            if requires_explicit_adapter_profile(
+                source_meta, target_meta, mappings["adapterProfile"]
+            ):
+                return (
+                    "attention",
+                    "Reference metadata is present, but this high-risk pair has no explicit adapter profile.",
+                    [
+                        f"Missing explicit adapter profile for high-risk conversion pair {source} -> {target}.",
+                        "Add a body-specific adapter profile entry to body_reference_db.json adapters for reliable surface/weight/morph transfer behavior.",
+                    ],
+                )
             topology_source = (
                 source_meta.get("topologyReference", source_meta.get("topology", "unknown"))
                 if isinstance(source_meta, dict)

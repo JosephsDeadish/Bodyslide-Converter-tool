@@ -1199,6 +1199,31 @@
       "source": "uunp",
       "target": "tbd",
       "profile": "female-cross-family-physics"
+    },
+    {
+      "source": "uunp",
+      "target": "cbbe",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "cbbe",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "7base",
+      "profile": "female-legacy-physics-downgrade"
+    },
+    {
+      "source": "uunp",
+      "target": "7base",
+      "profile": "female-legacy-physics-downgrade"
     }
   ]
 }

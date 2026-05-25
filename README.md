@@ -76,6 +76,7 @@ Each body entry must define:
 
 The Python engine actively consumes these mappings for reference-body validation, weight-transfer readiness, morph/zap transfer readiness, TRI gating, and physics-bone coverage checks.
 High-quality stages now require both `topologyReference` and `canonicalVertexMap` in addition to the mapping dictionaries; if either body is missing them, the Python runner downgrades surface reprojection, weight transfer, morph transfer, and TRI generation to fallback mode.
+High-risk pairs (cross-topology/physics-partition mismatches) should also define an explicit `adapters` profile entry; the Python reference-body stage now warns when those adapter profiles are missing.
 
 ### Install Python dependencies (recommended)
 
@@ -105,6 +106,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Physics config auditing now requires full target-bone marker coverage before passing the check, helping catch partial/incomplete config remaps.
 - Physics-bone remapping now includes semantic cross-body matching (breast/butt/belly/genitals chains with side/level handling) before fallback collapse, improving compatibility across physics-capable body-type pairs.
 - Detection and conversion metadata now includes UBE alias coverage under UUNP-family support and softbody physics-profile aliases for 3BA/BHUNP-style projects.
+- Physics alias remapping now also recognizes UBE softbody-style UUNP tokens (for example `NPC L/R UUNP Glute 01` and `NPC Belly01`) during UUNP-family physics conversion.
 - Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
 - The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
