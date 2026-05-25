@@ -2765,6 +2765,48 @@ describe("convertMod", () => {
     expect(cbpcCheck?.status).toBe("pass");
   });
 
+  it("synthesizes a UBE CBPC stub when source CBPC config is only comments", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_uunp.ini"),
+      "; placeholder config\n; no bone assignments yet\n",
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "uunp_outfit_0.nif"),
+      "uunp",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "ube",
+    );
+
+    const synthStub = result.convertedFiles.find(
+      (file) =>
+        file.outputPath === "SKSE/Plugins/CBPC/UBE_PhysicsStub.ini" &&
+        file.action === "synthesized",
+    );
+    expect(synthStub).toBeDefined();
+
+    const stubContent = await readFile(
+      join(outputDir, synthStub?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(stubContent).toContain("Auto-generated CBPC physics stub for UBE");
+    expect(stubContent).toContain("NPC L Breast01=0.600");
+    expect(stubContent).toContain("NPC Belly=0.300");
+  });
+
   it("throws a user-friendly error when input and output directories are the same", async () => {
     const dir = await makeTempDir();
     await mkdir(join(dir, "meshes", "armor"), { recursive: true });
