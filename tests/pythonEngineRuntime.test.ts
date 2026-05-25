@@ -10,6 +10,7 @@ import {
   getPythonDependencyTargetPath,
   getPythonInterpreterCandidates,
   getRunnerPathCandidates,
+  isMissingPythonRuntimeError,
   isPythonRunnerPathRunnable,
   scorePythonEngineRun,
 } from "../src/engine/pythonEngine.js";
@@ -89,6 +90,28 @@ describe("python engine interpreter candidates", () => {
       env: {
         SLIDESMITH_PYTHON: "C:\\Python312\\python.exe",
       } as NodeJS.ProcessEnv,
+    });
+
+    describe("python runtime error classification", () => {
+      it("treats py launcher missing-runtime errors as non-runnable candidates", () => {
+        expect(
+          isMissingPythonRuntimeError(
+            '[ERROR] No runtime installed that matches 3.13. Try running "py install 3.13".',
+          ),
+        ).toBe(true);
+        expect(
+          isMissingPythonRuntimeError(
+            "Requested Python version (3.12) not installed",
+          ),
+        ).toBe(true);
+      });
+
+      it("does not classify regular engine failures as missing-runtime errors", () => {
+        expect(
+          isMissingPythonRuntimeError("ModuleNotFoundError: No module named numpy"),
+        ).toBe(false);
+        expect(isMissingPythonRuntimeError("Python engine crashed")).toBe(false);
+      });
     });
 
     expect(interpreters[0]).toEqual({

@@ -74,6 +74,12 @@ const PYTHON_VERSION_PROBE_SNIPPET = [
   "import json,sys",
   "print(json.dumps({'major':sys.version_info.major,'minor':sys.version_info.minor}))",
 ].join("; ");
+const MISSING_RUNTIME_ERROR_PATTERNS = [
+  /No runtime installed that matches/i,
+  /Requested Python version.*not installed/i,
+  /No installed Pythons found/i,
+  /No Python runtime installed/i,
+];
 
 function isStageReport(value: unknown): value is EngineStageReport {
   if (!value || typeof value !== "object") return false;
@@ -786,6 +792,16 @@ async function probePythonVersion(
   });
 }
 
+export function isMissingPythonRuntimeError(message: string): boolean {
+  const normalizedMessage = message.trim();
+  if (normalizedMessage.length === 0) {
+    return false;
+  }
+  return MISSING_RUNTIME_ERROR_PATTERNS.some((pattern) =>
+    pattern.test(normalizedMessage),
+  );
+}
+
 async function isReadableFile(path: string): Promise<boolean> {
   try {
     await access(path, constants.R_OK);
@@ -876,10 +892,16 @@ async function tryInterpreter(
         return;
       }
 
+      const stderrMessage = stderr.trim();
+      if (isMissingPythonRuntimeError(stderrMessage)) {
+        resolve(null);
+        return;
+      }
+
       resolve(
         createFallbackRun(
           payload.runId,
-          stderr.trim() ||
+          stderrMessage ||
             `Python engine failed with exit code ${String(code)}.`,
         ),
       );
