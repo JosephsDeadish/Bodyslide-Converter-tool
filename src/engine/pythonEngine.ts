@@ -1,8 +1,9 @@
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { constants } from "node:fs";
-import { access } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { access, mkdir } from "node:fs/promises";
+import { homedir } from "node:os";
+import { delimiter, dirname, join } from "node:path";
 import type {
   BodyType,
   EngineQualityGate,
@@ -68,20 +69,46 @@ export function buildDependencyBootstrapCommand(
   command: string,
   commandArgs: string[],
   requirementsPath: string,
+  dependencyTargetPath?: string,
 ): { command: string; args: string[] } {
+  const args = [
+    ...commandArgs,
+    "-m",
+    "pip",
+    "install",
+    "--disable-pip-version-check",
+    "--no-input",
+    "--upgrade",
+    "--prefer-binary",
+    "-r",
+    requirementsPath,
+  ];
+  if (dependencyTargetPath) {
+    args.push("--target", dependencyTargetPath);
+  }
   return {
     command,
-    args: [
-      ...commandArgs,
-      "-m",
-      "pip",
-      "install",
-      "--disable-pip-version-check",
-      "--no-input",
-      "-r",
-      requirementsPath,
-    ],
+    args,
   };
+}
+
+export function getPythonDependencyTargetPath(
+  command: string,
+  commandArgs: string[],
+  context: Partial<{ homeDir: string; env: NodeJS.ProcessEnv }> = {},
+): string {
+  const env = context.env ?? process.env;
+  const configuredTarget = env.SLIDESMITH_PYTHON_DEPS_DIR?.trim();
+  const basePath =
+    configuredTarget && configuredTarget.length > 0
+      ? configuredTarget
+      : join(context.homeDir ?? homedir(), ".slidesmith", "python-deps");
+  const cacheKey = `${command}\0${commandArgs.join("\0")}`;
+  const interpreterHash = createHash("sha256")
+    .update(cacheKey)
+    .digest("hex")
+    .slice(0, 16);
+  return join(basePath, interpreterHash);
 }
 
 function isQualityGate(value: unknown): value is EngineQualityGate {
@@ -209,16 +236,22 @@ export async function runPythonEngine(
   let bestRun: PythonEngineRunSummary | null = null;
 
   for (const [index, interpreter] of interpreters.entries()) {
+    const dependencyTargetPath = getPythonDependencyTargetPath(
+      interpreter.command,
+      interpreter.args,
+    );
     await ensurePythonDependencies(
       interpreter.command,
       interpreter.args,
       runnerPath,
+      dependencyTargetPath,
     );
     const run = await tryInterpreter(
       interpreter.command,
       [...interpreter.args, runnerPath],
       payload,
       index === 0 ? options : {},
+      dependencyTargetPath,
     );
     if (run === null) {
       continue;
@@ -384,6 +417,7 @@ async function ensurePythonDependencies(
   command: string,
   commandArgs: string[],
   runnerPath: string,
+  dependencyTargetPath: string,
 ): Promise<void> {
   if (
     process.env.VITEST ||
@@ -398,7 +432,8 @@ async function ensurePythonDependencies(
     return;
   }
 
-  const cacheKey = `${command} ${commandArgs.join(" ")}:${requirementsPath}`;
+  await mkdir(dependencyTargetPath, { recursive: true });
+  const cacheKey = `${command} ${commandArgs.join(" ")}:${requirementsPath}:${dependencyTargetPath}`;
   const cached = PYTHON_DEP_BOOTSTRAP_CACHE.get(cacheKey);
   if (cached) {
     await cached;
@@ -410,11 +445,16 @@ async function ensurePythonDependencies(
       command,
       commandArgs,
       requirementsPath,
+      dependencyTargetPath,
     );
     const child = spawn(bootstrap.command, bootstrap.args, {
       stdio: "ignore",
       env: {
         ...process.env,
+        PYTHONPATH: prependPythonPath(
+          dependencyTargetPath,
+          process.env.PYTHONPATH,
+        ),
         PIP_DISABLE_PIP_VERSION_CHECK: "1",
         PYTHONUNBUFFERED: "1",
       },
@@ -442,12 +482,17 @@ async function tryInterpreter(
   args: string[],
   payload: PythonEngineInput,
   options: PythonEngineOptions,
+  dependencyTargetPath: string,
 ): Promise<PythonEngineRunSummary | null> {
   return new Promise<PythonEngineRunSummary | null>((resolve) => {
     const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
       env: {
         ...process.env,
+        PYTHONPATH: prependPythonPath(
+          dependencyTargetPath,
+          process.env.PYTHONPATH,
+        ),
         PYTHONUNBUFFERED: "1",
       },
     });
@@ -528,4 +573,15 @@ async function tryInterpreter(
     child.stdin.write(`${JSON.stringify(payload)}\n`);
     child.stdin.end();
   });
+}
+
+function prependPythonPath(pathToAdd: string, currentPath?: string): string {
+  if (!currentPath || currentPath.trim().length === 0) {
+    return pathToAdd;
+  }
+  const paths = currentPath.split(delimiter);
+  if (paths.includes(pathToAdd)) {
+    return currentPath;
+  }
+  return `${pathToAdd}${delimiter}${currentPath}`;
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDependencyBootstrapCommand,
+  getPythonDependencyTargetPath,
   getPythonInterpreterCandidates,
   getRunnerPathCandidates,
   isPythonRunnerPathRunnable,
@@ -157,9 +158,65 @@ describe("python dependency bootstrap command", () => {
         "install",
         "--disable-pip-version-check",
         "--no-input",
+        "--upgrade",
+        "--prefer-binary",
         "-r",
         "C:\\app\\dist-main\\python_engine\\requirements.txt",
       ],
     });
+  });
+
+  it("adds --target when dependency target path is provided", () => {
+    const bootstrap = buildDependencyBootstrapCommand(
+      "python3",
+      [],
+      "/app/dist-main/python_engine/requirements.txt",
+      "/home/user/.slidesmith/python-deps/abc123",
+    );
+
+    expect(bootstrap.args).toEqual([
+      "-m",
+      "pip",
+      "install",
+      "--disable-pip-version-check",
+      "--no-input",
+      "--upgrade",
+      "--prefer-binary",
+      "-r",
+      "/app/dist-main/python_engine/requirements.txt",
+      "--target",
+      "/home/user/.slidesmith/python-deps/abc123",
+    ]);
+  });
+});
+
+describe("python dependency target path", () => {
+  it("uses configured dependency directory when provided", () => {
+    const target = getPythonDependencyTargetPath("python3", [], {
+      homeDir: "/unused-home",
+      env: {
+        SLIDESMITH_PYTHON_DEPS_DIR: "/custom/slide-smith-python",
+      } as NodeJS.ProcessEnv,
+    });
+    expect(target.startsWith("/custom/slide-smith-python/")).toBe(true);
+  });
+
+  it("derives a deterministic path per interpreter command and args", () => {
+    const first = getPythonDependencyTargetPath("py", ["-3.12"], {
+      homeDir: "/home/tester",
+      env: {} as NodeJS.ProcessEnv,
+    });
+    const second = getPythonDependencyTargetPath("py", ["-3.12"], {
+      homeDir: "/home/tester",
+      env: {} as NodeJS.ProcessEnv,
+    });
+    const different = getPythonDependencyTargetPath("py", ["-3.11"], {
+      homeDir: "/home/tester",
+      env: {} as NodeJS.ProcessEnv,
+    });
+
+    expect(first).toBe(second);
+    expect(first).not.toBe(different);
+    expect(first.startsWith("/home/tester/.slidesmith/python-deps/")).toBe(true);
   });
 });
