@@ -1340,6 +1340,109 @@ describe("convertMod", () => {
     expect(rewritten).not.toContain("NPC Belly01");
   });
 
+  it("remaps 3BA prebreast and softbody belly aliases to BHUNP names", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_3ba_prebreast.ini"),
+      [
+        "NPC L PreBreast01=0.7",
+        "NPC R PreBreast02=0.6",
+        "NPC L PreBreast03=0.5",
+        "NPC Belly01=0.3",
+      ].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "3ba_softbody_outfit_0.nif"),
+      "3bbb amazing body",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("3ba");
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    expect(rewritten).toContain("BHUNP Breast L01");
+    expect(rewritten).toContain("BHUNP Breast R02");
+    expect(rewritten).toContain("BHUNP Breast L03");
+    expect(rewritten).toContain("NPC Belly");
+    expect(rewritten).not.toContain("NPC L PreBreast01");
+    expect(rewritten).not.toContain("NPC R PreBreast02");
+    expect(rewritten).not.toContain("NPC L PreBreast03");
+    expect(rewritten).not.toContain("NPC Belly01");
+  });
+
+  it("remaps UBE breast-chain aliases to BHUNP names", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_ube_breast_aliases.ini"),
+      [
+        "NPC L UBE Breast 01=0.7",
+        "NPC R UUNP Breast 02=0.6",
+        "NPC L UBE Breast 03=0.5",
+      ].join("\n"),
+      "utf8",
+    );
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "ube_softbody_outfit_0.nif"),
+      "ube body softbody",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "bhunp",
+    );
+
+    expect(result.sourceBodyType).toBe("uunp");
+
+    const iniFile = result.convertedFiles.find(
+      (f) => f.outputPath.includes("cbpc") && f.outputPath.endsWith(".ini"),
+    );
+    expect(iniFile).toBeDefined();
+
+    const rewritten = await readFile(
+      join(outputDir, iniFile?.outputPath ?? ""),
+      "utf8",
+    );
+
+    expect(rewritten).toContain("BHUNP Breast L01");
+    expect(rewritten).toContain("BHUNP Breast R02");
+    expect(rewritten).toContain("BHUNP Breast L03");
+    expect(rewritten).not.toContain("NPC L UBE Breast 01");
+    expect(rewritten).not.toContain("NPC R UUNP Breast 02");
+    expect(rewritten).not.toContain("NPC L UBE Breast 03");
+  });
+
   it("collapses cross-family physics references when no safe direct map exists", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

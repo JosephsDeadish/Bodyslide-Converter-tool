@@ -108,6 +108,7 @@ SLIDESMITH_PYTHON=/absolute/path/to/python
 - Detection and conversion metadata now includes UBE alias coverage under UUNP-family support and softbody physics-profile aliases for 3BA/BHUNP-style projects.
 - Physics alias remapping now also recognizes UBE softbody-style UUNP tokens (for example `NPC L/R UUNP Glute 01` and `NPC Belly01`) during UUNP-family physics conversion.
 - Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
+- Physics remapping now also recognizes modern softbody alias chains found in some 3BA/UUNP/UBE configs (for example `NPC L/R PreBreast01-03`, `NPC Belly01`, and `NPC L/R UBE Breast 01-03`) so conversions preserve breast/belly physics data more reliably.
 - Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
 - The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
 - CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact bundle (`slidesmith-release`) for workflow-run approval and testing.
