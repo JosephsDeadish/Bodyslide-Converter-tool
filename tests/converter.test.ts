@@ -2453,16 +2453,24 @@ describe("convertMod", () => {
       result.convertedFiles.some((file) => file.outputPath.endsWith(".tri")),
     ).toBe(true);
     expect(
-      result.convertedFiles.some((file) => file.outputPath.includes(".nif_0.tri")),
+      result.convertedFiles.some((file) =>
+        file.outputPath.includes(".nif_0.tri"),
+      ),
     ).toBe(false);
     expect(
-      result.convertedFiles.some((file) => file.outputPath.includes(".nif_1.tri")),
+      result.convertedFiles.some((file) =>
+        file.outputPath.includes(".nif_1.tri"),
+      ),
     ).toBe(false);
     expect(
-      result.convertedFiles.some((file) => file.outputPath.includes(".nif_0.osd")),
+      result.convertedFiles.some((file) =>
+        file.outputPath.includes(".nif_0.osd"),
+      ),
     ).toBe(false);
     expect(
-      result.convertedFiles.some((file) => file.outputPath.includes(".nif_1.osd")),
+      result.convertedFiles.some((file) =>
+        file.outputPath.includes(".nif_1.osd"),
+      ),
     ).toBe(false);
   });
 
@@ -3811,7 +3819,9 @@ describe("convertMod", () => {
       join(outputDir, ospEntry?.outputPath ?? ""),
       "utf8",
     );
-    expect(ospContent).toContain("<SourceFile>Armor/3BA_cuirass_0.nif</SourceFile>");
+    expect(ospContent).toContain(
+      "<SourceFile>Armor/3BA_cuirass_0.nif</SourceFile>",
+    );
     expect(ospContent).not.toContain(
       "<SourceFile>CalienteTools/BodySlide/ShapeData/",
     );

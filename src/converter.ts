@@ -2384,7 +2384,9 @@ async function synthesizeMissingOutfitSliderDataMeshes(
     const normalized = file.outputPath.replace(/\\/g, "/");
     const match = normalized.match(/^(.*?)(?:(_0|_1))?\.nif$/i);
     if (!match) continue;
-    const basePath = (match[1] ?? normalized.replace(/\.nif$/i, "")).toLowerCase();
+    const basePath = (
+      match[1] ?? normalized.replace(/\.nif$/i, "")
+    ).toLowerCase();
     const weightToken = (match[2]?.toLowerCase() ?? "") as "_0" | "_1" | "";
     const weights = runtimeNifGroups.get(basePath) ?? new Set<"_0" | "_1">();
     if (weightToken === "_0" || weightToken === "_1") {
