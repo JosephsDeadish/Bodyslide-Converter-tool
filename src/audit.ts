@@ -8,6 +8,11 @@ import type {
 } from "./types.js";
 
 const MESH_EXTENSIONS = new Set([".nif", ".tri", ".osd"]);
+const SLIDERSET_BLOCK_RE = /<SliderSet\b[\s\S]*?<\/SliderSet>/gi;
+const SLIDERSET_NAME_RE = /<SliderSet\b[^>]*\bname=["']([^"']+)["'][^>]*>/i;
+const SLIDERSET_OUTPUTPATH_RE = /<OutputPath>\s*([^<]*)\s*<\/OutputPath>/i;
+const SLIDERSET_OUTPUTFILE_RE = /<OutputFile>\s*([^<]*)\s*<\/OutputFile>/i;
+const SLIDERSET_SOURCEFILE_RE = /<SourceFile>\s*([^<]*)\s*<\/SourceFile>/i;
 
 function createCheck(
   id: string,
@@ -116,6 +121,66 @@ function collectSliderNames(files: ScannedFile[]): string[] {
 
 function collectPreviewPaths(files: ScannedFile[]): string[] {
   return files.map((file) => file.relativePath).sort();
+}
+
+function normalizePath(value: string): string {
+  return value
+    .replace(/\\/g, "/")
+    .replace(/^\.?\//, "")
+    .replace(/\/{2,}/g, "/")
+    .trim()
+    .toLowerCase();
+}
+
+function buildOutputMeshPath(outputPath: string, outputFile: string): string {
+  const normalizedPath = normalizePath(outputPath);
+  const normalizedFile = normalizePath(outputFile);
+  if (!normalizedPath) return normalizedFile;
+  return `${normalizedPath.replace(/\/?$/, "/")}${normalizedFile}`.replace(
+    /\/{2,}/g,
+    "/",
+  );
+}
+
+type SliderSetBuildEntry = {
+  projectPath: string;
+  sliderSetName: string;
+  outputMeshPath: string;
+  sourceFile: string;
+  hasOutputPath: boolean;
+  hasOutputFile: boolean;
+  hasSourceFile: boolean;
+};
+
+function parseSliderSetBuildEntries(file: ScannedFile): SliderSetBuildEntry[] {
+  const entries: SliderSetBuildEntry[] = [];
+  for (const blockMatch of file.preview.matchAll(SLIDERSET_BLOCK_RE)) {
+    const block = blockMatch[0] ?? "";
+    if (!block) continue;
+
+    const sliderSetName = block.match(SLIDERSET_NAME_RE)?.[1]?.trim() ?? "Unnamed";
+    const outputPathRaw = block.match(SLIDERSET_OUTPUTPATH_RE)?.[1]?.trim() ?? "";
+    const outputFileRaw = block.match(SLIDERSET_OUTPUTFILE_RE)?.[1]?.trim() ?? "";
+    const sourceFileRaw = block.match(SLIDERSET_SOURCEFILE_RE)?.[1]?.trim() ?? "";
+    const outputPathLooksLikeMesh = /\.nif$/i.test(outputPathRaw);
+
+    const outputMeshPath = outputFileRaw
+      ? buildOutputMeshPath(outputPathRaw, outputFileRaw)
+      : outputPathLooksLikeMesh
+        ? normalizePath(outputPathRaw)
+        : "";
+
+    entries.push({
+      projectPath: file.relativePath,
+      sliderSetName,
+      outputMeshPath,
+      sourceFile: normalizePath(sourceFileRaw),
+      hasOutputPath: outputPathRaw.length > 0,
+      hasOutputFile: outputFileRaw.length > 0 || outputPathLooksLikeMesh,
+      hasSourceFile: sourceFileRaw.length > 0,
+    });
+  }
+  return entries;
 }
 
 function buildSourceAssetCheck(
@@ -474,6 +539,107 @@ function buildSliderGroupCheck(
   );
 }
 
+function buildBodySlideBuildCheck(outputFiles: ScannedFile[]): ConversionAuditCheck {
+  const projects = outputFiles.filter(isBodySlideProject);
+  if (projects.length === 0) {
+    return createCheck(
+      "bodyslide-build",
+      "Validate BodySlide build readiness",
+      "attention",
+      "No BodySlide SliderSet project file was found in the converted output.",
+      [
+        "BodySlide requires at least one SliderSet project (.osp/.xml) to build meshes.",
+      ],
+    );
+  }
+
+  const runtimeMeshPaths = new Set(
+    outputFiles
+      .filter(
+        (file) =>
+          file.extension === ".nif" &&
+          !file.relativePath
+            .toLowerCase()
+            .replace(/\\/g, "/")
+            .includes("/calientetools/bodyslide/shapedata/"),
+      )
+      .map((file) => normalizePath(file.relativePath)),
+  );
+
+  const entries = projects.flatMap(parseSliderSetBuildEntries);
+  const missingOutputPath = entries.filter((entry) => !entry.hasOutputPath);
+  const missingOutputFile = entries.filter((entry) => !entry.hasOutputFile);
+  const missingSourceFile = entries.filter((entry) => !entry.hasSourceFile);
+  const missingOutputMeshes = entries.filter(
+    (entry) =>
+      entry.outputMeshPath.length > 0 && !runtimeMeshPaths.has(entry.outputMeshPath),
+  );
+  const invalidSourcePaths = entries.filter(
+    (entry) =>
+      entry.hasSourceFile &&
+      (entry.sourceFile.startsWith("calientetools/bodyslide/shapedata/") ||
+        entry.sourceFile.startsWith("shapedata/") ||
+        entry.sourceFile.startsWith("/")),
+  );
+  const projectsWithNoEntries = projects.filter(
+    (project) =>
+      !entries.some((entry) => entry.projectPath === project.relativePath),
+  );
+
+  const status: ConversionAuditCheck["status"] =
+    missingOutputPath.length === 0 &&
+    missingOutputFile.length === 0 &&
+    missingSourceFile.length === 0 &&
+    missingOutputMeshes.length === 0 &&
+    invalidSourcePaths.length === 0 &&
+    projectsWithNoEntries.length === 0
+      ? "pass"
+      : "attention";
+
+  return createCheck(
+    "bodyslide-build",
+    "Validate BodySlide build readiness",
+    status,
+    status === "pass"
+      ? `Validated ${entries.length} SliderSet definition(s) with complete OutputPath/OutputFile/SourceFile coverage and matching runtime mesh outputs.`
+      : "BodySlide project metadata is incomplete for one or more slider sets, which can break in-app mesh builds.",
+    [
+      `Parsed SliderSet definitions: ${entries.length}.`,
+      ...(projectsWithNoEntries.length > 0
+        ? [
+            `Projects without readable <SliderSet> blocks in scanner preview: ${projectsWithNoEntries.map((project) => project.relativePath).join(", ")}.`,
+          ]
+        : []),
+      ...(missingOutputPath.length > 0
+        ? [
+            `Missing <OutputPath>: ${missingOutputPath.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+          ]
+        : []),
+      ...(missingOutputFile.length > 0
+        ? [
+            `Missing <OutputFile> (or legacy OutputPath mesh path): ${missingOutputFile.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+          ]
+        : []),
+      ...(missingSourceFile.length > 0
+        ? [
+            `Missing <SourceFile>: ${missingSourceFile.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+          ]
+        : []),
+      ...(invalidSourcePaths.length > 0
+        ? [
+            `SourceFile should be ShapeData-relative (not absolute/rooted): ${invalidSourcePaths.slice(0, 4).map((entry) => `${entry.sliderSetName} (${entry.projectPath})`).join(", ")}.`,
+          ]
+        : []),
+      ...(missingOutputMeshes.length > 0
+        ? [
+            `SliderSet output mesh not found in converted runtime output: ${missingOutputMeshes.slice(0, 4).map((entry) => `${entry.outputMeshPath} (${entry.sliderSetName})`).join(", ")}.`,
+          ]
+        : []),
+    ],
+    collectPreviewPaths(projects.slice(0, 6)),
+  );
+}
+
 function buildCbpcStubCheck(
   outputFiles: ScannedFile[],
   targetType: BodyType,
@@ -545,6 +711,7 @@ export function createConversionAudit(
     buildProjectionCheck(sourceType, targetType, sourceFiles, outputFiles),
     buildSliderSetCheck(outputFiles),
     buildSliderGroupCheck(outputFiles),
+    buildBodySlideBuildCheck(outputFiles),
     buildSeamCheck(sourceType, targetType, outputFiles),
     buildBodyKnowledgeCheck(sourceType, targetType),
     buildPhysicsWeightCheck(outputFiles, targetType),

@@ -2036,7 +2036,16 @@ describe("convertMod", () => {
         "SliderSets",
         "3BA_Armor.osp",
       ),
-      '<SliderSetInfo><SliderSet name="3BA Armor"><Slider name="Breast Size" /></SliderSet></SliderSetInfo>',
+      [
+        "<SliderSetInfo>",
+        '  <SliderSet name="3BA Armor">',
+        "    <OutputPath>meshes/armor/</OutputPath>",
+        "    <OutputFile>3BA_outfit_1.nif</OutputFile>",
+        "    <SourceFile>armor/3BA_outfit_1.nif</SourceFile>",
+        '    <Slider name="Breast Size" />',
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
       "utf8",
     );
     await writeFile(
@@ -2067,6 +2076,64 @@ describe("convertMod", () => {
     expect(
       result.audit.checks.find((check) => check.id === "3ba-belly")?.status,
     ).toBe("pass");
+    expect(
+      result.audit.checks.find((check) => check.id === "bodyslide-build")
+        ?.status,
+    ).toBe("pass");
+  });
+
+  it("flags BodySlide build readiness issues when slider-set metadata is incomplete", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_gloves_0.nif"),
+      "cbbe mesh",
+      "utf8",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "cbbe_gloves.osp",
+      ),
+      [
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Gloves">',
+        "    <OutputPath>meshes/armor/</OutputPath>",
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const bodySlideBuildCheck = result.audit.checks.find(
+      (check) => check.id === "bodyslide-build",
+    );
+    expect(bodySlideBuildCheck).toBeDefined();
+    expect(bodySlideBuildCheck?.status).toBe("attention");
+    expect(bodySlideBuildCheck?.details.join("\n")).toContain(
+      "Missing <OutputFile>",
+    );
+    expect(bodySlideBuildCheck?.details.join("\n")).toContain(
+      "Missing <SourceFile>",
+    );
   });
 
   it("synthesizes a SliderGroup XML when OSP exists but no group file is present", async () => {
