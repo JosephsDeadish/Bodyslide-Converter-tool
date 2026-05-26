@@ -1753,6 +1753,7 @@ function escapeXml(value: string): string {
 
 const SLIDERSET_OUTPUTFILE_RE = /<OutputFile>\s*([^<]+)\s*<\/OutputFile>/gi;
 const SLIDERSET_BLOCK_RE = /<SliderSet\b[\s\S]*?<\/SliderSet>/gi;
+const SLIDERSET_NAME_RE = /<SliderSet\b[^>]*\bname=["']([^"']+)["'][^>]*>/gi;
 const SLIDERSET_OUTPUTPATH_RE = /<OutputPath>\s*([^<]*)\s*<\/OutputPath>/i;
 const SLIDERSET_SOURCEFILE_RE = /<SourceFile>\s*([^<]*)\s*<\/SourceFile>/i;
 const SLIDER_NAME_RE = /<Slider\b[^>]*\bname=["']([^"']+)["'][^>]*\/?>/gi;
@@ -1779,6 +1780,17 @@ function extractSliderNames(content: string): string[] {
     }
   }
   return sliderNames;
+}
+
+function extractSliderSetNames(content: string): string[] {
+  const sliderSetNames: string[] = [];
+  for (const match of content.matchAll(SLIDERSET_NAME_RE)) {
+    const sliderSetName = match[1]?.trim().replace(/\s+/g, " ");
+    if (sliderSetName) {
+      sliderSetNames.push(sliderSetName);
+    }
+  }
+  return sliderSetNames;
 }
 
 function normalizeSliderSetOutputPath(path: string): string {
@@ -2168,6 +2180,86 @@ async function synthesizeMissingSliderSetProject(
   }
 
   return sliderSetEntries.length;
+}
+
+async function writeCanonicalSliderGroupRegistration(
+  outputDir: string,
+  targetBodyType: BodyType,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<number> {
+  const sliderSetFiles = convertedFiles
+    .filter(
+      (file) =>
+        file.kind === "text" &&
+        (file.outputPath.toLowerCase().endsWith(".osp") ||
+          /\/slidersets\/.+\.xml$/i.test(file.outputPath)),
+    )
+    .sort((left, right) => left.outputPath.localeCompare(right.outputPath));
+  if (sliderSetFiles.length === 0) {
+    return 0;
+  }
+
+  const sliderSetNames = new Map<string, string>();
+  for (const file of sliderSetFiles) {
+    const outputPath = join(outputDir, file.outputPath);
+    let content = "";
+    try {
+      content = await readFile(outputPath, "utf8");
+    } catch {
+      continue;
+    }
+    for (const sliderSetName of extractSliderSetNames(content)) {
+      const key = sliderSetName.toLowerCase();
+      if (!sliderSetNames.has(key)) {
+        sliderSetNames.set(key, sliderSetName);
+      }
+    }
+  }
+  if (sliderSetNames.size === 0) {
+    return 0;
+  }
+
+  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+  const groupName = `${targetAlias} Outfits`;
+  const outputRelPath = `CalienteTools/BodySlide/SliderGroups/${targetAlias}_Outfits.xml`;
+  const outputAbsPath = join(
+    outputDir,
+    "CalienteTools",
+    "BodySlide",
+    "SliderGroups",
+    `${targetAlias}_Outfits.xml`,
+  );
+  const content = [
+    '<?xml version="1.0" encoding="utf-8"?>',
+    "<SliderGroups>",
+    `  <Group name="${escapeXml(groupName)}">`,
+    ...[...sliderSetNames.values()]
+      .sort((left, right) => left.localeCompare(right))
+      .map((sliderSetName) => `    <Member>${escapeXml(sliderSetName)}</Member>`),
+    "  </Group>",
+    "</SliderGroups>",
+    "",
+  ].join("\n");
+
+  await mkdir(dirname(outputAbsPath), { recursive: true });
+  await writeFile(outputAbsPath, content, "utf8");
+
+  const existingIndex = convertedFiles.findIndex(
+    (file) => file.outputPath.toLowerCase() === outputRelPath.toLowerCase(),
+  );
+  const convertedEntry = {
+    sourcePath: "(native post-process)",
+    outputPath: outputRelPath,
+    kind: "text" as const,
+    action: "synthesized" as const,
+  };
+  if (existingIndex >= 0) {
+    convertedFiles[existingIndex] = convertedEntry;
+  } else {
+    convertedFiles.push(convertedEntry);
+  }
+
+  return 1;
 }
 
 function toShapeDataPath(meshPath: string): string {
@@ -4079,6 +4171,19 @@ export async function convertMod(
       sourcePath: "(native post-process)",
       outputPath: "(generated bodyslide slidersets)",
       reason: `Synthesized ${synthesizedSliderSets} BodySlide SliderSet entr${synthesizedSliderSets === 1 ? "y" : "ies"} from converted meshes so the outfit appears directly in BodySlide.`,
+    });
+  }
+
+  const synthesizedSliderGroups = await writeCanonicalSliderGroupRegistration(
+    outputDir,
+    targetBodyType,
+    convertedFiles,
+  );
+  if (synthesizedSliderGroups > 0) {
+    skippedFiles.push({
+      sourcePath: "(native post-process)",
+      outputPath: "(generated bodyslide slidergroups)",
+      reason: `Wrote ${synthesizedSliderGroups} canonical BodySlide SliderGroup file so converted SliderSets appear under the ${BODY_TYPE_OUTPUT_ALIASES[targetBodyType]} Outfits group.`,
     });
   }
 

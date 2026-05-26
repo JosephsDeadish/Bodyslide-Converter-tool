@@ -2213,7 +2213,18 @@ describe("convertMod", () => {
       (f) =>
         f.outputPath.includes("SliderGroups") && f.action === "synthesized",
     );
-    expect(synthesizedGroups).toHaveLength(0);
+    expect(synthesizedGroups).toHaveLength(1);
+    expect(synthesizedGroups[0]?.outputPath).toBe(
+      "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
+    );
+
+    const groupContent = await readFile(
+      join(outputDir, synthesizedGroups[0]?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(groupContent).toContain('<Group name="3BA Outfits">');
+    expect(groupContent).toContain("<Member>3BA Iron Cuirass</Member>");
+    expect(groupContent).toContain("<Member>3BA Iron Gauntlets</Member>");
 
     // The audit check for slider-group should pass.
     expect(
@@ -2319,7 +2330,15 @@ describe("convertMod", () => {
         file.outputPath.includes("SliderGroups") &&
         file.action === "synthesized",
     );
-    expect(synthesizedGroups).toHaveLength(0);
+    expect(synthesizedGroups).toHaveLength(1);
+    expect(synthesizedGroups[0]?.outputPath).toBe(
+      "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
+    );
+    const groupContent = await readFile(
+      join(outputDir, synthesizedGroups[0]?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(groupContent).toContain("<Member>3BA Plated</Member>");
   });
 
   it("reuses same-family project slider hints when synthesizing supplemental SliderSets", async () => {
@@ -2699,7 +2718,7 @@ describe("convertMod", () => {
     );
   });
 
-  it("does not synthesize SliderGroup files when project files already exist", async () => {
+  it("rewrites canonical SliderGroup files even when source project group files already exist", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -2742,12 +2761,20 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    // Only one SliderGroup file should exist (the converted original, not an extra synthesized one).
     const synthGroupFiles = result.convertedFiles.filter(
       (f) =>
         f.outputPath.includes("SliderGroups") && f.action === "synthesized",
     );
-    expect(synthGroupFiles).toHaveLength(0);
+    expect(synthGroupFiles).toHaveLength(1);
+    expect(synthGroupFiles[0]?.outputPath).toBe(
+      "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
+    );
+    const groupContent = await readFile(
+      join(outputDir, synthGroupFiles[0]?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(groupContent).toContain('<Group name="3BA Outfits">');
+    expect(groupContent).toContain("<Member>3BA Shirt</Member>");
   });
 
   it("preserves nested SliderSets folder structure to avoid project filename collisions", async () => {
@@ -3894,7 +3921,29 @@ describe("convertMod", () => {
         file.outputPath.includes("SliderGroups") &&
         file.action === "synthesized",
     );
-    expect(generatedGroups).toHaveLength(0);
+    expect(generatedGroups).toHaveLength(1);
+    expect(generatedGroups[0]?.outputPath).toBe(
+      "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
+    );
+
+    const canonicalGroupContent = await readFile(
+      join(outputDir, generatedGroups[0]?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(canonicalGroupContent).toContain('<Group name="3BA Outfits">');
+    expect(canonicalGroupContent).toContain("<Member>3BA Plated</Member>");
+
+    const unrelatedGroupContent = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "3BA_unrelated.xml",
+      ),
+      "utf8",
+    );
+    expect(unrelatedGroupContent).toContain("3BA Something Else");
   });
 
   it("synthesizes supplemental SliderSet data when source projects lack SourceFile entries", async () => {
