@@ -124,10 +124,138 @@ describe("repair artifact generation", () => {
       adapters: Array<{ source: string; target: string }>;
     };
     expect(Object.keys(patch.bodies)).toEqual(["cbbe", "uunp"]);
+    expect(
+      (
+        patch.bodies.cbbe as {
+          physicsConfig?: { boneNamingConvention?: string };
+          correctiveSmoothingZones?: string[];
+        }
+      ).physicsConfig?.boneNamingConvention,
+    ).toBe("TODO-bone-naming-convention");
+    expect(
+      (
+        patch.bodies.uunp as { correctiveSmoothingZones?: string[] }
+      ).correctiveSmoothingZones,
+    ).toContain("breast-left");
     expect(patch.adapters).toContainEqual({
       source: "cbbe",
       target: "uunp",
       profile: "TODO-adapter-profile-name",
     });
+  });
+
+  it("generates targeted repair templates for adapter, smoothing, morph, and physics gaps", async () => {
+    const reportsDir = await makeTempDir();
+    const artifacts = await generateRepairArtifacts({
+      reportsDir,
+      sourceBodyType: "cbbe",
+      targetBodyType: "bhunp",
+      pythonSummary: makeSummary([
+        {
+          id: "reference-body",
+          title: "Reference body mapping",
+          status: "attention",
+          summary:
+            "Reference metadata is present, but this high-risk pair has no explicit adapter profile.",
+          details: [
+            "Missing explicit adapter profile for high-risk conversion pair cbbe -> bhunp.",
+          ],
+        },
+        {
+          id: "corrective-smoothing",
+          title: "Corrective smoothing",
+          status: "attention",
+          summary:
+            "Corrective smoothing zone definitions are missing from body metadata.",
+          details: [
+            "Populate correctiveSmoothingZones in body_reference_db.json for both source and target bodies.",
+          ],
+        },
+        {
+          id: "morph-transfer",
+          title: "Delta morph transfer",
+          status: "attention",
+          summary: "Morph-transfer prerequisites are incomplete.",
+          details: [
+            "Populate overlapping canonical morphEquivalents for both bodies.",
+            "Populate overlapping canonical sliderMappings for both bodies.",
+          ],
+        },
+        {
+          id: "physics-preservation",
+          title: "Physics and partitions",
+          status: "attention",
+          summary:
+            "Physics metadata is present but target boneMap coverage is incomplete.",
+          details: [
+            "Missing physics entries in target boneMap: BHUNP Breast L01",
+            "Bone naming convention mismatch (cbbe-3ba → bhunp): physics config files (CBPC ini / HDT-SMP XML) must be regenerated for the target body.",
+          ],
+        },
+      ]),
+    });
+
+    expect(artifacts.map((artifact) => artifact.relativePath)).toEqual(
+      expect.arrayContaining([
+        "_SlideSmith/repairs/adapter-profile-template.json",
+        "_SlideSmith/repairs/corrective-smoothing-template.json",
+        "_SlideSmith/repairs/morph-mapping-template.json",
+        "_SlideSmith/repairs/physics-metadata-template.json",
+      ]),
+    );
+
+    const adapterTemplate = JSON.parse(
+      await readFile(
+        join(reportsDir, "repairs", "adapter-profile-template.json"),
+        "utf8",
+      ),
+    ) as { adapters: Array<{ source: string; target: string; profile: string }> };
+    expect(adapterTemplate.adapters).toContainEqual({
+      source: "cbbe",
+      target: "bhunp",
+      profile: "TODO-adapter-profile-name",
+    });
+
+    const morphTemplate = JSON.parse(
+      await readFile(
+        join(reportsDir, "repairs", "morph-mapping-template.json"),
+        "utf8",
+      ),
+    ) as {
+      bodies: Record<
+        string,
+        {
+          sliderMappings?: Record<string, string>;
+          morphEquivalents?: Record<string, string>;
+        }
+      >;
+    };
+    expect(morphTemplate.bodies.cbbe.sliderMappings?.breast).toBe(
+      "TODO-slider-name",
+    );
+    expect(morphTemplate.bodies.bhunp.morphEquivalents?.zapBelly).toBe(
+      "TODO-zap-name",
+    );
+
+    const physicsTemplate = JSON.parse(
+      await readFile(
+        join(reportsDir, "repairs", "physics-metadata-template.json"),
+        "utf8",
+      ),
+    ) as {
+      bodies: Record<
+        string,
+        {
+          physicsBones?: string[];
+          physicsConfig?: { notes?: string };
+        }
+      >;
+    };
+    expect(physicsTemplate.bodies.bhunp.physicsBones).toContain(
+      "TODO-physics-bone",
+    );
+    expect(physicsTemplate.bodies.cbbe.physicsConfig?.notes).toBe(
+      "TODO-physics-notes",
+    );
   });
 });

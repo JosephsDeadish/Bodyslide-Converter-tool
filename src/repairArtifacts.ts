@@ -2,7 +2,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { BodyType, PythonEngineRunSummary } from "./types.js";
 
-type RepairIssueId = "missing-nif-mesh" | "incomplete-body-metadata";
+type RepairIssueId =
+  | "missing-nif-mesh"
+  | "incomplete-body-metadata"
+  | "missing-adapter-profile"
+  | "missing-smoothing-profile"
+  | "incomplete-morph-mappings"
+  | "incomplete-physics-metadata";
 
 type RepairIssue = {
   id: RepairIssueId;
@@ -35,6 +41,30 @@ function hasIncompleteMetadataMessage(value: string): boolean {
   );
 }
 
+function hasAdapterProfileMessage(value: string): boolean {
+  return /adapter profile/i.test(value);
+}
+
+function hasSmoothingProfileMessage(value: string): boolean {
+  return /corrective smoothing zone/i.test(value) || /correctivesmoothingzones/i.test(value);
+}
+
+function hasMorphMappingMessage(value: string): boolean {
+  return /morphtransfer prerequisites are incomplete/i.test(value.replace(/[\s-]+/g, "")) ||
+    /morphequivalents/i.test(value) ||
+    /slidermappings/i.test(value);
+}
+
+function hasPhysicsMetadataMessage(value: string): boolean {
+  return (
+    /physics metadata/i.test(value) ||
+    /physics config files .* must be regenerated/i.test(value) ||
+    /bone naming convention mismatch/i.test(value) ||
+    /missing physics entries in target bonemap/i.test(value) ||
+    /softbody deformation/i.test(value)
+  );
+}
+
 function collectRepairIssues(summary: PythonEngineRunSummary): RepairIssue[] {
   const missingNifStages = summary.stages.filter(
     (stage) =>
@@ -45,6 +75,26 @@ function collectRepairIssues(summary: PythonEngineRunSummary): RepairIssue[] {
     (stage) =>
       hasIncompleteMetadataMessage(stage.summary) ||
       stage.details.some((detail) => hasIncompleteMetadataMessage(detail)),
+  );
+  const adapterStages = summary.stages.filter(
+    (stage) =>
+      hasAdapterProfileMessage(stage.summary) ||
+      stage.details.some((detail) => hasAdapterProfileMessage(detail)),
+  );
+  const smoothingStages = summary.stages.filter(
+    (stage) =>
+      hasSmoothingProfileMessage(stage.summary) ||
+      stage.details.some((detail) => hasSmoothingProfileMessage(detail)),
+  );
+  const morphStages = summary.stages.filter(
+    (stage) =>
+      hasMorphMappingMessage(stage.summary) ||
+      stage.details.some((detail) => hasMorphMappingMessage(detail)),
+  );
+  const physicsStages = summary.stages.filter(
+    (stage) =>
+      hasPhysicsMetadataMessage(stage.summary) ||
+      stage.details.some((detail) => hasPhysicsMetadataMessage(detail)),
   );
 
   const issues: RepairIssue[] = [];
@@ -64,6 +114,38 @@ function collectRepairIssues(summary: PythonEngineRunSummary): RepairIssue[] {
       stageIds: metadataStages.map((stage) => stage.id),
     });
   }
+  if (adapterStages.length > 0) {
+    issues.push({
+      id: "missing-adapter-profile",
+      summary:
+        "High-risk body-pair adapter profiles are missing for one or more transfer stages.",
+      stageIds: adapterStages.map((stage) => stage.id),
+    });
+  }
+  if (smoothingStages.length > 0) {
+    issues.push({
+      id: "missing-smoothing-profile",
+      summary:
+        "Corrective smoothing zones are missing, so deformation cleanup cannot run fully.",
+      stageIds: smoothingStages.map((stage) => stage.id),
+    });
+  }
+  if (morphStages.length > 0) {
+    issues.push({
+      id: "incomplete-morph-mappings",
+      summary:
+        "Morph/slider mappings are incomplete, so zap and TRI transfer automation is degraded.",
+      stageIds: morphStages.map((stage) => stage.id),
+    });
+  }
+  if (physicsStages.length > 0) {
+    issues.push({
+      id: "incomplete-physics-metadata",
+      summary:
+        "Physics metadata is incomplete, so reweighting and physics conversion need follow-up.",
+      stageIds: physicsStages.map((stage) => stage.id),
+    });
+  }
   return issues;
 }
 
@@ -76,24 +158,40 @@ function buildBodyMetadataPatchTemplate(
     topology: "TODO-topology-family",
     topologyReference: "TODO-reference-project-name",
     canonicalVertexMap: "TODO-canonical-vertex-map",
+    skeletonProfile: "TODO-skeleton-profile",
+    partitionProfile: "TODO-partition-profile",
+    physicsBones: ["TODO-physics-bone"],
     sliderMappings: {
       waist: "TODO-body-slider-name",
+      breast: "TODO-body-slider-name",
     },
     boneMap: {
       pelvis: "TODO-body-bone-name",
+      spine: "TODO-body-bone-name",
     },
     morphEquivalents: {
       heavy: "TODO-body-morph-name",
+      natural: "TODO-body-morph-name",
     },
     correctiveSmoothingZones: [
       "armpit-left",
       "armpit-right",
+      "breast-left",
+      "breast-right",
       "crotch",
       "elbow-left",
       "elbow-right",
       "knee-left",
       "knee-right",
     ],
+    physicsConfig: {
+      cbpcCompatible: false,
+      hdtSmpCompatible: false,
+      softbodySupported: false,
+      physicsLevel: "TODO-physics-level",
+      boneNamingConvention: "TODO-bone-naming-convention",
+      notes: "TODO-physics-notes",
+    },
   };
 
   const bodies = Object.fromEntries(
@@ -114,6 +212,115 @@ function buildBodyMetadataPatchTemplate(
     schemaVersion: 3,
     bodies,
     adapters,
+  };
+}
+
+function buildAdapterProfileTemplate(
+  sourceBodyType: BodyType,
+  targetBodyType: BodyType,
+): Record<string, unknown> {
+  return {
+    schemaVersion: 3,
+    adapters: [
+      {
+        source: sourceBodyType,
+        target: targetBodyType,
+        profile: "TODO-adapter-profile-name",
+      },
+    ],
+    notes: [
+      "Create a body-pair-specific profile for cross-topology, cross-physics, or cross-gender conversions.",
+      "Use a reverse-direction upgrade/downgrade profile if the existing profile only exists in the opposite direction.",
+    ],
+  };
+}
+
+function buildCorrectiveSmoothingTemplate(
+  sourceBodyType: BodyType,
+  targetBodyType: BodyType,
+): Record<string, unknown> {
+  const uniqueBodyTypes = [...new Set([sourceBodyType, targetBodyType])];
+  return {
+    schemaVersion: 3,
+    bodies: Object.fromEntries(
+      uniqueBodyTypes.map((bodyType) => [
+        bodyType,
+        {
+          correctiveSmoothingZones: [
+            "armpit-left",
+            "armpit-right",
+            "breast-left",
+            "breast-right",
+            "crotch",
+            "elbow-left",
+            "elbow-right",
+            "knee-left",
+            "knee-right",
+          ],
+        },
+      ]),
+    ),
+  };
+}
+
+function buildMorphMappingTemplate(
+  sourceBodyType: BodyType,
+  targetBodyType: BodyType,
+): Record<string, unknown> {
+  const uniqueBodyTypes = [...new Set([sourceBodyType, targetBodyType])];
+  return {
+    schemaVersion: 3,
+    bodies: Object.fromEntries(
+      uniqueBodyTypes.map((bodyType) => [
+        bodyType,
+        {
+          sliderMappings: {
+            waist: "TODO-slider-name",
+            belly: "TODO-slider-name",
+            butt: "TODO-slider-name",
+            breast: "TODO-slider-name",
+          },
+          morphEquivalents: {
+            heavy: "TODO-morph-name",
+            thin: "TODO-morph-name",
+            natural: "TODO-morph-name",
+            zapBelly: "TODO-zap-name",
+          },
+        },
+      ]),
+    ),
+  };
+}
+
+function buildPhysicsMetadataTemplate(
+  sourceBodyType: BodyType,
+  targetBodyType: BodyType,
+): Record<string, unknown> {
+  const uniqueBodyTypes = [...new Set([sourceBodyType, targetBodyType])];
+  return {
+    schemaVersion: 3,
+    bodies: Object.fromEntries(
+      uniqueBodyTypes.map((bodyType) => [
+        bodyType,
+        {
+          physicsBones: ["TODO-physics-bone"],
+          boneMap: {
+            pelvis: "TODO-body-bone-name",
+            belly: "TODO-body-bone-name",
+            leftBreast: "TODO-body-bone-name",
+            rightBreast: "TODO-body-bone-name",
+          },
+          physicsConfig: {
+            cbpcCompatible: false,
+            hdtSmpCompatible: false,
+            softbodySupported: false,
+            physicsLevel: "TODO-physics-level",
+            boneNamingConvention: "TODO-bone-naming-convention",
+            notes: "TODO-physics-notes",
+          },
+        },
+      ]),
+    ),
   };
 }
 
@@ -160,6 +367,8 @@ export async function generateRepairArtifacts(
       (issue, index) =>
         `${index + 1}. ${issue.summary} (stages: ${issue.stageIds.join(", ")})`,
     ),
+    "",
+    "Key follow-up areas: reference metadata, adapter profiles, reweighting, morph transfer, physics configs, and smoothing/deform cleanup.",
     "",
     "Apply the generated templates in this folder, then rerun conversion.",
   ];
@@ -210,6 +419,81 @@ export async function generateRepairArtifacts(
       relativePath: `_SlideSmith/repairs/${metadataPatchFileName}`,
       description:
         "Metadata patch scaffold for topology, canonical maps, slider/bone/morph mappings, and adapter profiles.",
+    });
+  }
+
+  if (issues.some((issue) => issue.id === "missing-adapter-profile")) {
+    const adapterPatchFileName = "adapter-profile-template.json";
+    await writeFile(
+      join(repairsDir, adapterPatchFileName),
+      `${JSON.stringify(
+        buildAdapterProfileTemplate(args.sourceBodyType, args.targetBodyType),
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    artifacts.push({
+      relativePath: `_SlideSmith/repairs/${adapterPatchFileName}`,
+      description:
+        "Adapter-profile scaffold for high-risk body-pair automation routes.",
+    });
+  }
+
+  if (issues.some((issue) => issue.id === "missing-smoothing-profile")) {
+    const smoothingPatchFileName = "corrective-smoothing-template.json";
+    await writeFile(
+      join(repairsDir, smoothingPatchFileName),
+      `${JSON.stringify(
+        buildCorrectiveSmoothingTemplate(
+          args.sourceBodyType,
+          args.targetBodyType,
+        ),
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    artifacts.push({
+      relativePath: `_SlideSmith/repairs/${smoothingPatchFileName}`,
+      description:
+        "Corrective smoothing-zone scaffold for deformation cleanup coverage.",
+    });
+  }
+
+  if (issues.some((issue) => issue.id === "incomplete-morph-mappings")) {
+    const morphPatchFileName = "morph-mapping-template.json";
+    await writeFile(
+      join(repairsDir, morphPatchFileName),
+      `${JSON.stringify(
+        buildMorphMappingTemplate(args.sourceBodyType, args.targetBodyType),
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    artifacts.push({
+      relativePath: `_SlideSmith/repairs/${morphPatchFileName}`,
+      description:
+        "Slider/morph mapping scaffold for zap, preset, and TRI transfer coverage.",
+    });
+  }
+
+  if (issues.some((issue) => issue.id === "incomplete-physics-metadata")) {
+    const physicsPatchFileName = "physics-metadata-template.json";
+    await writeFile(
+      join(repairsDir, physicsPatchFileName),
+      `${JSON.stringify(
+        buildPhysicsMetadataTemplate(args.sourceBodyType, args.targetBodyType),
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+    artifacts.push({
+      relativePath: `_SlideSmith/repairs/${physicsPatchFileName}`,
+      description:
+        "Physics metadata scaffold for bone remaps, CBPC/HDT-SMP naming, and softbody notes.",
     });
   }
 
