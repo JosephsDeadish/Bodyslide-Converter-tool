@@ -130,7 +130,10 @@ function ReferenceBodyField({
       <div className="field-label">{label}</div>
       <div className="field-hint">{hint}</div>
       <div className="path-row">
-        <Tooltip dir="right" text={value ? `Full path: ${value}` : emptyTooltip}>
+        <Tooltip
+          dir="right"
+          text={value ? `Full path: ${value}` : emptyTooltip}
+        >
           <input
             className="path-input"
             type="text"

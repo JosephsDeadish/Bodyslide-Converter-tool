@@ -2618,13 +2618,7 @@ describe("convertMod", () => {
     );
 
     await mkdir(
-      join(
-        inputDir,
-        "CalienteTools",
-        "BodySlide",
-        "ShapeData",
-        "Armor",
-      ),
+      join(inputDir, "CalienteTools", "BodySlide", "ShapeData", "Armor"),
       { recursive: true },
     );
     await writeFile(

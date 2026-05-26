@@ -447,17 +447,16 @@ async function executeConversion(
 
   const outputFiles = await scanModFiles(output);
   const userDataDir = app.getPath("userData");
+  const pythonReferenceBodyNifPath =
+    resolvedReferenceBodyNifPath ?? resolvedMaleReferenceBodyNifPath;
   const pythonSummary = await runPythonEngine(
     {
       inputPath: output,
       outputPath: output,
       sourceBodyType: pythonSourceType,
       targetBodyType: target,
-      ...((resolvedReferenceBodyNifPath ?? resolvedMaleReferenceBodyNifPath)
-        ? {
-            referenceBodyNifPath:
-              resolvedReferenceBodyNifPath ?? resolvedMaleReferenceBodyNifPath,
-          }
+      ...(pythonReferenceBodyNifPath
+        ? { referenceBodyNifPath: pythonReferenceBodyNifPath }
         : {}),
       files: outputFiles,
     },
