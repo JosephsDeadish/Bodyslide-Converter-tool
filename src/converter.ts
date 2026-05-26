@@ -2374,14 +2374,7 @@ async function synthesizeMissingSliderGroup(
         (f.outputPath.endsWith(".xml") &&
           /\/slidersets\//i.test(f.outputPath))),
   );
-  const hasSliderGroup = convertedFiles.some(
-    (f) =>
-      f.kind === "text" &&
-      f.outputPath.endsWith(".xml") &&
-      /\/slidergroups\//i.test(f.outputPath),
-  );
-
-  if (projectFiles.length === 0 || hasSliderGroup) return;
+  if (projectFiles.length === 0) return;
 
   // Extract slider-set names from the already-written converted project files.
   const setNames: string[] = [];
@@ -2419,15 +2412,26 @@ async function synthesizeMissingSliderGroup(
     fileName,
   );
 
+  const existingEntryIndex = convertedFiles.findIndex(
+    (file) => file.outputPath.toLowerCase() === outputRelPath.toLowerCase(),
+  );
+  const hadExistingGroupFile =
+    existingEntryIndex >= 0 || (await pathExists(outputAbsPath));
+
   await mkdir(dirname(outputAbsPath), { recursive: true });
   await writeFile(outputAbsPath, xmlContent, "utf8");
 
-  convertedFiles.push({
+  const nextGroupEntry = {
     sourcePath: "(native post-process)",
     outputPath: outputRelPath,
     kind: "text",
-    action: "synthesized",
-  });
+    action: hadExistingGroupFile ? ("rewritten" as const) : ("synthesized" as const),
+  };
+  if (existingEntryIndex >= 0) {
+    convertedFiles[existingEntryIndex] = nextGroupEntry;
+    return;
+  }
+  convertedFiles.push(nextGroupEntry);
 }
 
 // Default CBPC weights used when generating a physics config stub.
@@ -3239,7 +3243,30 @@ function isLikelyUtf8Text(buffer: Buffer): boolean {
   const decoded = buffer.toString("utf8");
   const replacementCount = (decoded.match(UTF8_REPLACEMENT_CHAR_RE) ?? [])
     .length;
-  return replacementCount <= Math.max(3, Math.floor(decoded.length * 0.01));
+  if (replacementCount > Math.max(3, Math.floor(decoded.length * 0.01))) {
+    return false;
+  }
+
+  let controlCount = 0;
+  let printableCount = 0;
+  for (const char of decoded) {
+    const code = char.charCodeAt(0);
+    if (code === 9 || code === 10 || code === 13) {
+      printableCount += 1;
+      continue;
+    }
+    if (code >= 32 && code !== 127) {
+      printableCount += 1;
+      continue;
+    }
+    controlCount += 1;
+  }
+  if (decoded.length === 0) {
+    return true;
+  }
+  const controlRatio = controlCount / decoded.length;
+  const printableRatio = printableCount / decoded.length;
+  return controlRatio <= 0.1 && printableRatio >= 0.85;
 }
 
 function getConversionPath(

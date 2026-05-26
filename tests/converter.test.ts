@@ -1117,6 +1117,40 @@ describe("convertMod", () => {
     expect(copied.equals(binaryPayload)).toBe(true);
   });
 
+  it("keeps binary-like OSD payloads untouched even when they contain alias text", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    const binaryPayload = Buffer.from([
+      0x43, 0x42, 0x42, 0x45, 0x01, 0x02, 0x7f, 0x80, 0x81,
+    ]);
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_cuirass_0.osd"),
+      binaryPayload,
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const copiedEntry = result.convertedFiles.find((file) =>
+      file.outputPath.endsWith("_cuirass_0.osd"),
+    );
+    expect(copiedEntry).toBeDefined();
+    expect(copiedEntry?.action).toBe("copied");
+    const copied = await readFile(
+      join(outputDir, ...(copiedEntry?.outputPath ?? "").split("/")),
+    );
+    expect(copied.equals(binaryPayload)).toBe(true);
+  });
+
   it("synthesizes missing _1 OSD weight file when only _0 exists", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -3826,6 +3860,66 @@ describe("convertMod", () => {
     expect(sliderSetContent).toContain(
       "<OutputFile>3BA_plated_1.nif</OutputFile>",
     );
+  });
+
+  it("always writes a BodySlide group registration for converted SliderSets", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderGroups"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_plated_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "cbbe_unrelated.xml",
+      ),
+      [
+        '<?xml version="1.0" encoding="utf-8"?>',
+        "<SliderGroups>",
+        '  <Group name="CBBE Unrelated">',
+        '    <Member name="CBBE Something Else"/>',
+        "  </Group>",
+        "</SliderGroups>",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const generatedGroup = result.convertedFiles.find(
+      (file) =>
+        file.outputPath === "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
+    );
+    expect(generatedGroup).toBeDefined();
+    const groupContent = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderGroups",
+        "3BA_Outfits.xml",
+      ),
+      "utf8",
+    );
+    expect(groupContent).toContain('<Group name="3BA Outfits">');
+    expect(groupContent).toContain('<Member name="3BA Plated"/>');
   });
 
   it("synthesizes supplemental SliderSet data when source projects lack SourceFile entries", async () => {
