@@ -182,7 +182,6 @@ ipcMain.handle("dialog:openNifFile", async (event: IpcMainInvokeEvent) => {
   if (!win) return null;
   const { canceled, filePaths } = await dialog.showOpenDialog(win, {
     properties: ["openFile"],
-    filters: [{ name: "NIF Mesh", extensions: ["nif"] }],
   });
   return canceled ? null : (filePaths[0] ?? null);
 });
@@ -435,7 +434,9 @@ async function executeConversion(
       outputPath: output,
       sourceBodyType: pythonSourceType,
       targetBodyType: target,
-      referenceBodyNifPath: resolvedReferenceBodyNifPath,
+      ...(resolvedReferenceBodyNifPath
+        ? { referenceBodyNifPath: resolvedReferenceBodyNifPath }
+        : {}),
       files: outputFiles,
     },
     {

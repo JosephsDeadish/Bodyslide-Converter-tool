@@ -286,7 +286,7 @@ export function App() {
         target: targetBodyType as BodyType,
         output: outputPath,
         sourceOverride: sourceOverride as BodyType,
-        referenceBodyNifPath: referenceBodyNifPath || undefined,
+        ...(referenceBodyNifPath ? { referenceBodyNifPath } : {}),
         physicsProfile,
         ...(mixedGender && maleSource && maleTarget
           ? {

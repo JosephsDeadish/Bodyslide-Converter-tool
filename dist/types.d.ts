@@ -119,6 +119,7 @@ export type ConversionRunArgs = {
     target: BodyType;
     output: string;
     sourceOverride?: BodyType;
+    referenceBodyNifPath?: string;
     physicsProfile?: ConversionPhysicsProfile;
     maleSource?: BodyType;
     maleTarget?: BodyType;
@@ -150,6 +151,7 @@ export type UserPreferences = {
     outputPath?: string;
     targetBodyType?: string;
     sourceOverride?: string;
+    referenceBodyNifPath?: string;
     physicsProfile?: string;
     mixedGender?: boolean;
     maleSource?: string;
