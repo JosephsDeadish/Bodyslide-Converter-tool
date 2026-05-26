@@ -10,6 +10,7 @@ import type {
 const FEMALE_BODIES: ReadonlySet<BodyType> = new Set([
   "cbbe",
   "3ba",
+  "coco",
   "tbd",
   "unp",
   "bhunp",
@@ -271,6 +272,14 @@ function relationshipOperations(
     "3ba:ube",
     "ube:bhunp",
     "bhunp:ube",
+    "coco:bhunp",
+    "bhunp:coco",
+    "coco:uunp",
+    "uunp:coco",
+    "coco:ube",
+    "ube:coco",
+    "coco:tbd",
+    "tbd:coco",
   ]);
   if (
     sourceInfo.physicsSupport &&

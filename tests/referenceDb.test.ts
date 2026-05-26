@@ -171,7 +171,7 @@ describe("body reference database", () => {
   it("keeps canonical slider and morph keysets aligned by topology families", async () => {
     const db = await loadReferenceDb();
 
-    const cbbeFamily = ["cbbe", "3ba", "tbd"] as const;
+    const cbbeFamily = ["cbbe", "3ba", "coco", "tbd"] as const;
     const unpFamily = ["unp", "bhunp", "uunp", "7base"] as const;
     const maleFamily = ["himbo", "bodytalk", "sos", "sam"] as const;
 
@@ -192,7 +192,7 @@ describe("body reference database", () => {
   it("keeps baseline canonical bone chains present in each topology family", async () => {
     const db = await loadReferenceDb();
 
-    const cbbeFamily = ["cbbe", "3ba", "tbd"] as const;
+    const cbbeFamily = ["cbbe", "3ba", "coco", "tbd"] as const;
     const unpFamily = ["unp", "bhunp", "uunp", "7base"] as const;
     const maleFamily = ["himbo", "bodytalk", "sos", "sam"] as const;
     const families = [cbbeFamily, unpFamily, maleFamily];

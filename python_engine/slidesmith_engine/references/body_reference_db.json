@@ -1234,7 +1234,8 @@
         "muscle": "Vanilla Athletic",
         "pregnancy": "Vanilla Belly",
         "zapCleavage": "Vanilla Chest Zap",
-        "zapBelly": "Vanilla Belly Zap"
+        "zapBelly": "Vanilla Belly Zap",
+        "natural": "Vanilla Body"
       },
       "physicsUpgradePath": "3ba",
       "physicsDowngradePath": null,
@@ -1777,6 +1778,46 @@
       "source": "ube",
       "target": "vanilla",
       "profile": "female-baseline-physics-downgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "vanilla",
+      "profile": "female-baseline-downgrade"
+    },
+    {
+      "source": "3ba",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "unp",
+      "target": "vanilla",
+      "profile": "female-baseline-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "uunp",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "7base",
+      "target": "vanilla",
+      "profile": "female-legacy-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "7base",
+      "profile": "female-physics-downgrade-legacy"
     }
   ]
 }
