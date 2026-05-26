@@ -46,13 +46,20 @@ function hasAdapterProfileMessage(value: string): boolean {
 }
 
 function hasSmoothingProfileMessage(value: string): boolean {
-  return /corrective smoothing zone/i.test(value) || /correctivesmoothingzones/i.test(value);
+  return (
+    /corrective smoothing zone/i.test(value) ||
+    /correctivesmoothingzones/i.test(value)
+  );
 }
 
 function hasMorphMappingMessage(value: string): boolean {
-  return /morphtransfer prerequisites are incomplete/i.test(value.replace(/[\s-]+/g, "")) ||
+  return (
+    /morphtransfer prerequisites are incomplete/i.test(
+      value.replace(/[\s-]+/g, ""),
+    ) ||
     /morphequivalents/i.test(value) ||
-    /slidermappings/i.test(value);
+    /slidermappings/i.test(value)
+  );
 }
 
 function hasPhysicsMetadataMessage(value: string): boolean {

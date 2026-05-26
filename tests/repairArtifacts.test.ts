@@ -133,9 +133,8 @@ describe("repair artifact generation", () => {
       ).physicsConfig?.boneNamingConvention,
     ).toBe("TODO-bone-naming-convention");
     expect(
-      (
-        patch.bodies.uunp as { correctiveSmoothingZones?: string[] }
-      ).correctiveSmoothingZones,
+      (patch.bodies.uunp as { correctiveSmoothingZones?: string[] })
+        .correctiveSmoothingZones,
     ).toContain("breast-left");
     expect(patch.adapters).toContainEqual({
       source: "cbbe",
@@ -209,7 +208,9 @@ describe("repair artifact generation", () => {
         join(reportsDir, "repairs", "adapter-profile-template.json"),
         "utf8",
       ),
-    ) as { adapters: Array<{ source: string; target: string; profile: string }> };
+    ) as {
+      adapters: Array<{ source: string; target: string; profile: string }>;
+    };
     expect(adapterTemplate.adapters).toContainEqual({
       source: "cbbe",
       target: "bhunp",
