@@ -386,6 +386,102 @@ def _run_physics_bone_transfer(
         }
 
 
+def _run_mesh_cleanup(
+    output_path: str,
+    libraries: dict[str, bool],
+    has_nif: bool,
+) -> dict[str, Any]:
+    """
+    Invoke mesh cleanup on output NIF files.
+    Returns a result dict with keys:
+    status, message, files_processed, files_modified, vertices_normalized,
+    weights_clamped, errors.
+    """
+    if not has_nif:
+        return {
+            "status": "skip",
+            "message": "No NIF files detected in output directory — mesh cleanup skipped.",
+            "files_processed": 0,
+            "files_modified": 0,
+            "vertices_normalized": 0,
+            "weights_clamped": 0,
+            "errors": [],
+        }
+
+    if not has_nif_io_support(libraries):
+        return {
+            "status": "skip",
+            "message": (
+                "pyffi is not installed — mesh cleanup skipped. "
+                "Install pyffi (pip install pyffi) to enable automated NIF processing."
+            ),
+            "files_processed": 0,
+            "files_modified": 0,
+            "vertices_normalized": 0,
+            "weights_clamped": 0,
+            "errors": [],
+        }
+
+    if not output_path:
+        return {
+            "status": "skip",
+            "message": "Output path not provided — mesh cleanup skipped.",
+            "files_processed": 0,
+            "files_modified": 0,
+            "vertices_normalized": 0,
+            "weights_clamped": 0,
+            "errors": [],
+        }
+
+    try:
+        from slidesmith_engine.pipeline import cleanup_meshes_for_output_dir
+
+        result = cleanup_meshes_for_output_dir(output_path)
+        processed = int(result.get("files_processed", 0))
+        modified = int(result.get("files_modified", 0))
+        normalized = int(result.get("vertices_normalized", 0))
+        clamped = int(result.get("weights_clamped", 0))
+        errors = result.get("errors", [])
+
+        if errors:
+            return {
+                "status": "partial" if modified > 0 else "error",
+                "message": (
+                    f"Mesh cleanup processed {processed} NIF(s), "
+                    f"modified {modified}, encountered {len(errors)} error(s)."
+                ),
+                "files_processed": processed,
+                "files_modified": modified,
+                "vertices_normalized": normalized,
+                "weights_clamped": clamped,
+                "errors": errors,
+            }
+
+        return {
+            "status": "pass",
+            "message": (
+                f"Mesh cleanup processed {processed} NIF(s) and modified {modified}. "
+                f"Normalized {normalized} vertex weight set(s) and clamped {clamped} negative weight entr"
+                f"{'y' if clamped == 1 else 'ies'}."
+            ),
+            "files_processed": processed,
+            "files_modified": modified,
+            "vertices_normalized": normalized,
+            "weights_clamped": clamped,
+            "errors": [],
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": f"Mesh cleanup pipeline error: {exc}",
+            "files_processed": 0,
+            "files_modified": 0,
+            "vertices_normalized": 0,
+            "weights_clamped": 0,
+            "errors": [str(exc)],
+        }
+
+
 def stage_status(
     stage_id: str, req: dict[str, Any], db: dict[str, Any], libraries: dict[str, bool]
 ) -> tuple[str, str, list[str]]:
@@ -596,20 +692,34 @@ def stage_status(
         )
 
     if stage_id == "mesh-cleanup":
-        required_libraries = [
-            *missing_nif_io_support(libraries),
-            *missing_libraries(libraries, "trimesh", "pyvista"),
-        ]
-        if has_nif and not required_libraries:
-            return ("pass", "Normals/tangents cleanup stage prepared.", ["Mesh validation checks queued."])
-        details = ["Mesh validation checks queued."]
-        if not has_nif:
-            details.insert(0, "No NIF mesh detected for normals/tangents cleanup.")
-        if required_libraries:
+        advanced_cleanup_libraries = missing_libraries(libraries, "trimesh", "pyvista")
+        output_path_str = req.get("outputPath", "")
+        cleanup_result = _run_mesh_cleanup(output_path_str, libraries, has_nif)
+        details: list[str] = [cleanup_result["message"], "Mesh validation checks queued."]
+
+        if advanced_cleanup_libraries:
             details.append(
-                f"Missing required Python libraries for mesh cleanup: {', '.join(required_libraries)}."
+                "Advanced normals/tangents cleanup checks are unavailable: "
+                f"{', '.join(advanced_cleanup_libraries)} missing."
             )
-        return ("attention", "Normals/tangents cleanup is running in compatibility mode.", details)
+
+        if cleanup_result["errors"]:
+            details.extend(str(error) for error in cleanup_result["errors"][:5])
+
+        if cleanup_result["status"] == "pass":
+            if advanced_cleanup_libraries:
+                return (
+                    "attention",
+                    "Basic mesh cleanup executed; advanced cleanup features are unavailable.",
+                    details,
+                )
+            return ("pass", "Mesh cleanup executed on output NIF assets.", details)
+
+        return (
+            "attention",
+            "Mesh cleanup is running in compatibility mode.",
+            details,
+        )
 
     if stage_id == "physics-preservation":
         source_bones = len(source_physics) if isinstance(source_physics, list) else 0

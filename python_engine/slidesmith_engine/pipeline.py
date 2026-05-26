@@ -648,6 +648,211 @@ def apply_physics_bone_weights(
     return result
 
 
+def _normalize_shape_skin_weights(shape: Any) -> tuple[int, int]:
+    """
+    Normalize per-vertex skin weights for one skinned NiTriShape.
+
+    Returns:
+        (normalized_vertex_count, clamped_weight_count)
+    """
+    try:
+        skin_inst = shape.skin_instance
+        if skin_inst is None or skin_inst.data is None:
+            return (0, 0)
+        skin_data = skin_inst.data
+        n_bones = int(skin_data.num_bones)
+    except Exception:
+        return (0, 0)
+
+    vertex_entries: dict[int, list[Any]] = {}
+    vertex_totals: dict[int, float] = {}
+    clamped_weights = 0
+
+    for bi in range(n_bones):
+        try:
+            bone_data = skin_data.bone_list[bi]
+        except Exception:
+            continue
+        for j in range(int(bone_data.num_vertices)):
+            try:
+                vw = bone_data.vertex_weights[j]
+                vi = int(vw.index)
+                weight = float(vw.weight)
+                if weight < 0.0:
+                    vw.weight = 0.0
+                    weight = 0.0
+                    clamped_weights += 1
+                vertex_entries.setdefault(vi, []).append(vw)
+                vertex_totals[vi] = vertex_totals.get(vi, 0.0) + weight
+            except Exception:
+                continue
+
+    normalized_vertices = 0
+    for vi, entries in vertex_entries.items():
+        total = vertex_totals.get(vi, 0.0)
+        if total <= 0.0 or abs(total - 1.0) <= 0.001:
+            continue
+        for vw in entries:
+            try:
+                vw.weight = float(vw.weight) / total
+            except Exception:
+                continue
+        normalized_vertices += 1
+
+    return (normalized_vertices, clamped_weights)
+
+
+def cleanup_nif_mesh_weights(nif_path: str | Path) -> dict[str, Any]:
+    """
+    Apply basic mesh cleanup to one NIF:
+    - clamp negative skin weights
+    - normalize per-vertex skin weight totals
+    """
+    nif_path = Path(nif_path)
+    result: dict[str, Any] = {
+        "status": "skip",
+        "shapes_processed": 0,
+        "shapes_modified": 0,
+        "vertices_normalized": 0,
+        "weights_clamped": 0,
+        "errors": [],
+        "message": "",
+    }
+
+    if not nif_path.is_file():
+        result["message"] = f"NIF not found: {nif_path}"
+        return result
+
+    try:
+        import pyffi  # noqa: F401 — presence check
+        from pyffi.formats.nif import NifFormat
+    except ImportError:
+        result["message"] = (
+            "pyffi is not installed — mesh cleanup skipped. "
+            "Install pyffi to enable automated NIF processing."
+        )
+        return result
+
+    try:
+        data = NifFormat.Data()
+        with open(nif_path, "rb") as fh:
+            data.read(fh)
+    except Exception as exc:
+        result["status"] = "error"
+        result["errors"].append(f"NIF read error: {exc}")
+        result["message"] = f"Could not read NIF: {exc}"
+        return result
+
+    total_shapes_processed = 0
+    total_shapes_modified = 0
+    total_vertices_normalized = 0
+    total_weights_clamped = 0
+
+    for block in data.blocks:
+        if not isinstance(block, NifFormat.NiTriShape):
+            continue
+        if block.skin_instance is None or block.skin_instance.data is None:
+            continue
+        total_shapes_processed += 1
+        normalized_vertices, clamped_weights = _normalize_shape_skin_weights(block)
+        if normalized_vertices > 0 or clamped_weights > 0:
+            total_shapes_modified += 1
+        total_vertices_normalized += normalized_vertices
+        total_weights_clamped += clamped_weights
+
+    result["shapes_processed"] = total_shapes_processed
+    result["shapes_modified"] = total_shapes_modified
+    result["vertices_normalized"] = total_vertices_normalized
+    result["weights_clamped"] = total_weights_clamped
+
+    if total_shapes_processed == 0:
+        result["status"] = "skip"
+        result["message"] = "No skinned NiTriShape blocks found in NIF."
+        return result
+
+    if total_shapes_modified == 0:
+        result["status"] = "pass"
+        result["message"] = "Mesh cleanup found no weight normalization changes."
+        return result
+
+    tmp_fd, tmp_path = tempfile.mkstemp(
+        suffix=".nif", dir=nif_path.parent, prefix=".slidesmith_tmp_"
+    )
+    try:
+        os.close(tmp_fd)
+        with open(tmp_path, "wb") as fh:
+            data.write(fh)
+        verify_data = NifFormat.Data()
+        with open(tmp_path, "rb") as fh:
+            verify_data.read(fh)
+        shutil.move(tmp_path, nif_path)
+    except Exception as exc:
+        result["status"] = "error"
+        result["errors"].append(f"NIF write/verify error: {exc}")
+        result["message"] = f"Mesh cleanup write failed: {exc}"
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        return result
+    finally:
+        if os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    result["status"] = "pass"
+    result["message"] = (
+        "Basic mesh cleanup complete: "
+        f"normalized {total_vertices_normalized} vertex weight set(s), "
+        f"clamped {total_weights_clamped} negative weight entr"
+        f"{'y' if total_weights_clamped == 1 else 'ies'} across "
+        f"{total_shapes_modified} of {total_shapes_processed} skinned shape(s)."
+    )
+    return result
+
+
+def cleanup_meshes_for_output_dir(output_path: str | Path) -> dict[str, Any]:
+    """
+    Walk *output_path* for NIF files and apply basic mesh cleanup to each one.
+    """
+    output_path = Path(output_path)
+    aggregate: dict[str, Any] = {
+        "files_processed": 0,
+        "files_modified": 0,
+        "files_skipped": 0,
+        "files_errored": 0,
+        "vertices_normalized": 0,
+        "weights_clamped": 0,
+        "errors": [],
+    }
+
+    if not output_path.is_dir():
+        aggregate["errors"].append(f"Output directory not found: {output_path}")
+        return aggregate
+
+    nif_files = list(output_path.rglob("*.nif")) + list(output_path.rglob("*.NIF"))
+    for nif_file in nif_files:
+        aggregate["files_processed"] += 1
+        res = cleanup_nif_mesh_weights(nif_file)
+        aggregate["vertices_normalized"] += int(res.get("vertices_normalized", 0))
+        aggregate["weights_clamped"] += int(res.get("weights_clamped", 0))
+        if res["status"] == "pass" and (
+            int(res.get("shapes_modified", 0)) > 0
+            or int(res.get("vertices_normalized", 0)) > 0
+            or int(res.get("weights_clamped", 0)) > 0
+        ):
+            aggregate["files_modified"] += 1
+        elif res["status"] in ("skip", "pass"):
+            aggregate["files_skipped"] += 1
+        elif res["status"] in ("partial", "error"):
+            aggregate["files_errored"] += 1
+            aggregate["errors"].extend(res.get("errors", []))
+
+    return aggregate
+
+
 def transfer_bones_for_output_dir(
     output_path: str | Path,
     physics_bone_names: list[str],

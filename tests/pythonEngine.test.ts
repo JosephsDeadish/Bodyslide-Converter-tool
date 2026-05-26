@@ -274,6 +274,9 @@ describe("python engine runner", () => {
     const surfaceStage = run.stages.find(
       (stage) => stage.id === "surface-reprojection",
     );
+    const meshCleanupStage = run.stages.find(
+      (stage) => stage.id === "mesh-cleanup",
+    );
 
     expect(referenceStage?.status).toBe("pass");
     expect(run.libraries).toEqual({
@@ -293,6 +296,10 @@ describe("python engine runner", () => {
         ),
       ),
     ).toBe(true);
+    expect(meshCleanupStage?.status).toBe("attention");
+    expect(meshCleanupStage?.details).toContain(
+      "pyffi is not installed — mesh cleanup skipped. Install pyffi (pip install pyffi) to enable automated NIF processing.",
+    );
   });
 
   it("flags high-risk conversion pairs that are missing explicit adapter profiles", async () => {
