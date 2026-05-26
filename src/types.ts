@@ -136,6 +136,8 @@ export type SkippedFile = {
 export type ConversionResult = {
   sourceBodyType: BodyType;
   targetBodyType: BodyType;
+  requestedPhysicsProfile: ConversionPhysicsProfile;
+  effectivePhysicsProfile: ConversionPhysicsProfile;
   conversionMode: "native" | "compatibility";
   conversionPath: string;
   preferredOutputAlias: string;

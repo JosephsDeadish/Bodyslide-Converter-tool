@@ -2478,6 +2478,28 @@ function looksLikeCbpcConfig(content: string, outputPath: string): boolean {
   return collectCbpcAssignedBones(content.slice(0, 8192)).size > 0;
 }
 
+function collectHdtDeclaredBones(content: string): Set<string> {
+  const declaredBones = new Set<string>();
+  const xmlBonePattern =
+    /<(?:bone|node|constraint|rigidbody|rigidBody|shape)[^>]*\b(?:name|bone)\s*=\s*["']([^"']+)["'][^>]*>/gi;
+  for (const match of content.matchAll(xmlBonePattern)) {
+    const boneName = (match[1] ?? "").trim();
+    if (!boneName) continue;
+    for (const key of buildBoneLookupKeys(boneName)) {
+      declaredBones.add(key);
+    }
+  }
+  const jsonBonePattern = /"(?:name|bone)"\s*:\s*"([^"]+)"/gi;
+  for (const match of content.matchAll(jsonBonePattern)) {
+    const boneName = (match[1] ?? "").trim();
+    if (!boneName) continue;
+    for (const key of buildBoneLookupKeys(boneName)) {
+      declaredBones.add(key);
+    }
+  }
+  return declaredBones;
+}
+
 /**
  * When converting to a physics-capable target body the source mod may contain
  * a physics config that covers only a subset of the bones required by the
@@ -3838,25 +3860,47 @@ export async function convertMod(
     physicsProfile === "auto" &&
     BODY_TYPE_INFO[targetBodyType].hdtSmpCompatible
   ) {
-    const hasExistingPhysicsConfig = convertedFiles.some((file) => {
-      if (file.action === "synthesized" || file.kind !== "text") {
-        return false;
-      }
-      const normalized = file.outputPath.toLowerCase().replace(/\\/g, "/");
-      if (extname(normalized) === ".ini") {
-        return normalized.includes("/cbpc/");
-      }
-      if (extname(normalized) === ".xml" || extname(normalized) === ".json") {
-        return (
-          normalized.includes("/hdtsmp64/") || normalized.includes("/hdt/")
-        );
+    const targetInfo = BODY_TYPE_INFO[targetBodyType];
+    const hasUsableHdtConfig = async (): Promise<boolean> => {
+      for (const file of convertedFiles) {
+        if (file.action === "synthesized" || file.kind !== "text") {
+          continue;
+        }
+        const normalized = file.outputPath.toLowerCase().replace(/\\/g, "/");
+        const extension = extname(normalized);
+        if (extension !== ".xml" && extension !== ".json") {
+          continue;
+        }
+        if (
+          !normalized.includes("/skse/plugins/hdtsmp64/") &&
+          !normalized.includes("/hdtsmp64/") &&
+          !normalized.includes("/hdt/")
+        ) {
+          continue;
+        }
+        const outputAbsPath = join(outputDir, file.outputPath);
+        let content = "";
+        try {
+          content = await readFile(outputAbsPath, "utf8");
+        } catch {
+          continue;
+        }
+        const declaredBones = collectHdtDeclaredBones(content.slice(0, 65536));
+        if (declaredBones.size === 0) {
+          continue;
+        }
+        for (const targetBone of targetInfo.physicsBones) {
+          const lookupKeys = getTargetBoneLookupKeys(targetBodyType, targetBone);
+          for (const key of lookupKeys) {
+            if (declaredBones.has(key)) {
+              return true;
+            }
+          }
+        }
       }
       return false;
-    });
-    if (hasExistingPhysicsConfig) {
-      // Keep source-provided physics configs untouched; only synthesize a
-      // dual-mode HDT fallback when no existing physics config is present.
-    } else {
+    };
+    if (!(await hasUsableHdtConfig())) {
       await synthesizeMissingHdtSmpXmlStub(
         outputDir,
         targetBodyType,
@@ -3902,6 +3946,8 @@ export async function convertMod(
   return {
     sourceBodyType,
     targetBodyType,
+    requestedPhysicsProfile,
+    effectivePhysicsProfile: physicsProfile,
     conversionMode: conversionPath.mode,
     conversionPath: conversionPath.label,
     preferredOutputAlias: conversionPath.preferredOutputAlias,

@@ -4229,6 +4229,8 @@ describe("convertMod", () => {
         warning.includes("Falling back to 'HDT-SMP'"),
       ),
     ).toBe(true);
+    expect(result.requestedPhysicsProfile).toBe("cbpc");
+    expect(result.effectivePhysicsProfile).toBe("hdt-smp");
   });
 
   it("synthesizes HDT-SMP XML stub for 3BA when physicsProfile is hdt-smp", async () => {
@@ -4317,6 +4319,49 @@ describe("convertMod", () => {
     expect(
       hdtStub,
       "expected HDT-SMP stub for auto profile on 3BA",
+    ).toBeDefined();
+    expect(result.requestedPhysicsProfile).toBe("auto");
+    expect(result.effectivePhysicsProfile).toBe("auto");
+  });
+
+  it("still synthesizes missing HDT-SMP stub in auto mode when only CBPC config exists", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe",
+    );
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbpc_source.ini"),
+      "NPC L Breast=0.600\nNPC R Breast=0.600\nNPC L Butt=0.450\nNPC R Butt=0.450\n",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+      { physicsProfile: "auto" },
+    );
+
+    const targetAlias = result.preferredOutputAlias;
+    const hdtStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+    expect(
+      hdtStub,
+      "expected HDT-SMP stub for auto profile on 3BA when only CBPC config exists",
     ).toBeDefined();
   });
 });

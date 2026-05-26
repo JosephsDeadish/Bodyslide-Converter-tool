@@ -410,7 +410,8 @@ async function executeConversion(
       `TARGET: ${target}`,
       `MODE: ${result.conversionMode}`,
       `PATH: ${result.conversionPath}`,
-      `PHYSICS PROFILE: ${physicsProfile}`,
+      `PHYSICS PROFILE (SELECTED): ${result.requestedPhysicsProfile}`,
+      `PHYSICS PROFILE (EFFECTIVE): ${result.effectivePhysicsProfile}`,
       `OUTPUT ALIAS: ${result.preferredOutputAlias}`,
       ``,
       detection.rankedCandidates.length > 0
