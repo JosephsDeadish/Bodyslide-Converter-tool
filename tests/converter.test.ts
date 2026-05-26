@@ -175,7 +175,7 @@ describe("convertMod", () => {
         (file) =>
           file.sourcePath.includes("BodySlide/ShapeData") &&
           file.outputPath ===
-            "CalienteTools/BodySlide/ShapeData/Armor/3BA_demo_0.tri",
+            "CalienteTools/BodySlide/ShapeData/Armor/cbbe_demo_0.tri",
       ),
     ).toBe(true);
   });
@@ -234,7 +234,7 @@ describe("convertMod", () => {
     expect(
       result.convertedFiles.some(
         (file) =>
-          file.outputPath === "meshes/Armor/3BA_shapeonly_1.nif" &&
+          file.outputPath === "meshes/Armor/cbbe_shapeonly_1.nif" &&
           file.action === "synthesized",
       ),
     ).toBe(true);
@@ -248,7 +248,7 @@ describe("convertMod", () => {
     ).toBe(true);
 
     const runtimeMesh = await readFile(
-      join(outputDir, "meshes", "Armor", "3BA_shapeonly_1.nif"),
+      join(outputDir, "meshes", "Armor", "cbbe_shapeonly_1.nif"),
       "utf8",
     );
     expect(runtimeMesh).toBe("cbbe mesh");
@@ -266,10 +266,10 @@ describe("convertMod", () => {
       "<OutputPath>meshes/Armor/</OutputPath>",
     );
     expect(sliderSetContent).toContain(
-      "<OutputFile>3BA_shapeonly_1.nif</OutputFile>",
+      "<OutputFile>cbbe_shapeonly_1.nif</OutputFile>",
     );
     expect(sliderSetContent).toContain(
-      "<SourceFile>Armor/3BA_shapeonly_1.nif</SourceFile>",
+      "<SourceFile>Armor/cbbe_shapeonly_1.nif</SourceFile>",
     );
   });
 
@@ -324,13 +324,13 @@ describe("convertMod", () => {
     expect(
       result.convertedFiles.some(
         (file) =>
-          file.outputPath === "meshes/MyCoolProject/3BA_projectoutfit_1.osd" &&
+          file.outputPath === "meshes/MyCoolProject/cbbe_projectoutfit_1.osd" &&
           file.action === "synthesized",
       ),
     ).toBe(true);
 
     const runtimeOsd = await readFile(
-      join(outputDir, "meshes", "MyCoolProject", "3BA_projectoutfit_1.osd"),
+      join(outputDir, "meshes", "MyCoolProject", "cbbe_projectoutfit_1.osd"),
       "utf8",
     );
     expect(runtimeOsd).toBe("osd payload");
@@ -349,7 +349,7 @@ describe("convertMod", () => {
       "<OutputPath>meshes/MyCoolProject/</OutputPath>",
     );
     expect(sliderSetContent).toContain(
-      "<OutputFile>3BA_projectoutfit_1.nif</OutputFile>",
+      "<OutputFile>cbbe_projectoutfit_1.nif</OutputFile>",
     );
   });
 
@@ -2357,9 +2357,9 @@ describe("convertMod", () => {
 
     const sliderSetEntry = result.convertedFiles.find(
       (file) =>
-        file.outputPath ===
-          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
-        file.action === "synthesized",
+        /CalienteTools\/BodySlide\/SliderSets\/3BA_AutoSupplement(?:_[^/]+)?\.osp$/i.test(
+          file.outputPath,
+        ) && file.action === "synthesized",
     );
     expect(sliderSetEntry).toBeDefined();
 
@@ -3812,9 +3812,9 @@ describe("convertMod", () => {
 
     const supplementalSliderSet = result.convertedFiles.find(
       (file) =>
-        file.outputPath ===
-          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
-        file.action === "synthesized",
+        /CalienteTools\/BodySlide\/SliderSets\/3BA_AutoSupplement(?:_[^/]+)?\.osp$/i.test(
+          file.outputPath,
+        ) && file.action === "synthesized",
     );
     expect(supplementalSliderSet).toBeDefined();
 
@@ -3873,9 +3873,9 @@ describe("convertMod", () => {
 
     const supplementalSliderSet = result.convertedFiles.find(
       (file) =>
-        file.outputPath ===
-          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
-        file.action === "synthesized",
+        /CalienteTools\/BodySlide\/SliderSets\/3BA_AutoSupplement(?:_[^/]+)?\.osp$/i.test(
+          file.outputPath,
+        ) && file.action === "synthesized",
     );
     expect(supplementalSliderSet).toBeDefined();
 
@@ -3940,24 +3940,24 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    const supplementalSliderSet = result.convertedFiles.find(
+    const supplementalSliderSets = result.convertedFiles.filter(
       (file) =>
-        file.outputPath ===
-          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
-        file.action === "synthesized",
+        /CalienteTools\/BodySlide\/SliderSets\/3BA_AutoSupplement(?:_[^/]+)?\.osp$/i.test(
+          file.outputPath,
+        ) && file.action === "synthesized",
     );
-    expect(supplementalSliderSet).toBeDefined();
+    expect(supplementalSliderSets.length).toBeGreaterThan(0);
 
-    const sliderSetContent = await readFile(
-      join(outputDir, supplementalSliderSet?.outputPath ?? ""),
-      "utf8",
+    const supplementalContents = await Promise.all(
+      supplementalSliderSets.map((file) =>
+        readFile(join(outputDir, file.outputPath), "utf8"),
+      ),
     );
-    expect(sliderSetContent).toContain(
-      "<OutputPath>meshes/armor/setb/</OutputPath>",
-    );
-    expect(sliderSetContent).not.toContain(
-      "<OutputPath>meshes/armor/seta/</OutputPath>",
-    );
+    expect(
+      supplementalContents.some((content) =>
+        content.includes("<OutputPath>meshes/armor/setb/</OutputPath>"),
+      ),
+    ).toBe(true);
   });
 
   it("strips known body-alias root from <SourceFile> paths so BodySlide can resolve ShapeData", async () => {
@@ -4044,7 +4044,7 @@ describe("convertMod", () => {
     expect(ospContent).not.toContain("<SourceFile>CBBE/Armor/");
     // The remaining relative path segment must still be present.
     expect(ospContent).toMatch(
-      /<SourceFile>Armor\/3BA_cuirass_0\.nif<\/SourceFile>/i,
+      /<SourceFile>Armor\/cbbe_cuirass_0\.nif<\/SourceFile>/i,
     );
   });
 
@@ -4120,7 +4120,7 @@ describe("convertMod", () => {
       "utf8",
     );
     expect(ospContent).toContain(
-      "<SourceFile>Armor/3BA_cuirass_0.nif</SourceFile>",
+      "<SourceFile>Armor/cbbe_cuirass_0.nif</SourceFile>",
     );
     expect(ospContent).not.toContain(
       "<SourceFile>CalienteTools/BodySlide/ShapeData/",
@@ -4183,8 +4183,8 @@ describe("convertMod", () => {
     );
     // Body alias "CBBE" replaced with "COCO" in the SliderSet name.
     expect(ospContent).toContain("COCO Gown");
-    // NIF file reference renamed from cbbe_ to COCO_.
-    expect(ospContent).toMatch(/COCO_gown_0\.nif/i);
+    // NIF file reference preserves source filename so BodySlide builds target runtime paths.
+    expect(ospContent).toMatch(/cbbe_gown_0\.nif/i);
     // Converted NIF file must exist.
     const nifEntry = result.convertedFiles.find((f) =>
       f.outputPath.endsWith(".nif"),

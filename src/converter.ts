@@ -1758,6 +1758,11 @@ const SLIDERSET_BLOCK_RE = /<SliderSet\b[\s\S]*?<\/SliderSet>/gi;
 const SLIDERSET_OUTPUTPATH_RE = /<OutputPath>\s*([^<]*)\s*<\/OutputPath>/i;
 const SLIDERSET_SOURCEFILE_RE = /<SourceFile>\s*([^<]*)\s*<\/SourceFile>/i;
 const SLIDER_NAME_RE = /<Slider\b[^>]*\bname=["']([^"']+)["'][^>]*\/?>/gi;
+const KNOWN_SOURCEFILE_ALIAS_ROOTS = new Set(
+  (Object.keys(BODY_TYPE_INFO) as BodyType[])
+    .flatMap((bodyType) => getBodyTypeAliases(bodyType))
+    .map((alias) => alias.toLowerCase()),
+);
 
 function extractSliderSetNames(content: string): string[] {
   const names: string[] = [];
@@ -2022,9 +2027,12 @@ async function synthesizeMissingSliderSetProject(
     if (projectOutputFiles.size === 0 && projectOutputPaths.size === 0) {
       return true;
     }
+    const canUseFileCoverage =
+      !lowPath.includes("/") && !highPath.includes("/");
     const coveredByFile =
-      (!!lowFile && (projectOutputFiles.get(lowFile) ?? false)) ||
-      (!!highFile && (projectOutputFiles.get(highFile) ?? false));
+      canUseFileCoverage &&
+      ((!!lowFile && (projectOutputFiles.get(lowFile) ?? false)) ||
+        (!!highFile && (projectOutputFiles.get(highFile) ?? false)));
     const coveredByPath =
       (!!lowPath && (projectOutputPaths.get(lowPath) ?? false)) ||
       (!!highPath && (projectOutputPaths.get(highPath) ?? false));
@@ -3110,6 +3118,57 @@ function rewriteRelativePath(
     .join("/");
 }
 
+function shouldPreserveBodySlideRelativePath(relativePath: string): boolean {
+  const lower = relativePath.toLowerCase().replace(/\\/g, "/");
+  return /(^|\/)(?:calientetools\/)?bodyslide\/shapedata\//.test(lower);
+}
+
+function isBodySlideSliderSetProjectPath(relativePath: string): boolean {
+  const lower = relativePath.toLowerCase().replace(/\\/g, "/");
+  return (
+    /(?:^|\/)calientetools\/bodyslide\/slidersets\//.test(lower) &&
+    (lower.endsWith(".osp") || lower.endsWith(".xml"))
+  );
+}
+
+function preserveBodySlideTagValues(
+  originalContent: string,
+  rewrittenContent: string,
+): string {
+  const tags = ["OutputPath", "OutputFile"] as const;
+  let next = rewrittenContent;
+  for (const tag of tags) {
+    const originalValues = [
+      ...originalContent.matchAll(
+        new RegExp(`<${tag}>\\s*([^<]*?)\\s*<\\/${tag}>`, "gi"),
+      ),
+    ].map((match) => match[1] ?? "");
+    let index = 0;
+    next = next.replace(
+      new RegExp(`<${tag}>\\s*([^<]*?)\\s*<\\/${tag}>`, "gi"),
+      (match) => {
+        if (index >= originalValues.length) return match;
+        const value = originalValues[index] ?? "";
+        index += 1;
+        return `<${tag}>${value}</${tag}>`;
+      },
+    );
+  }
+  const originalSourceValues = [
+    ...originalContent.matchAll(/<SourceFile>\s*([^<]*?)\s*<\/SourceFile>/gi),
+  ].map((match) => match[1] ?? "");
+  let sourceIndex = 0;
+  next = next.replace(/<SourceFile>\s*([^<]*?)\s*<\/SourceFile>/gi, (match) => {
+    if (sourceIndex >= originalSourceValues.length) return match;
+    const value = normalizeBodySlideSourceFileValue(
+      originalSourceValues[sourceIndex] ?? "",
+    );
+    sourceIndex += 1;
+    return `<SourceFile>${value}</SourceFile>`;
+  });
+  return next;
+}
+
 /**
  * Strips a known body-alias first segment from a BodySlide <SourceFile> path.
  *
@@ -3126,33 +3185,34 @@ function rewriteRelativePath(
  * SourceFile always matches the stripped ShapeData location.
  */
 function normalizeBodySlideSourceFileRoots(content: string): string {
-  function normalizeSourceFileValue(value: string): string {
-    const normalized = value
-      .replace(/\\/g, "/")
-      .replace(/^\.?\//, "")
-      .replace(/\/{2,}/g, "/");
-    const strippedShapeDataPrefix = normalized.replace(
-      /^(?:(?:calientetools\/)?bodyslide\/)?shapedata\//i,
-      "",
-    );
-    const segments = strippedShapeDataPrefix.split("/").filter(Boolean);
-    if (
-      segments.length > 1 &&
-      KNOWN_OUTPUT_ALIASES.has((segments[0] ?? "").toLowerCase())
-    ) {
-      return segments.slice(1).join("/");
-    }
-    return segments.join("/") || strippedShapeDataPrefix;
-  }
-
   return content.replace(
     /<SourceFile>\s*([^<]*?)\s*<\/SourceFile>/gi,
     (_match, rawValue: string) => {
       const value = rawValue.trim();
       if (!value) return _match;
-      return `<SourceFile>${normalizeSourceFileValue(value)}</SourceFile>`;
+      return `<SourceFile>${normalizeBodySlideSourceFileValue(value)}</SourceFile>`;
     },
   );
+}
+
+function normalizeBodySlideSourceFileValue(value: string): string {
+  const normalized = value
+    .replace(/\\/g, "/")
+    .replace(/^\.?\//, "")
+    .replace(/\/{2,}/g, "/");
+  const strippedShapeDataPrefix = normalized.replace(
+    /^(?:(?:calientetools\/)?bodyslide\/)?shapedata\//i,
+    "",
+  );
+  const segments = strippedShapeDataPrefix.split("/").filter(Boolean);
+  if (
+    segments.length > 1 &&
+    (KNOWN_OUTPUT_ALIASES.has((segments[0] ?? "").toLowerCase()) ||
+      KNOWN_SOURCEFILE_ALIAS_ROOTS.has((segments[0] ?? "").toLowerCase()))
+  ) {
+    return segments.slice(1).join("/");
+  }
+  return segments.join("/") || strippedShapeDataPrefix;
 }
 
 function rewriteBodyMetadataContent(
@@ -3160,17 +3220,17 @@ function rewriteBodyMetadataContent(
   source: BodyType,
   target: BodyType,
 ): string {
-  return normalizeBodySlideSourceFileRoots(
-    replaceAliases(
-      replacePhysicsReferences(
-        rewriteGenderMarkers(content, source, target),
-        source,
-        target,
-      ),
-      source,
-      target,
-    ),
+  const withoutGenderAndPhysics = replacePhysicsReferences(
+    rewriteGenderMarkers(content, source, target),
+    source,
+    target,
   );
+  const aliasAdjustedContent = replaceAliases(
+    withoutGenderAndPhysics,
+    source,
+    target,
+  );
+  return normalizeBodySlideSourceFileRoots(aliasAdjustedContent);
 }
 
 function isLikelyUtf8Text(buffer: Buffer): boolean {
@@ -3904,11 +3964,24 @@ export async function convertMod(
       continue;
     }
 
-    const rewrittenRelativePath = normalizeToMo2DataPath(
-      rewriteRelativePath(file.relativePath, sourceBodyType, targetBodyType),
+    const sourceNormalizedPath = normalizeToMo2DataPath(
+      file.relativePath.replace(/\\/g, "/"),
       file.extension,
       file.preview,
     );
+    const rewrittenRelativePath = shouldPreserveBodySlideRelativePath(
+      file.relativePath,
+    )
+      ? sourceNormalizedPath
+      : normalizeToMo2DataPath(
+          rewriteRelativePath(
+            file.relativePath,
+            sourceBodyType,
+            targetBodyType,
+          ),
+          file.extension,
+          file.preview,
+        );
     const outputPath = join(outputDir, rewrittenRelativePath);
     await mkdir(dirname(outputPath), { recursive: true });
 
@@ -3931,8 +4004,18 @@ export async function convertMod(
       }
 
       const content = await readFile(file.absolutePath, "utf8");
+      const metadataContent = rewriteBodyMetadataContent(
+        content,
+        sourceBodyType,
+        targetBodyType,
+      );
+      const bodySlidePathAwareContent = isBodySlideSliderSetProjectPath(
+        rewrittenRelativePath,
+      )
+        ? preserveBodySlideTagValues(content, metadataContent)
+        : metadataContent;
       const nextContent = ensureTargetPhysicsBonesPresent(
-        rewriteBodyMetadataContent(content, sourceBodyType, targetBodyType),
+        bodySlidePathAwareContent,
         rewrittenRelativePath,
         targetBodyType,
         physicsProfile,
