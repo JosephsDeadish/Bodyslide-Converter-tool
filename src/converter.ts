@@ -2235,7 +2235,9 @@ async function writeCanonicalSliderGroupRegistration(
     `  <Group name="${escapeXml(groupName)}">`,
     ...[...sliderSetNames.values()]
       .sort((left, right) => left.localeCompare(right))
-      .map((sliderSetName) => `    <Member>${escapeXml(sliderSetName)}</Member>`),
+      .map(
+        (sliderSetName) => `    <Member>${escapeXml(sliderSetName)}</Member>`,
+      ),
     "  </Group>",
     "</SliderGroups>",
     "",
