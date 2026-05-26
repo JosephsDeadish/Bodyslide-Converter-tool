@@ -532,9 +532,8 @@ export function Sidebar({
                   <>
                     Use a target-body base mesh (.nif) to improve
                     conversion-stage reference checks. Recommended file:{" "}
-                    <code>femalebody_0.nif</code> or{" "}
-                    <code>malebody_0.nif</code> from the body mod you are
-                    converting TO.
+                    <code>femalebody_0.nif</code> or <code>malebody_0.nif</code>{" "}
+                    from the body mod you are converting TO.
                   </>
                 )
               }
