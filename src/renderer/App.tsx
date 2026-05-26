@@ -3,6 +3,7 @@ import type {
   BodyType,
   BodyTypeInfo,
   BodyTypeOption,
+  ConversionPhysicsProfile,
   ConversionJobEvent,
   DetectionResult,
   ScanResult,
@@ -30,6 +31,8 @@ export function App() {
     null,
   );
   const [sourceOverride, setSourceOverride] = useState("");
+  const [physicsProfile, setPhysicsProfile] =
+    useState<ConversionPhysicsProfile>("auto");
   const [mixedGender, setMixedGender] = useState(false);
   const [maleSource, setMaleSource] = useState("");
   const [maleTarget, setMaleTarget] = useState("");
@@ -147,6 +150,7 @@ export function App() {
         target: targetBodyType as BodyType,
         output: outputPath,
         sourceOverride: sourceOverride as BodyType,
+        physicsProfile,
         ...(mixedGender && maleSource && maleTarget
           ? {
               maleSource: maleSource as BodyType,
@@ -198,6 +202,7 @@ export function App() {
         detecting={detecting}
         detectResult={detectResult}
         sourceOverride={sourceOverride}
+        physicsProfile={physicsProfile}
         mixedGender={mixedGender}
         maleSource={maleSource}
         maleTarget={maleTarget}
@@ -222,6 +227,7 @@ export function App() {
         }}
         onSourceOverrideChange={setSourceOverride}
         onMixedGenderChange={setMixedGender}
+        onPhysicsProfileChange={setPhysicsProfile}
         onMaleSourceChange={setMaleSource}
         onMaleTargetChange={setMaleTarget}
         onConvert={() => {

@@ -5,6 +5,7 @@ import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import { scanModFiles } from "./scanner.js";
 import type {
   BodyType,
+  ConversionPhysicsProfile,
   ConversionResult,
   DetectionResult,
   ScannedFile,
@@ -2427,7 +2428,11 @@ function ensureTargetPhysicsBonesPresent(
   content: string,
   outputPath: string,
   target: BodyType,
+  physicsProfile: ConversionPhysicsProfile,
 ): string {
+  if (physicsProfile !== "auto" && physicsProfile !== "cbpc") {
+    return content;
+  }
   const targetInfo = BODY_TYPE_INFO[target];
   if (!targetInfo.physicsSupport || targetInfo.physicsBones.length === 0) {
     return content;
@@ -2470,7 +2475,11 @@ async function synthesizeMissingCbpcStub(
   outputDir: string,
   targetBodyType: BodyType,
   convertedFiles: ConversionResult["convertedFiles"],
+  physicsProfile: ConversionPhysicsProfile,
 ): Promise<void> {
+  if (physicsProfile !== "auto" && physicsProfile !== "cbpc") {
+    return;
+  }
   const targetInfo = BODY_TYPE_INFO[targetBodyType];
   if (!targetInfo.physicsSupport || targetInfo.physicsBones.length === 0) {
     return;
@@ -2955,6 +2964,7 @@ function createWarnings(
   source: BodyType,
   target: BodyType,
   path: ReturnType<typeof getConversionPath>,
+  physicsProfile: ConversionPhysicsProfile,
 ): string[] {
   const warnings = [...path.namingNotes];
   const sourceInfo = BODY_TYPE_INFO[source];
@@ -2982,6 +2992,21 @@ function createWarnings(
     warnings.push(
       `${target.toUpperCase()} uses physics-aware assets. This native pass remaps known physics references in text configs where possible; verify runtime behavior if the source mod ships custom physics rules.`,
     );
+  }
+  if (targetInfo.physicsSupport) {
+    if (physicsProfile === "none") {
+      warnings.push(
+        "Physics profile was set to 'No physics'. CBPC-specific INI patching and synthesized CBPC stubs were skipped for this conversion.",
+      );
+    } else if (physicsProfile === "hdt-smp") {
+      warnings.push(
+        "Physics profile was set to 'HDT-SMP'. CBPC-specific INI patching and synthesized CBPC stubs were skipped.",
+      );
+    } else if (physicsProfile === "cbpc") {
+      warnings.push(
+        "Physics profile was set to 'CBPC'. Conversion prioritizes CBPC INI patching and fallback stub generation when needed.",
+      );
+    }
   }
 
   if (sourceInfo.physicsSupport !== targetInfo.physicsSupport) {
@@ -3231,6 +3256,9 @@ export async function convertMod(
   files: ScannedFile[],
   detection: DetectionResult,
   targetBodyType: BodyType,
+  options: Partial<{
+    physicsProfile: ConversionPhysicsProfile;
+  }> = {},
 ): Promise<ConversionResult> {
   if (detection.bodyType === "unknown") {
     throw new Error(
@@ -3239,6 +3267,7 @@ export async function convertMod(
   }
 
   const sourceBodyType = detection.bodyType;
+  const physicsProfile = options.physicsProfile ?? "auto";
   const conversionPath = getConversionPath(sourceBodyType, targetBodyType);
 
   await mkdir(outputDir, { recursive: true });
@@ -3325,6 +3354,7 @@ export async function convertMod(
         rewriteBodyMetadataContent(content, sourceBodyType, targetBodyType),
         rewrittenRelativePath,
         targetBodyType,
+        physicsProfile,
       );
       await writeFile(outputPath, nextContent, "utf8");
       convertedFiles.push({
@@ -3456,7 +3486,12 @@ export async function convertMod(
 
   // Synthesize a CBPC physics config stub when the target body supports
   // physics but the source mod contained no physics config files at all.
-  await synthesizeMissingCbpcStub(outputDir, targetBodyType, convertedFiles);
+  await synthesizeMissingCbpcStub(
+    outputDir,
+    targetBodyType,
+    convertedFiles,
+    physicsProfile,
+  );
 
   const outputFiles = await scanModFiles(outputDir);
   const audit = createConversionAudit(
@@ -3471,6 +3506,7 @@ export async function convertMod(
       sourceBodyType,
       targetBodyType,
       conversionPath,
+      physicsProfile,
     ),
     ...(audit.overallStatus === "attention"
       ? [

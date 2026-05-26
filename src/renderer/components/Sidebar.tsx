@@ -1,6 +1,7 @@
 import type {
   BodyTypeInfo,
   BodyTypeOption,
+  ConversionPhysicsProfile,
   DetectionResult,
 } from "../api-types";
 import { Tooltip } from "./Tooltip";
@@ -17,6 +18,7 @@ interface SidebarProps {
   detecting: boolean;
   detectResult: DetectionResult | null;
   sourceOverride: string;
+  physicsProfile: ConversionPhysicsProfile;
   mixedGender: boolean;
   maleSource: string;
   maleTarget: string;
@@ -28,6 +30,7 @@ interface SidebarProps {
   onClearOutput(): void;
   onTargetChange(value: string): void;
   onSourceOverrideChange(value: string): void;
+  onPhysicsProfileChange(value: ConversionPhysicsProfile): void;
   onMixedGenderChange(value: boolean): void;
   onMaleSourceChange(value: string): void;
   onMaleTargetChange(value: string): void;
@@ -63,6 +66,15 @@ const FEMALE_BODY_TYPES = [
 ];
 const MALE_BODY_TYPES = ["himbo", "bodytalk", "sos", "sam"];
 const OTHER_BODY_TYPES = ["vanilla"];
+const PHYSICS_OPTIONS: Array<{
+  value: ConversionPhysicsProfile;
+  label: string;
+}> = [
+  { value: "auto", label: "Auto (recommended)" },
+  { value: "cbpc", label: "CBPC" },
+  { value: "hdt-smp", label: "HDT-SMP" },
+  { value: "none", label: "No physics" },
+];
 
 function pathBasename(p: string): string {
   return p.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? p;
@@ -128,6 +140,7 @@ export function Sidebar({
   detecting,
   detectResult,
   sourceOverride,
+  physicsProfile,
   mixedGender,
   maleSource,
   maleTarget,
@@ -139,6 +152,7 @@ export function Sidebar({
   onClearOutput,
   onTargetChange,
   onSourceOverrideChange,
+  onPhysicsProfileChange,
   onMixedGenderChange,
   onMaleSourceChange,
   onMaleTargetChange,
@@ -407,6 +421,34 @@ export function Sidebar({
           otherOptions={otherOptions}
           onChange={onTargetChange}
         />
+
+        <div style={{ marginTop: "1rem" }}>
+          <Tooltip
+            dir="right"
+            text="Choose the physics setup you intend to use in-game. Auto keeps compatibility behavior, CBPC prioritizes INI generation/completion, HDT-SMP skips CBPC stub generation, and No physics avoids physics-specific patching."
+          >
+            <div className="field-label">Physics Profile</div>
+          </Tooltip>
+          <div className="field-hint">
+            Select the intended runtime physics for this conversion
+          </div>
+          <select
+            className="select-control"
+            style={{ marginTop: "4px" }}
+            value={physicsProfile}
+            onChange={(event) =>
+              onPhysicsProfileChange(
+                event.target.value as ConversionPhysicsProfile,
+              )
+            }
+          >
+            {PHYSICS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {bodyTypeInfo !== null && <BodyInfoBox info={bodyTypeInfo} />}
 

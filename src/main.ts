@@ -249,6 +249,7 @@ async function executeConversion(
 ): Promise<ScanResult> {
   const { input, target, output, sourceOverride, maleSource, maleTarget } =
     args;
+  const physicsProfile = args.physicsProfile ?? "auto";
 
   if (resolve(input) === resolve(output)) {
     throw new Error(
@@ -307,7 +308,9 @@ async function executeConversion(
     progress: 70,
   });
 
-  const result = await convertMod(input, output, files, detection, target);
+  const result = await convertMod(input, output, files, detection, target, {
+    physicsProfile,
+  });
   applyPythonSummaryToAudit(result, pythonSummary);
 
   // ── Male conversion pass (mixed-gender mods) ─────────────────────────────
@@ -328,6 +331,9 @@ async function executeConversion(
         maleFiles,
         maleDetection,
         maleTargetType,
+        {
+          physicsProfile,
+        },
       );
       result.convertedFiles = [
         ...result.convertedFiles,
@@ -397,6 +403,7 @@ async function executeConversion(
       `TARGET: ${target}`,
       `MODE: ${result.conversionMode}`,
       `PATH: ${result.conversionPath}`,
+      `PHYSICS PROFILE: ${physicsProfile}`,
       `OUTPUT ALIAS: ${result.preferredOutputAlias}`,
       ``,
       detection.rankedCandidates.length > 0

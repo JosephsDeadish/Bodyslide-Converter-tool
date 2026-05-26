@@ -150,11 +150,14 @@ export type ConversionResult = {
   pythonEngine?: PythonEngineRunSummary;
 };
 
+export type ConversionPhysicsProfile = "auto" | "cbpc" | "hdt-smp" | "none";
+
 export type ConversionRunArgs = {
   input: string;
   target: BodyType;
   output: string;
   sourceOverride?: BodyType;
+  physicsProfile?: ConversionPhysicsProfile;
   maleSource?: BodyType;
   maleTarget?: BodyType;
 };

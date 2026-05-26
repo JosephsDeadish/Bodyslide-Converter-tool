@@ -2946,6 +2946,41 @@ describe("convertMod", () => {
     expect(stubEntry).toBeDefined();
   });
 
+  it("does not synthesize a CBPC stub when physics profile is HDT-SMP", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "caliente",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+      { physicsProfile: "hdt-smp" },
+    );
+
+    const stubEntry = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.outputPath.endsWith(".ini") &&
+        f.action === "synthesized",
+    );
+    expect(stubEntry).toBeUndefined();
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Physics profile was set to 'HDT-SMP'"),
+      ),
+    ).toBe(true);
+  });
+
   it("uses genital-specific defaults for synthesized SOS CBPC stubs", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -3427,6 +3462,50 @@ describe("convertMod", () => {
     for (const bone of bti["3ba"].physicsBones) {
       expect(convertedConfig.toLowerCase()).toContain(bone.toLowerCase());
     }
+  });
+
+  it("does not append missing CBPC bones when physics profile is set to no physics", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "SKSE", "Plugins", "CBPC"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe mesh",
+    );
+    await writeFile(
+      join(inputDir, "SKSE", "Plugins", "CBPC", "cbbe_armor.ini"),
+      ["NPC L Breast01=0.500", "NPC R Breast01=0.500"].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(inputDir, outputDir, files, detection, "3ba", {
+      physicsProfile: "none",
+    });
+
+    const convertedConfigEntry = result.convertedFiles.find(
+      (f) =>
+        f.kind === "text" &&
+        f.outputPath.toLowerCase().includes("cbpc") &&
+        f.outputPath.toLowerCase().endsWith(".ini"),
+    );
+    expect(convertedConfigEntry).toBeDefined();
+    const convertedConfig = await readFile(
+      join(outputDir, convertedConfigEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(convertedConfig).not.toContain(
+      "Missing physics chain bones added by SlideSmith",
+    );
+    expect(convertedConfig).not.toContain("NPC Belly");
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Physics profile was set to 'No physics'"),
+      ),
+    ).toBe(true);
   });
 
   it("handles spaced CBPC assignments and ignores commented-out bone lines when filling missing physics bones", async () => {

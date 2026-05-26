@@ -113,9 +113,13 @@ describe("python engine interpreter candidates", () => {
       args: [],
     });
 
+    expect(interpreters).toContainEqual({ command: "py", args: ["-3.16"] });
+    expect(interpreters).toContainEqual({ command: "py", args: ["-3.14"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.13"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.12"] });
     expect(interpreters).toContainEqual({ command: "py", args: ["-3.11"] });
+    expect(interpreters).toContainEqual({ command: "python3.16", args: [] });
+    expect(interpreters).toContainEqual({ command: "python3.14", args: [] });
     expect(interpreters).toContainEqual({ command: "python3.13", args: [] });
     expect(interpreters).toContainEqual({ command: "python3.12", args: [] });
     expect(interpreters).toContainEqual({ command: "python3", args: [] });
@@ -146,7 +150,7 @@ describe("python runtime error classification", () => {
 });
 
 describe("python interpreter validation", () => {
-  it("accepts only 64-bit Python 3.10-3.13 interpreters", () => {
+  it("accepts only 64-bit Python 3.10-3.16 interpreters", () => {
     expect(
       isSupportedPythonInterpreter({
         major: 3,
@@ -167,6 +171,26 @@ describe("python interpreter validation", () => {
         basePrefix: "/python312-32",
       }),
     ).toBe(false);
+    expect(
+      isSupportedPythonInterpreter({
+        major: 3,
+        minor: 16,
+        bits: 64,
+        executable: "/python316/python",
+        prefix: "/python316",
+        basePrefix: "/python316",
+      }),
+    ).toBe(true);
+    expect(
+      isSupportedPythonInterpreter({
+        major: 3,
+        minor: 14,
+        bits: 64,
+        executable: "/python314/python",
+        prefix: "/python314",
+        basePrefix: "/python314",
+      }),
+    ).toBe(true);
     expect(
       isSupportedPythonInterpreter({
         major: 3,
