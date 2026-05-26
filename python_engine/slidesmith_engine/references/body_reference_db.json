@@ -1,0 +1,1823 @@
+{
+  "schemaVersion": 3,
+  "description": "Body reference metadata for canonical topology maps, per-body adapter transfer data, and physics configuration profiles.",
+  "bodies": {
+    "cbbe": {
+      "topology": "cbbe",
+      "topologyReference": "CBBE SE Curvy",
+      "canonicalVertexMap": "cbbe-female-canonical",
+      "skeletonProfile": "xpmsse-compatible-female",
+      "partitionProfile": "female-default",
+      "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "CBBE Curvy",
+        "thin": "CBBE Slim",
+        "muscle": "Muscular",
+        "pregnancy": "Pregnant Belly",
+        "zapCleavage": "Zap Cleavage",
+        "zapBelly": "Zap Belly",
+        "natural": "CBBE Body"
+      },
+      "physicsUpgradePath": "3ba",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
+    },
+    "3ba": {
+      "topology": "cbbe",
+      "topologyReference": "3BA Body Amazing",
+      "canonicalVertexMap": "cbbe-female-canonical",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC LBreastRoot",
+        "NPC RBreastRoot",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly",
+        "NPC BellyRoot"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
+        "leftBreastRoot": "NPC LBreastRoot",
+        "rightBreast": "NPC R Breast01",
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "rightBreastRoot": "NPC RBreastRoot",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
+        "belly": "NPC Belly",
+        "bellyRoot": "NPC BellyRoot",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "3BA Curvy",
+        "thin": "3BA Slim",
+        "muscle": "3BA Athletic",
+        "pregnancy": "3BA Pregnant",
+        "zapCleavage": "3BA Zap Cleavage",
+        "zapBelly": "3BA Zap Belly",
+        "natural": "3BA Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": true,
+        "hdtSmpCompatible": true,
+        "softbodySupported": true,
+        "physicsLevel": "3bbb",
+        "boneNamingConvention": "cbbe-3ba",
+        "notes": "Supports CBPC and HDT-SMP. NPC LBreastRoot/NPC RBreastRoot are 3BA-specific root control bones above the standard breast chain \u2014 they must be preserved for CBPC/HDT-SMP to work correctly. NPC BellyRoot extends the belly chain for the softbody belly simulation. 3BA Softbody variant enables per-vertex HDT-SMP deformation via NiSkinData partitions. COCO uses the identical physics bone set as 3BA; COCO \u2194 3BA physics conversion is lossless."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "cbbe",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC LBreastRoot": "NPC Spine2",
+        "NPC RBreastRoot": "NPC Spine2",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly",
+        "NPC BellyRoot": "NPC Belly"
+      }
+    },
+    "coco": {
+      "topology": "cbbe",
+      "topologyReference": "COCO Body SE",
+      "canonicalVertexMap": "cbbe-female-canonical",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC LBreastRoot",
+        "NPC RBreastRoot",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly",
+        "NPC BellyRoot"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
+        "leftBreastRoot": "NPC LBreastRoot",
+        "rightBreast": "NPC R Breast01",
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "rightBreastRoot": "NPC RBreastRoot",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
+        "belly": "NPC Belly",
+        "bellyRoot": "NPC BellyRoot",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "COCO Body Curvy",
+        "thin": "COCO Body Slim",
+        "muscle": "COCO Body Athletic",
+        "pregnancy": "COCO Body Pregnant",
+        "zapCleavage": "COCO Zap Cleavage",
+        "zapBelly": "COCO Zap Belly",
+        "natural": "COCO Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": true,
+        "hdtSmpCompatible": true,
+        "softbodySupported": true,
+        "physicsLevel": "3bbb",
+        "boneNamingConvention": "cbbe-3ba",
+        "notes": "Uses identical bone naming to 3BA: NPC L/R Breast01-03, NPC LBreastRoot/NPC RBreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot. COCO \u2194 3BA conversion is near-lossless for physics configs. Standard CBBE-family CBPC configs with BreastRoot bones are directly compatible. COCOBody HDT-SMP XML (NickNak) required for softbody simulation."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "cbbe",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC LBreastRoot": "NPC Spine2",
+        "NPC RBreastRoot": "NPC Spine2",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly",
+        "NPC BellyRoot": "NPC Belly"
+      }
+    },
+    "himbo": {
+      "topology": "male",
+      "topologyReference": "HIMBO RefBody",
+      "canonicalVertexMap": "male-himbo-canonical",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-default",
+      "physicsBones": ["NPC L Pectoral", "NPC R Pectoral"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "chestWidth": "Chest Width",
+        "chestDepth": "Chest Depth",
+        "shoulderWidth": "Shoulders"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Pectoral",
+        "rightBreast": "NPC R Pectoral",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot",
+        "leftPectoral": "NPC L Pectoral",
+        "rightPectoral": "NPC R Pectoral"
+      },
+      "morphEquivalents": {
+        "heavy": "HIMBO Bulk",
+        "thin": "HIMBO Lean",
+        "muscle": "HIMBO Muscular",
+        "pregnancy": "HIMBO Belly",
+        "zapCleavage": "HIMBO Chest Zap",
+        "zapBelly": "HIMBO Belly Zap",
+        "natural": "HIMBO Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": true,
+        "softbodySupported": false,
+        "physicsLevel": "pectoral",
+        "boneNamingConvention": "npc-pectoral",
+        "notes": "HIMBO Physics Addon (separate HDT-SMP install) adds optional pectoral motion via NPC L/R Pectoral bones. Base HIMBO has no physics \u2014 the addon is a separate esp/esm. CBPC is not supported for pectoral physics. Use the same NPC L/R Pectoral mapping when converting HIMBO Physics content to BodyTalk Physics and vice versa."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {
+        "NPC L Pectoral": "NPC L Clavicle",
+        "NPC R Pectoral": "NPC R Clavicle"
+      }
+    },
+    "bodytalk": {
+      "topology": "male",
+      "topologyReference": "BodyTalk V3",
+      "canonicalVertexMap": "male-bodytalk-canonical",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-default",
+      "physicsBones": ["NPC L Pectoral", "NPC R Pectoral"],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thigh",
+        "arm": "Arms",
+        "calf": "Calves",
+        "chestWidth": "Chest Width",
+        "chestDepth": "Chest Depth",
+        "shoulderWidth": "Shoulders"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot",
+        "leftPectoral": "NPC L Pectoral",
+        "rightPectoral": "NPC R Pectoral"
+      },
+      "morphEquivalents": {
+        "heavy": "BodyTalk Bulk",
+        "thin": "BodyTalk Lean",
+        "muscle": "BodyTalk Muscular",
+        "pregnancy": "BodyTalk Belly",
+        "zapCleavage": "BodyTalk Chest Zap",
+        "zapBelly": "BodyTalk Belly Zap",
+        "natural": "BodyTalk Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": true,
+        "softbodySupported": false,
+        "physicsLevel": "pectoral",
+        "boneNamingConvention": "npc-pectoral",
+        "notes": "BodyTalk Physics variant (separate HDT-SMP addon) adds pectoral motion via NPC L/R Pectoral bones \u2014 the identical bone naming used by the HIMBO Physics Addon. HIMBO \u2194 BodyTalk physics conversion is lossless. CBPC not supported for pectoral physics. BT3 Muscle Solution is the most common physics-enabled variant."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {
+        "NPC L Pectoral": "NPC L Clavicle",
+        "NPC R Pectoral": "NPC R Clavicle"
+      }
+    },
+    "tbd": {
+      "topology": "cbbe",
+      "topologyReference": "TBD 3BBB",
+      "canonicalVertexMap": "cbbe-female-canonical",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
+        "rightBreast": "NPC R Breast01",
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "TBD Curvy",
+        "thin": "TBD Slim",
+        "muscle": "TBD Athletic",
+        "pregnancy": "TBD Pregnant",
+        "zapCleavage": "TBD Zap Cleavage",
+        "zapBelly": "TBD Zap Belly",
+        "natural": "TBD Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": true,
+        "hdtSmpCompatible": true,
+        "softbodySupported": true,
+        "physicsLevel": "3bbb",
+        "boneNamingConvention": "cbbe-standard",
+        "notes": "Uses CBBE-standard NPC L/R Breast01-03, L/R Butt, NPC Belly bone names \u2014 no BreastRoot bones. CBPC configs are interchangeable with standard CBBE-family physics setups. TBD 3BBB adds HDT-SMP softbody support via NiSkinData partitions. When converting from 3BA or COCO, BreastRoot/BellyRoot bone weights must be collapsed to the standard chain."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "cbbe",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
+      }
+    },
+    "sos": {
+      "topology": "male",
+      "topologyReference": "SOS Full",
+      "canonicalVertexMap": "male-sos-canonical",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-physics",
+      "physicsBones": [
+        "NPC GenitalsBase01",
+        "NPC GenitalsBase02",
+        "NPC GenitalsBase03",
+        "NPC GenitalsBase04",
+        "NPC GenitalsBase05",
+        "NPC L GenitalsScrotum01",
+        "NPC R GenitalsScrotum01"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "chestWidth": "Chest Width",
+        "chestDepth": "Chest Depth",
+        "shoulderWidth": "Shoulders"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "genitalsBase": "NPC GenitalsBase",
+        "genitalsBase01": "NPC GenitalsBase01",
+        "genitalsBase02": "NPC GenitalsBase02",
+        "genitalsBase03": "NPC GenitalsBase03",
+        "genitalsBase04": "NPC GenitalsBase04",
+        "genitalsBase05": "NPC GenitalsBase05",
+        "leftGenitalsScrotum01": "NPC L GenitalsScrotum01",
+        "rightGenitalsScrotum01": "NPC R GenitalsScrotum01",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot",
+        "leftPectoral": "NPC L Pectoral",
+        "rightPectoral": "NPC R Pectoral"
+      },
+      "morphEquivalents": {
+        "heavy": "SOS Bulk",
+        "thin": "SOS Lean",
+        "muscle": "SOS Muscular",
+        "pregnancy": "SOS Belly",
+        "zapCleavage": "SOS Chest Zap",
+        "zapBelly": "SOS Belly Zap",
+        "natural": "SOS Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": true,
+        "softbodySupported": false,
+        "physicsLevel": "genital",
+        "boneNamingConvention": "sos",
+        "notes": "SOS Regular uses HDT-SMP for genital physics via NPC GenitalsBase01-05 and NPC L/R GenitalsScrotum01 bones. SOS Light is the static no-physics variant. Always confirm the corresponding SMP XML config is present."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {
+        "NPC GenitalsBase01": "NPC Pelvis",
+        "NPC GenitalsBase02": "NPC Pelvis",
+        "NPC GenitalsBase03": "NPC Pelvis",
+        "NPC GenitalsBase04": "NPC Pelvis",
+        "NPC GenitalsBase05": "NPC Pelvis",
+        "NPC L GenitalsScrotum01": "NPC Pelvis",
+        "NPC R GenitalsScrotum01": "NPC Pelvis"
+      }
+    },
+    "unp": {
+      "topology": "unp",
+      "topologyReference": "UNP Blessed",
+      "canonicalVertexMap": "unp-female-canonical",
+      "skeletonProfile": "xpmsse-compatible-female",
+      "partitionProfile": "female-default",
+      "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breast",
+        "thigh": "Thigh",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "UNP Curvy",
+        "thin": "UNP Slim",
+        "muscle": "UNP Athletic",
+        "pregnancy": "UNP Pregnant",
+        "zapCleavage": "UNP Zap Cleavage",
+        "zapBelly": "UNP Zap Belly",
+        "natural": "UNP Body"
+      },
+      "physicsUpgradePath": "bhunp",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
+    },
+    "bhunp": {
+      "topology": "unp",
+      "topologyReference": "BHUNP 3BBB",
+      "canonicalVertexMap": "unp-female-canonical",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": [
+        "BHUNP Breast L01",
+        "BHUNP Breast R01",
+        "BHUNP Breast L02",
+        "BHUNP Breast R02",
+        "BHUNP Breast L03",
+        "BHUNP Breast R03",
+        "BHUNP Butt L",
+        "BHUNP Butt R",
+        "NPC Belly"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "BHUNP Breast Height",
+        "breastDepth": "BHUNP Breast Depth",
+        "breastWidth": "BHUNP Breast Width",
+        "nippleCurve": "BHUNP Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "BHUNP Breast L01",
+        "leftBreast02": "BHUNP Breast L02",
+        "leftBreast03": "BHUNP Breast L03",
+        "rightBreast": "BHUNP Breast R01",
+        "rightBreast02": "BHUNP Breast R02",
+        "rightBreast03": "BHUNP Breast R03",
+        "leftButt": "BHUNP Butt L",
+        "rightButt": "BHUNP Butt R",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "BHUNP Curvy",
+        "thin": "BHUNP Slim",
+        "muscle": "BHUNP Athletic",
+        "pregnancy": "BHUNP Pregnant",
+        "zapCleavage": "BHUNP Zap Cleavage",
+        "zapBelly": "BHUNP Zap Belly",
+        "natural": "BHUNP Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": true,
+        "hdtSmpCompatible": true,
+        "softbodySupported": true,
+        "physicsLevel": "3bbb",
+        "boneNamingConvention": "bhunp",
+        "notes": "BHUNP uses BHUNP-prefixed breast/butt bone names (BHUNP Breast L/R01-03, BHUNP Butt L/R) which differ from the NPC-prefixed names used by all other female bodies. NPC Belly is shared with CBBE-family. CBPC config must reference BHUNP bone names specifically. BHUNP has no BreastRoot bones (unlike 3BA/COCO). BHUNP Softbody enables per-vertex HDT-SMP deformation."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "unp",
+      "physicsCollapseMap": {
+        "BHUNP Breast L01": "NPC L Breast",
+        "BHUNP Breast R01": "NPC R Breast",
+        "BHUNP Breast L02": "NPC L Breast",
+        "BHUNP Breast R02": "NPC R Breast",
+        "BHUNP Breast L03": "NPC L Breast",
+        "BHUNP Breast R03": "NPC R Breast",
+        "BHUNP Butt L": "NPC Pelvis",
+        "BHUNP Butt R": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
+      }
+    },
+    "uunp": {
+      "topology": "unp",
+      "topologyReference": "UUNP Special",
+      "canonicalVertexMap": "unp-female-canonical",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
+        "rightBreast": "NPC R Breast01",
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "belly": "NPC Belly",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "UUNP Curvy",
+        "thin": "UUNP Slim",
+        "muscle": "UUNP Athletic",
+        "pregnancy": "UUNP Pregnant",
+        "zapCleavage": "UUNP Zap Cleavage",
+        "zapBelly": "UUNP Zap Belly",
+        "natural": "UUNP Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": true,
+        "hdtSmpCompatible": true,
+        "softbodySupported": true,
+        "physicsLevel": "tbbp",
+        "boneNamingConvention": "cbbe-standard",
+        "notes": "UUNP Special uses NPC L/R Breast01-03, L/R Butt, NPC Belly (same naming as CBBE-family). UBE (Unified Body Enhancer) is a UUNP alias. UUNP Special Softbody enables per-vertex HDT-SMP deformation using standard NPC bone names."
+      },
+      "physicsUpgradePath": "bhunp",
+      "physicsDowngradePath": "unp",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
+      }
+    },
+    "7base": {
+      "topology": "legacy-female",
+      "topologyReference": "7Base Bombshell",
+      "canonicalVertexMap": "unp-female-canonical",
+      "skeletonProfile": "xpmsse-compatible-female",
+      "partitionProfile": "female-default",
+      "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "7Base Curvy",
+        "thin": "7Base Slim",
+        "muscle": "7Base Athletic",
+        "pregnancy": "7Base Pregnant",
+        "zapCleavage": "7Base Zap Cleavage",
+        "zapBelly": "7Base Zap Belly",
+        "natural": "7Base Body"
+      },
+      "physicsUpgradePath": "bhunp",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
+    },
+    "sam": {
+      "topology": "male",
+      "topologyReference": "SAM Light",
+      "canonicalVertexMap": "male-sam-canonical",
+      "skeletonProfile": "xpmsse-compatible-male",
+      "partitionProfile": "male-default",
+      "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "chest-left",
+        "chest-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Glutes",
+        "breast": "Chest",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "chestWidth": "SAM Chest Width",
+        "chestDepth": "SAM Chest Depth",
+        "shoulderWidth": "SAM Shoulders"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot",
+        "leftPectoral": "NPC L Pectoral",
+        "rightPectoral": "NPC R Pectoral"
+      },
+      "morphEquivalents": {
+        "heavy": "SAM Bulk",
+        "thin": "SAM Lean",
+        "muscle": "SAM Athletic",
+        "pregnancy": "SAM Belly",
+        "zapCleavage": "SAM Chest Zap",
+        "zapBelly": "SAM Belly Zap",
+        "natural": "SAM Body"
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
+    },
+    "ube": {
+      "topology": "unp",
+      "topologyReference": "UBE 2.0 Body",
+      "canonicalVertexMap": "unp-female-canonical",
+      "skeletonProfile": "xpmsse-extended-female",
+      "partitionProfile": "female-physics",
+      "physicsBones": [
+        "NPC L Breast01",
+        "NPC R Breast01",
+        "NPC L Breast02",
+        "NPC R Breast02",
+        "NPC L Breast03",
+        "NPC R Breast03",
+        "NPC L Butt",
+        "NPC R Butt",
+        "NPC Belly"
+      ],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "breast-left",
+        "breast-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hips",
+        "butt": "Butt",
+        "breast": "Breasts",
+        "thigh": "Thighs",
+        "arm": "Arms",
+        "calf": "Calves",
+        "breastHeight": "Breast Height",
+        "breastDepth": "Breast Depth",
+        "breastWidth": "Breast Width",
+        "nippleCurve": "Nipple Curve",
+        "hipProtrusion": "Hip Protrusion",
+        "thighSize": "Thigh Size",
+        "backWidth": "Back Width"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast01",
+        "leftBreast02": "NPC L Breast02",
+        "leftBreast03": "NPC L Breast03",
+        "rightBreast": "NPC R Breast01",
+        "rightBreast02": "NPC R Breast02",
+        "rightBreast03": "NPC R Breast03",
+        "belly": "NPC Belly",
+        "leftButt": "NPC L Butt",
+        "rightButt": "NPC R Butt",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "UBE Curvy",
+        "thin": "UBE Slim",
+        "muscle": "UBE Athletic",
+        "pregnancy": "UBE Pregnant",
+        "zapCleavage": "UBE Zap Cleavage",
+        "zapBelly": "UBE Zap Belly",
+        "natural": "UBE Body"
+      },
+      "physicsConfig": {
+        "cbpcCompatible": true,
+        "hdtSmpCompatible": true,
+        "softbodySupported": true,
+        "physicsLevel": "tbbp",
+        "boneNamingConvention": "cbbe-standard",
+        "notes": "UBE uses the same NPC L/R Breast01-03, L/R Butt, NPC Belly bone names as UUNP Special. UBE physics configs are interchangeable with UUNP Special physics configs. UBE Softbody enables per-vertex HDT-SMP deformation via NiSkinData partitions."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "unp",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
+      }
+    },
+    "vanilla": {
+      "topology": "vanilla",
+      "topologyReference": "Vanilla Skyrim",
+      "canonicalVertexMap": "vanilla-canonical",
+      "skeletonProfile": "vanilla",
+      "partitionProfile": "vanilla",
+      "physicsBones": [],
+      "correctiveSmoothingZones": [
+        "armpit-left",
+        "armpit-right",
+        "crotch",
+        "elbow-left",
+        "elbow-right",
+        "knee-left",
+        "knee-right"
+      ],
+      "sliderMappings": {
+        "waist": "Waist",
+        "belly": "Belly",
+        "hip": "Hip",
+        "butt": "Butt",
+        "breast": "Chest",
+        "thigh": "Thigh",
+        "arm": "Arms",
+        "calf": "Calves"
+      },
+      "boneMap": {
+        "spine": "NPC Spine2",
+        "pelvis": "NPC Pelvis",
+        "leftThigh": "NPC L Thigh",
+        "rightThigh": "NPC R Thigh",
+        "leftCalf": "NPC L Calf",
+        "rightCalf": "NPC R Calf",
+        "leftBreast": "NPC L Breast",
+        "rightBreast": "NPC R Breast",
+        "belly": "NPC Belly",
+        "neck": "NPC Neck",
+        "leftClavicle": "NPC L Clavicle",
+        "rightClavicle": "NPC R Clavicle",
+        "leftUpperArm": "NPC L UpperArm",
+        "rightUpperArm": "NPC R UpperArm",
+        "leftForeArm": "NPC L ForeArm",
+        "rightForeArm": "NPC R ForeArm",
+        "leftHand": "NPC L Hand",
+        "rightHand": "NPC R Hand",
+        "leftFoot": "NPC L Foot",
+        "rightFoot": "NPC R Foot"
+      },
+      "morphEquivalents": {
+        "heavy": "Vanilla Heavy",
+        "thin": "Vanilla Light",
+        "muscle": "Vanilla Athletic",
+        "pregnancy": "Vanilla Belly",
+        "zapCleavage": "Vanilla Chest Zap",
+        "zapBelly": "Vanilla Belly Zap",
+        "natural": "Vanilla Body"
+      },
+      "physicsUpgradePath": "3ba",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "Vanilla Skyrim body has no physics bones and uses the original Bethesda skeleton topology. Outfits targeting a physics body (3BA, TBD, UUNP Special, UBE, BHUNP) require a full re-weight pass in Outfit Studio against the target reference body before BodySlide sliders will output correctly."
+      }
+    }
+  },
+  "adapters": [
+    {
+      "source": "3ba",
+      "target": "uunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "3ba",
+      "target": "tbd",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "3ba",
+      "target": "bhunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "tbd",
+      "target": "3ba",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "tbd",
+      "target": "uunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "tbd",
+      "target": "bhunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "uunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "3ba",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "uunp",
+      "target": "bhunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "uunp",
+      "target": "3ba",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "ube",
+      "target": "uunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "ube",
+      "target": "bhunp",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "ube",
+      "target": "3ba",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "ube",
+      "target": "tbd",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "uunp",
+      "target": "ube",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "ube",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "3ba",
+      "target": "ube",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "tbd",
+      "target": "ube",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "unp",
+      "target": "ube",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "ube",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "himbo",
+      "target": "sam",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "himbo",
+      "target": "bodytalk",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sam",
+      "target": "himbo",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "cbbe",
+      "target": "3ba",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "tbd",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "uunp",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "unp",
+      "target": "bhunp",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "unp",
+      "target": "uunp",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "unp",
+      "target": "cbbe",
+      "profile": "female-cross-family"
+    },
+    {
+      "source": "bodytalk",
+      "target": "sos",
+      "profile": "male-physics-upgrade"
+    },
+    {
+      "source": "bodytalk",
+      "target": "himbo",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sos",
+      "target": "bodytalk",
+      "profile": "male-physics-downgrade"
+    },
+    {
+      "source": "sam",
+      "target": "sos",
+      "profile": "male-physics-upgrade"
+    },
+    {
+      "source": "sam",
+      "target": "bodytalk",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "bodytalk",
+      "target": "sam",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "himbo",
+      "target": "sos",
+      "profile": "male-physics-addon"
+    },
+    {
+      "source": "vanilla",
+      "target": "cbbe",
+      "profile": "female-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "unp",
+      "profile": "female-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "3ba",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "bhunp",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "uunp",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "himbo",
+      "profile": "male-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "sam",
+      "profile": "male-baseline-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "bodytalk",
+      "profile": "male-baseline-upgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "bhunp",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "3ba",
+      "target": "cbbe",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "cbbe",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "unp",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "uunp",
+      "target": "unp",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "3ba",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "unp",
+      "profile": "female-cross-family"
+    },
+    {
+      "source": "7base",
+      "target": "cbbe",
+      "profile": "female-legacy-cross-family"
+    },
+    {
+      "source": "7base",
+      "target": "bhunp",
+      "profile": "female-legacy-physics-upgrade"
+    },
+    {
+      "source": "7base",
+      "target": "uunp",
+      "profile": "female-legacy-physics-upgrade"
+    },
+    {
+      "source": "unp",
+      "target": "3ba",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "unp",
+      "target": "tbd",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "7base",
+      "target": "3ba",
+      "profile": "female-legacy-cross-family-physics-upgrade"
+    },
+    {
+      "source": "7base",
+      "target": "unp",
+      "profile": "female-legacy-same-family"
+    },
+    {
+      "source": "7base",
+      "target": "tbd",
+      "profile": "female-legacy-cross-family"
+    },
+    {
+      "source": "3ba",
+      "target": "7base",
+      "profile": "female-physics-downgrade-legacy"
+    },
+    {
+      "source": "cbbe",
+      "target": "7base",
+      "profile": "female-cross-family-legacy"
+    },
+    {
+      "source": "unp",
+      "target": "7base",
+      "profile": "female-same-family-legacy"
+    },
+    {
+      "source": "vanilla",
+      "target": "tbd",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "7base",
+      "profile": "female-baseline-legacy"
+    },
+    {
+      "source": "vanilla",
+      "target": "sos",
+      "profile": "male-baseline-physics-addon"
+    },
+    {
+      "source": "sos",
+      "target": "himbo",
+      "profile": "male-physics-addon-base"
+    },
+    {
+      "source": "sos",
+      "target": "sam",
+      "profile": "male-physics-addon-base"
+    },
+    {
+      "source": "bhunp",
+      "target": "tbd",
+      "profile": "female-cross-family-physics"
+    },
+    {
+      "source": "uunp",
+      "target": "tbd",
+      "profile": "female-cross-family-physics"
+    },
+    {
+      "source": "uunp",
+      "target": "cbbe",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "cbbe",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "7base",
+      "profile": "female-legacy-physics-downgrade"
+    },
+    {
+      "source": "uunp",
+      "target": "7base",
+      "profile": "female-legacy-physics-downgrade"
+    },
+    {
+      "source": "coco",
+      "target": "3ba",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "3ba",
+      "target": "coco",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "coco",
+      "target": "tbd",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "tbd",
+      "target": "coco",
+      "profile": "female-physics-same-family"
+    },
+    {
+      "source": "coco",
+      "target": "cbbe",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "coco",
+      "profile": "female-physics-upgrade"
+    },
+    {
+      "source": "coco",
+      "target": "bhunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "bhunp",
+      "target": "coco",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "coco",
+      "target": "uunp",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "uunp",
+      "target": "coco",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "coco",
+      "target": "ube",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "ube",
+      "target": "coco",
+      "profile": "female-physics-cross-family"
+    },
+    {
+      "source": "coco",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "unp",
+      "target": "coco",
+      "profile": "female-cross-family-physics-upgrade"
+    },
+    {
+      "source": "coco",
+      "target": "7base",
+      "profile": "female-legacy-cross-family"
+    },
+    {
+      "source": "7base",
+      "target": "coco",
+      "profile": "female-legacy-cross-family-physics-upgrade"
+    },
+    {
+      "source": "coco",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "coco",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "ube",
+      "target": "cbbe",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "ube",
+      "target": "unp",
+      "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "*",
+      "target": "himbo",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "*",
+      "target": "bodytalk",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "*",
+      "target": "sam",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "*",
+      "target": "sos",
+      "profile": "male-physics-upgrade"
+    },
+    {
+      "source": "himbo",
+      "target": "*",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "bodytalk",
+      "target": "*",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sam",
+      "target": "*",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sos",
+      "target": "*",
+      "profile": "male-physics-downgrade"
+    },
+    {
+      "source": "7base",
+      "target": "ube",
+      "profile": "female-legacy-physics-upgrade"
+    },
+    {
+      "source": "ube",
+      "target": "7base",
+      "profile": "female-legacy-physics-downgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "ube",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "ube",
+      "target": "vanilla",
+      "profile": "female-baseline-physics-downgrade"
+    },
+    {
+      "source": "cbbe",
+      "target": "vanilla",
+      "profile": "female-baseline-downgrade"
+    },
+    {
+      "source": "3ba",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "unp",
+      "target": "vanilla",
+      "profile": "female-baseline-downgrade"
+    },
+    {
+      "source": "bhunp",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "uunp",
+      "target": "vanilla",
+      "profile": "female-physics-downgrade"
+    },
+    {
+      "source": "7base",
+      "target": "vanilla",
+      "profile": "female-legacy-downgrade"
+    },
+    {
+      "source": "tbd",
+      "target": "7base",
+      "profile": "female-physics-downgrade-legacy"
+    }
+  ]
+}

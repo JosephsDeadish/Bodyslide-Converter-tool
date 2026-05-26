@@ -1,2 +1,155 @@
-# Bodyslide-Converter-tool
-Input any any clothing or armor mod for any body type and ouput bodyslide conversion for desired body 
+# SlideSmith
+
+Modern Electron + React desktop app and TypeScript CLI for scanning armor/clothing mod folders, auto-detecting likely source body type, and running conversion passes for supported target body types.
+
+The desktop path now uses a **Python core conversion engine** (invoked by Electron main process) for staged mesh/geometry pipeline orchestration.
+
+## Supported target body types
+
+- cbbe
+- 3ba
+- coco
+- himbo
+- bodytalk
+- tbd
+- sos
+- unp
+- bhunp
+- uunp
+- ube
+- 7base
+- sam
+- vanilla
+
+## Quick start
+
+```bash
+npm install
+npm run build
+node dist/index.js --input /path/to/mod --target 3ba --output /path/to/output
+```
+
+## Build runnable EXE
+
+To build the Electron desktop app locally:
+
+```bash
+npm install
+npm run build:main
+npm run build:renderer
+```
+
+To package a Windows portable executable:
+
+```bash
+npm install
+npm run package:win
+```
+
+Output:
+
+- `release/SlideSmith.exe`
+
+The command generates:
+
+- `conversion-report.json` with detection scores and conversion metadata
+- `conversion-summary.txt` with converted files, ranked body-type candidates, warnings, and a structured conversion audit
+- converted mod assets written into the selected output folder
+
+## Python core engine (desktop conversion backend)
+
+The Electron app orchestrates conversion jobs, while geometry/math stages are delegated to `python_engine/runner.py`.
+
+### Architecture boundary
+
+- Renderer: UI only (contextBridge API; no filesystem or geometry operations)
+- Electron main: IPC/job lifecycle + report writing + process orchestration
+- Python core: staged mesh pipeline and quality gates
+
+### Reference database
+
+`python_engine/slidesmith_engine/references/body_reference_db.json` is now the canonical source for per-body transfer metadata used by the Python core stage checks.  
+Each body entry must define:
+
+- `topology`, `topologyReference`, and `canonicalVertexMap`
+- `sliderMappings` (canonical slider key -> body slider name)
+- `boneMap` (canonical bone chain -> body bone name)
+- `morphEquivalents` (canonical morph key -> body-specific morph/zap name)
+
+The Python engine actively consumes these mappings for reference-body validation, weight-transfer readiness, morph/zap transfer readiness, TRI gating, and physics-bone coverage checks.
+High-quality stages now require both `topologyReference` and `canonicalVertexMap` in addition to the mapping dictionaries; if either body is missing them, the Python runner downgrades surface reprojection, weight transfer, morph transfer, and TRI generation to fallback mode.
+High-risk pairs (cross-topology/physics-partition mismatches) should also define an explicit `adapters` profile entry; the Python reference-body stage now warns when those adapter profiles are missing.
+
+### Install Python dependencies (recommended)
+
+```bash
+python -m pip install -r python_engine/requirements.txt
+```
+
+`PyFFI` (NIF IO), `numpy`, `scipy`, `trimesh`, and `pyvista` are treated as runtime capability gates by the Python core. Missing packages leave the app usable, but force degraded fallback reporting for NIF IO, surface reprojection, smoothing, cleanup, and TRI/morph generation stages.
+On Windows, runtime bootstrap now enforces wheel-only (`--only-binary=:all:`) package installs to avoid fragile source builds that require local C/C++ toolchains.
+
+### Bundle Python dependencies inside the EXE build
+
+The Electron build and Python dependency bundle steps are intentionally separate. Build the Electron main process first:
+
+```bash
+npm run build:main
+```
+
+Then, if you want bundled Python wheels copied into the package payload, run:
+
+```bash
+npm run bundle:python-deps
+npm run build:main
+```
+
+You can still preseed manually if preferred:
+
+```bash
+python -m pip install -r python_engine/requirements.txt --target python_deps
+```
+
+The packaged runtime adds bundled `python_deps` paths to `PYTHONPATH` before falling back to runtime pip bootstrap.
+
+If Python is not on `PATH`, set:
+
+```bash
+SLIDESMITH_PYTHON=/absolute/path/to/python
+```
+
+Use Python **3.10-3.16 (64-bit)** (including all `3.14.x` patch releases). Avoid 32-bit interpreters and broken/partial virtual environments; the runtime bootstrap intentionally ignores unsupported interpreters.
+
+## Notes
+
+- Detection is heuristic-based and inspects filenames plus file previews.
+- Scanner preview reads are now extension-filtered and streamed from file starts (`.txt/.xml/.osp/.ini/.json` up to 4 KB, `.nif/.tri/.osd` up to 512 B), which improves stability and responsiveness on very large armor/clothing mod trees.
+- Scanner file-count cap now defaults to 300,000 files per pass and can be increased with `SLIDESMITH_MAX_SCAN_FILES=<number>` for exceptionally large mod packs.
+- Native conversion currently supports same-body output, same-gender cross-family adaptation, vanilla compatibility adaptation, and cross-gender outfit adaptation. Named compatibility paths include CBBE ↔ 3BA ↔ TBD, UNP ↔ UUNP ↔ BHUNP ↔ 7Base, and HIMBO ↔ SAM ↔ BodyTalk ↔ SOS.
+- Generated output file names are normalized to canonical target body aliases (for example `3BA`, `BHUNP`, `UUNP`, `HIMBO`, and `SAM`) to make BodySlide outputs easier to identify.
+- Cross-gender adaptation also rewrites common gendered asset markers such as `femalebody`/`malebody` and first-person hand paths so generated outputs line up with the selected target gender.
+- The CLI summary, JSON report, and desktop app all include the generated conversion path metadata plus structured conversion-plan operations for manual follow-up.
+- Generated outputs now apply automatic naming, gender-marker, and physics-reference harmonization; use BodySlide preview plus in-game checks for high-risk topology/cross-gender cases.
+- Desktop conversion now includes a **Physics Profile** selector (`Auto`, `CBPC`, `HDT-SMP`, `No physics`) so CBPC-specific patching/stub generation can match the intended runtime setup.
+- Desktop conversion now includes an optional **Reference Body NIF** picker. Use the target body's base mesh (`femalebody_0.nif` for female targets, `malebody_0.nif` for male targets) so Python reference-body checks can validate the selected reference file during conversion.
+- Installer-style layouts are now handled more safely: embedded `Data/` roots inside option folders are normalized to canonical game paths, while `fomod/` installer metadata files are preserved without body-alias rewrites.
+- Native conversion now auto-synthesizes missing `_0`/`_1` `.nif` weight-pair meshes when only one side exists, improving in-game weight-slider completeness.
+- Native conversion now auto-synthesizes a BodySlide SliderSet `.osp` file when mesh outputs exist but no project file was provided, so converted outfits still appear directly in BodySlide without manual project setup.
+- Native conversion now also synthesizes supplemental BodySlide SliderSet data when source project files are present but missing mesh `OutputFile` coverage, reducing BodySlide "missing SliderSet data" issues.
+- Converted BodySlide outputs now always include a canonical `CalienteTools/BodySlide/SliderGroups/<TargetAlias>_Outfits.xml` registration built from the generated SliderSet names so the converted outfits appear under a predictable BodySlide group.
+- BodySlide placement is normalized to canonical folders for compatibility with MO2/Vortex and BodySlide itself: `.osp` in `CalienteTools/BodySlide/SliderSets/`, SliderGroup XML in `CalienteTools/BodySlide/SliderGroups/`, ShapeData meshes in `CalienteTools/BodySlide/ShapeData/<TargetAlias>/...`, and runtime build outputs in `meshes/...`.
+- Reports now include a structured conversion audit that checks extracted mesh/slider assets, BodySlide slider-set generation, topology risk, and target physics-config coverage (including 3BA belly-chain validation).
+- Physics config auditing now requires full target-bone marker coverage before passing the check, helping catch partial/incomplete config remaps.
+- Physics-bone remapping now includes semantic cross-body matching (breast/butt/belly/genitals chains with side/level handling) before fallback collapse, improving compatibility across physics-capable body-type pairs.
+- Detection and conversion metadata now includes UBE alias coverage under UUNP-family support and softbody physics-profile aliases for 3BA/BHUNP-style projects.
+- Physics alias remapping now also recognizes UBE softbody-style UUNP tokens (for example `NPC L/R UUNP Glute 01` and `NPC Belly01`) during UUNP-family physics conversion.
+- Physics remapping now recognizes additional compact bone-token variants seen in some CBPC configs (for example `NPC LBreast01`, `NPC RButt01`) to improve cross-body conversion reliability.
+- Physics remapping now also recognizes modern softbody alias chains found in some 3BA/UUNP/UBE configs (for example `NPC L/R PreBreast01-03`, `NPC Belly01`, and `NPC L/R UBE Breast 01-03`) so conversions preserve breast/belly physics data more reliably.
+- `.nif` conversion now prioritizes body/outfit-likely meshes (including weighted/body-aliased naming patterns) while still preserving clearly non-body paths such as weapon/world meshes.
+- Body knowledge metadata now includes per-target skeleton guidance (including XPMSSE/XP32 expectations for physics-capable Skyrim SE bodies) and surfaces that guidance in conversion warnings and target info.
+- Desktop builds now include a native right-click context menu for copy/cut/paste/select-all in the renderer so selected report text can be copied directly.
+- Detection now surfaces FOMOD, MO2, and Vortex packaging signals in planning/UI so deployment context is visible before conversion.
+- The desktop sidebar now includes a **Support on Patreon** button that opens https://www.patreon.com/cw/DeadOnTheInside in your browser.
+- Packaged Windows builds now use `build/icon.ico` as the executable/taskbar icon; runtime window icon also resolves from `build/icon.*` candidates.
+- CI workflow (`.github/workflows/build.yml`) runs lint/test/build and also publishes a Windows EXE artifact bundle (`slidesmith-release`) for workflow-run approval and testing.
+- Packaging remains standard `electron-builder` output (no obfuscation/self-extractors/UPX). For production release trust, add Windows code signing in your release pipeline.

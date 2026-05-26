@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-exe/
+dist-main/
+release/
+python_deps/
+__pycache__/
+*.pyc
+.venv/
