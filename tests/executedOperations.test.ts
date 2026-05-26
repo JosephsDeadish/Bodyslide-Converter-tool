@@ -89,13 +89,15 @@ describe("buildExecutedOperations", () => {
     });
 
     expect(operations[0]?.id).toBe("scan-assets");
-    expect(operations.some((op) => op.id === "python-surface-reprojection")).toBe(
-      true,
-    );
+    expect(
+      operations.some((op) => op.id === "python-surface-reprojection"),
+    ).toBe(true);
     expect(operations.some((op) => op.id === "python-weight-transfer")).toBe(
       true,
     );
-    expect(operations.some((op) => op.id === "python-quality-gates")).toBe(true);
+    expect(operations.some((op) => op.id === "python-quality-gates")).toBe(
+      true,
+    );
     expect(operations.some((op) => op.id === "write-converted-assets")).toBe(
       true,
     );

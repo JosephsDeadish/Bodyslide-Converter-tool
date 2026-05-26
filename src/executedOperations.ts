@@ -69,7 +69,8 @@ export function buildExecutedOperations({
   operations.push({
     id: "write-reports",
     name: "Write conversion reports",
-    description: "Wrote JSON and text conversion reports with audit and warning details.",
+    description:
+      "Wrote JSON and text conversion reports with audit and warning details.",
   });
 
   return operations;
