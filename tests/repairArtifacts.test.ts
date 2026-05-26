@@ -1,4 +1,4 @@
-import { access, mkdtemp, readFile, rm } from "node:fs/promises";
+import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -311,6 +311,61 @@ describe("repair artifact generation", () => {
         "_SlideSmith/repairs/morph-mapping-template.json",
         "_SlideSmith/repairs/physics-metadata-template.json",
       ]),
+    );
+  });
+
+  it("dual-writes generated repair artifacts to userData/repairs without mutating user reference DB", async () => {
+    const reportsDir = await makeTempDir();
+    const userDataDir = await makeTempDir();
+    const userReferenceDbPath = join(userDataDir, "body_reference_db.json");
+    const originalUserDb = `${JSON.stringify(
+      {
+        schemaVersion: 3,
+        bodies: {
+          cbbe: {
+            topology: "cbbe",
+          },
+        },
+        adapters: [],
+      },
+      null,
+      2,
+    )}\n`;
+    await writeFile(userReferenceDbPath, originalUserDb, "utf8");
+
+    const artifacts = await generateRepairArtifacts({
+      reportsDir,
+      userDataDir,
+      sourceBodyType: "cbbe",
+      targetBodyType: "uunp",
+      pythonSummary: makeSummary([
+        {
+          id: "reference-body",
+          title: "Reference body mapping",
+          status: "attention",
+          summary: "Reference body metadata is incomplete for this pair.",
+          details: [
+            "Populate topology, topologyReference, canonicalVertexMap, sliderMappings, boneMap, and morphEquivalents for both source and target bodies.",
+          ],
+        },
+      ]),
+    });
+
+    expect(artifacts.map((artifact) => artifact.relativePath)).toContain(
+      "_SlideSmith/repairs/repair-manifest.json",
+    );
+
+    for (const artifact of artifacts) {
+      const fileName = artifact.relativePath.split("/").pop();
+      expect(fileName).toBeTruthy();
+      await expect(access(join(reportsDir, "repairs", fileName!))).resolves
+        .toBeUndefined;
+      await expect(access(join(userDataDir, "repairs", fileName!))).resolves
+        .toBeUndefined;
+    }
+
+    await expect(readFile(userReferenceDbPath, "utf8")).resolves.toBe(
+      originalUserDb,
     );
   });
 });

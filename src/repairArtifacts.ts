@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import type { BodyType, PythonEngineRunSummary } from "./types.js";
@@ -24,9 +24,7 @@ export type RepairArtifact = {
 
 type RepairArtifactGenerationArgs = {
   reportsDir: string;
-  /** Optional Electron userData dir — when set, repairs are also written here
-   *  and the reference-DB patch is auto-merged so the Python engine uses it
-   *  on the next conversion run. */
+  /** Optional Electron userData dir — when set, repairs are also written here. */
   userDataDir?: string;
   sourceBodyType: BodyType;
   targetBodyType: BodyType;
@@ -635,64 +633,8 @@ function buildPhysicsMetadataTemplate(
 }
 
 // ---------------------------------------------------------------------------
-// User-data dir helpers: write repairs to ~/.slidesmith and auto-merge DB patch
+// User-data dir helper: dual-write repairs to ~/.slidesmith/repairs
 // ---------------------------------------------------------------------------
-
-type ReferenceDbPatch = {
-  bodies?: Record<string, unknown>;
-  adapters?: unknown[];
-};
-
-async function mergeReferenceDbPatch(
-  userDataDir: string,
-  patch: ReferenceDbPatch,
-): Promise<void> {
-  const userDbPath = join(userDataDir, "body_reference_db.json");
-
-  // Read existing user DB or start from an empty structure.
-  let existing: { bodies?: Record<string, unknown>; adapters?: unknown[] } = {
-    bodies: {},
-    adapters: [],
-  };
-  try {
-    const raw = await readFile(userDbPath, "utf8");
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      existing = parsed as typeof existing;
-    }
-  } catch {
-    // No existing user DB — starting fresh is fine.
-  }
-
-  // Merge bodies: patch entries override existing ones.
-  if (patch.bodies && typeof patch.bodies === "object") {
-    existing.bodies = { ...(existing.bodies ?? {}), ...patch.bodies };
-  }
-
-  // Append new adapters that don't already exist (match on source+target).
-  if (Array.isArray(patch.adapters)) {
-    const existingAdapters = Array.isArray(existing.adapters)
-      ? existing.adapters
-      : [];
-    const adapterKey = (a: unknown) => {
-      if (a && typeof a === "object") {
-        const obj = a as Record<string, unknown>;
-        return `${String(obj.source ?? "")}:${String(obj.target ?? "")}`;
-      }
-      return "";
-    };
-    const existingKeys = new Set(existingAdapters.map(adapterKey));
-    for (const adapter of patch.adapters) {
-      if (!existingKeys.has(adapterKey(adapter))) {
-        existingAdapters.push(adapter);
-        existingKeys.add(adapterKey(adapter));
-      }
-    }
-    existing.adapters = existingAdapters;
-  }
-
-  await writeFile(userDbPath, `${JSON.stringify(existing, null, 2)}\n`, "utf8");
-}
 
 async function writeToUserDataDir(
   userDataDir: string,
@@ -733,11 +675,15 @@ export async function generateRepairArtifacts(
     `${JSON.stringify(manifest, null, 2)}\n`,
     "utf8",
   );
+  const manifestContent = `${JSON.stringify(manifest, null, 2)}\n`;
   artifacts.push({
     relativePath: `_SlideSmith/repairs/${manifestFileName}`,
     description:
       "Structured list of detected repair issues and stage coverage.",
   });
+  if (args.userDataDir) {
+    await writeToUserDataDir(args.userDataDir, manifestFileName, manifestContent);
+  }
 
   const checklistFileName = "repair-checklist.txt";
   const checklistLines = [
@@ -821,10 +767,6 @@ export async function generateRepairArtifacts(
         metadataPatchFileName,
         patchJson,
       );
-      await mergeReferenceDbPatch(
-        args.userDataDir,
-        patch as ReferenceDbPatch,
-      ).catch(() => undefined);
     }
   }
 
