@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import type { BodyType, PythonEngineRunSummary } from "./types.js";
@@ -20,6 +20,14 @@ type RepairIssue = {
 export type RepairArtifact = {
   relativePath: string;
   description: string;
+};
+
+export type RepairArtifactResult = {
+  artifacts: RepairArtifact[];
+  /** Human-readable notices about reference DB entries that were automatically
+   *  merged into the user's local `body_reference_db.json`. Empty when no
+   *  merge occurred. */
+  dbMergeNotices: string[];
 };
 
 type RepairArtifactGenerationArgs = {
@@ -633,8 +641,78 @@ function buildPhysicsMetadataTemplate(
 }
 
 // ---------------------------------------------------------------------------
-// User-data dir helper: dual-write repairs to ~/.slidesmith/repairs
+// User-data dir helpers: dual-write repairs and auto-merge reference DB patch
 // ---------------------------------------------------------------------------
+
+type ReferenceDbPatch = {
+  bodies?: Record<string, unknown>;
+  adapters?: unknown[];
+};
+
+type DbMergeResult = {
+  bodiesAdded: string[];
+  adaptersAdded: string[];
+};
+
+async function mergeReferenceDbPatch(
+  userDataDir: string,
+  patch: ReferenceDbPatch,
+): Promise<DbMergeResult> {
+  const userDbPath = join(userDataDir, "body_reference_db.json");
+
+  let existing: { bodies?: Record<string, unknown>; adapters?: unknown[] } = {
+    bodies: {},
+    adapters: [],
+  };
+  try {
+    const raw = await readFile(userDbPath, "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      existing = parsed as typeof existing;
+    }
+  } catch {
+    // No existing user DB — starting fresh.
+  }
+
+  const bodiesAdded: string[] = [];
+  if (patch.bodies && typeof patch.bodies === "object") {
+    const merged = { ...(existing.bodies ?? {}) };
+    for (const [key, value] of Object.entries(patch.bodies)) {
+      merged[key] = value;
+      bodiesAdded.push(key);
+    }
+    existing.bodies = merged;
+  }
+
+  const adaptersAdded: string[] = [];
+  if (Array.isArray(patch.adapters)) {
+    const existingAdapters = Array.isArray(existing.adapters)
+      ? existing.adapters
+      : [];
+    const adapterKey = (a: unknown) => {
+      if (a && typeof a === "object") {
+        const obj = a as Record<string, unknown>;
+        return `${String(obj.source ?? "")}:${String(obj.target ?? "")}`;
+      }
+      return "";
+    };
+    const existingKeys = new Set(existingAdapters.map(adapterKey));
+    for (const adapter of patch.adapters) {
+      const key = adapterKey(adapter);
+      if (!existingKeys.has(key)) {
+        existingAdapters.push(adapter);
+        existingKeys.add(key);
+        adaptersAdded.push(key);
+      }
+    }
+    existing.adapters = existingAdapters;
+  }
+
+  await mkdir(userDataDir, { recursive: true });
+  await writeFile(userDbPath, `${JSON.stringify(existing, null, 2)}\n`, "utf8");
+
+  return { bodiesAdded, adaptersAdded };
+}
 
 async function writeToUserDataDir(
   userDataDir: string,
@@ -648,16 +726,17 @@ async function writeToUserDataDir(
 
 export async function generateRepairArtifacts(
   args: RepairArtifactGenerationArgs,
-): Promise<RepairArtifact[]> {
+): Promise<RepairArtifactResult> {
   const issues = collectRepairIssues(args.pythonSummary);
   if (issues.length === 0) {
-    return [];
+    return { artifacts: [], dbMergeNotices: [] };
   }
 
   const repairsDir = join(args.reportsDir, "repairs");
   await mkdir(repairsDir, { recursive: true });
 
   const artifacts: RepairArtifact[] = [];
+  const dbMergeNotices: string[] = [];
 
   const manifest = {
     generatedAt: new Date().toISOString(),
@@ -670,12 +749,8 @@ export async function generateRepairArtifacts(
     ],
   };
   const manifestFileName = "repair-manifest.json";
-  await writeFile(
-    join(repairsDir, manifestFileName),
-    `${JSON.stringify(manifest, null, 2)}\n`,
-    "utf8",
-  );
   const manifestContent = `${JSON.stringify(manifest, null, 2)}\n`;
+  await writeFile(join(repairsDir, manifestFileName), manifestContent, "utf8");
   artifacts.push({
     relativePath: `_SlideSmith/repairs/${manifestFileName}`,
     description:
@@ -763,14 +838,44 @@ export async function generateRepairArtifacts(
       description:
         "Metadata patch scaffold for topology, canonical maps, slider/bone/morph mappings, and adapter profiles.",
     });
-    // Auto-merge into the user-data reference DB so the Python engine picks it
-    // up on the next conversion run without any manual file copying.
     if (args.userDataDir) {
       await writeToUserDataDir(
         args.userDataDir,
         metadataPatchFileName,
         patchJson,
       );
+      // Auto-merge the scaffold into the user reference DB so the Python engine
+      // picks it up on the next run.  A notice is surfaced to the user so they
+      // know the DB was modified and can inspect/edit it.
+      try {
+        const mergeResult = await mergeReferenceDbPatch(
+          args.userDataDir,
+          patch as ReferenceDbPatch,
+        );
+        const changed =
+          mergeResult.bodiesAdded.length + mergeResult.adaptersAdded.length;
+        if (changed > 0) {
+          const parts: string[] = [];
+          if (mergeResult.bodiesAdded.length > 0) {
+            parts.push(
+              `body entries for: ${mergeResult.bodiesAdded.join(", ")}`,
+            );
+          }
+          if (mergeResult.adaptersAdded.length > 0) {
+            parts.push(
+              `adapter entries for: ${mergeResult.adaptersAdded.join(", ")}`,
+            );
+          }
+          dbMergeNotices.push(
+            `Reference DB auto-updated: scaffolded ${parts.join(" and ")} ` +
+              `(${args.sourceBodyType}→${args.targetBodyType}). ` +
+              `Review and fill in TODO values in _SlideSmith/repairs/${metadataPatchFileName}, ` +
+              `then rerun conversion for improved accuracy.`,
+          );
+        }
+      } catch {
+        // Merge failure is non-fatal; the patch file is still written to repairs/.
+      }
     }
   }
 
@@ -877,5 +982,5 @@ export async function generateRepairArtifacts(
     }
   }
 
-  return artifacts;
+  return { artifacts, dbMergeNotices };
 }

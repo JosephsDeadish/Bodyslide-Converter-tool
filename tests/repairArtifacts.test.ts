@@ -44,7 +44,7 @@ afterEach(async () => {
 describe("repair artifact generation", () => {
   it("skips artifact generation when no repair signals are present", async () => {
     const reportsDir = await makeTempDir();
-    const artifacts = await generateRepairArtifacts({
+    const { artifacts } = await generateRepairArtifacts({
       reportsDir,
       sourceBodyType: "cbbe",
       targetBodyType: "3ba",
@@ -65,7 +65,7 @@ describe("repair artifact generation", () => {
 
   it("generates missing-NIF repair templates when no NIF mesh warnings are present", async () => {
     const reportsDir = await makeTempDir();
-    const artifacts = await generateRepairArtifacts({
+    const { artifacts } = await generateRepairArtifacts({
       reportsDir,
       sourceBodyType: "cbbe",
       targetBodyType: "3ba",
@@ -148,7 +148,7 @@ describe("repair artifact generation", () => {
 
   it("generates targeted repair templates for adapter, smoothing, morph, and physics gaps", async () => {
     const reportsDir = await makeTempDir();
-    const artifacts = await generateRepairArtifacts({
+    const { artifacts } = await generateRepairArtifacts({
       reportsDir,
       sourceBodyType: "cbbe",
       targetBodyType: "bhunp",
@@ -263,7 +263,7 @@ describe("repair artifact generation", () => {
 
   it("detects repair issues from quality gates and warnings when stage summaries are sparse", async () => {
     const reportsDir = await makeTempDir();
-    const artifacts = await generateRepairArtifacts({
+    const { artifacts } = await generateRepairArtifacts({
       reportsDir,
       sourceBodyType: "cbbe",
       targetBodyType: "bhunp",
@@ -310,26 +310,24 @@ describe("repair artifact generation", () => {
     );
   });
 
-  it("dual-writes generated repair artifacts to userData/repairs without mutating user reference DB", async () => {
+  it("dual-writes repair artifacts to userData/repairs and auto-merges metadata patch into user reference DB with notices", async () => {
     const reportsDir = await makeTempDir();
     const userDataDir = await makeTempDir();
     const userReferenceDbPath = join(userDataDir, "body_reference_db.json");
-    const originalUserDb = `${JSON.stringify(
+    const originalUserDb = JSON.stringify(
       {
         schemaVersion: 3,
         bodies: {
-          cbbe: {
-            topology: "cbbe",
-          },
+          cbbe: { topology: "cbbe" },
         },
         adapters: [],
       },
       null,
       2,
-    )}\n`;
-    await writeFile(userReferenceDbPath, originalUserDb, "utf8");
+    );
+    await writeFile(userReferenceDbPath, `${originalUserDb}\n`, "utf8");
 
-    const artifacts = await generateRepairArtifacts({
+    const { artifacts, dbMergeNotices } = await generateRepairArtifacts({
       reportsDir,
       userDataDir,
       sourceBodyType: "cbbe",
@@ -347,10 +345,10 @@ describe("repair artifact generation", () => {
       ]),
     });
 
+    // All generated artifacts must exist in both the output and userData repairs folders.
     expect(artifacts.map((artifact) => artifact.relativePath)).toContain(
       "_SlideSmith/repairs/repair-manifest.json",
     );
-
     for (const artifact of artifacts) {
       const fileName = artifact.relativePath.split("/").pop();
       if (!fileName) {
@@ -362,8 +360,20 @@ describe("repair artifact generation", () => {
         .toBeUndefined;
     }
 
-    await expect(readFile(userReferenceDbPath, "utf8")).resolves.toBe(
-      originalUserDb,
-    );
+    // Metadata patch should have been auto-merged into the user reference DB.
+    const mergedDb = JSON.parse(
+      await readFile(userReferenceDbPath, "utf8"),
+    ) as {
+      bodies: Record<string, unknown>;
+      adapters: unknown[];
+    };
+    // Original cbbe entry preserved, uunp scaffold added.
+    expect(Object.keys(mergedDb.bodies)).toContain("cbbe");
+    expect(Object.keys(mergedDb.bodies)).toContain("uunp");
+
+    // A human-readable notice must be returned.
+    expect(dbMergeNotices.length).toBeGreaterThan(0);
+    expect(dbMergeNotices[0]).toMatch(/Reference DB auto-updated/i);
+    expect(dbMergeNotices[0]).toMatch(/cbbe.*uunp/i);
   });
 });

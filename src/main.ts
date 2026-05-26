@@ -432,13 +432,14 @@ async function executeConversion(
 
   const reportsDir = join(output, "_SlideSmith");
   await mkdir(reportsDir, { recursive: true });
-  const repairArtifacts = await generateRepairArtifacts({
-    reportsDir,
-    userDataDir,
-    sourceBodyType: pythonSourceType,
-    targetBodyType: target,
-    pythonSummary,
-  });
+  const { artifacts: repairArtifacts, dbMergeNotices } =
+    await generateRepairArtifacts({
+      reportsDir,
+      userDataDir,
+      sourceBodyType: pythonSourceType,
+      targetBodyType: target,
+      pythonSummary,
+    });
   if (repairArtifacts.length > 0) {
     result.warnings = [
       ...new Set([
@@ -446,6 +447,9 @@ async function executeConversion(
         `Generated ${repairArtifacts.length} repair helper file(s) in _SlideSmith/repairs for missing assets/metadata follow-up.`,
       ]),
     ];
+  }
+  if (dbMergeNotices.length > 0) {
+    result.warnings = [...new Set([...result.warnings, ...dbMergeNotices])];
   }
   plan.operations = buildExecutedOperations({
     filesAnalyzed: files.length,
