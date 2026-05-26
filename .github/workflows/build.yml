@@ -60,8 +60,9 @@ jobs:
         run: npm run package:win
 
       - name: Create source archive
+        shell: bash
         run: |
-          git archive --format=zip --output release/source-code.zip HEAD
+          git archive --format=zip --output release/source-code.zip HEAD -- . ':(exclude)node_modules' ':(exclude)node_modules/**'
 
       - name: Bundle release zip
         shell: pwsh
