@@ -285,6 +285,200 @@ const KNOWN_OUTPUT_ALIASES = new Set(
   Object.values(BODY_TYPE_OUTPUT_ALIASES).map((alias) => alias.toLowerCase()),
 );
 
+const BODY_TYPE_SLIDER_HINTS: Record<BodyType, readonly string[]> = {
+  cbbe: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+  ],
+  "3ba": [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+  ],
+  coco: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+  ],
+  himbo: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Glutes",
+    "Chest",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Chest Width",
+    "Chest Depth",
+    "Shoulders",
+  ],
+  bodytalk: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Glutes",
+    "Chest",
+    "Thigh",
+    "Arms",
+    "Calves",
+    "Chest Width",
+    "Chest Depth",
+    "Shoulders",
+  ],
+  tbd: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+  ],
+  sos: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Glutes",
+    "Chest",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Chest Width",
+    "Chest Depth",
+    "Shoulders",
+  ],
+  unp: [
+    "Waist",
+    "Belly",
+    "Hips",
+    "Butt",
+    "Breast",
+    "Thigh",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+  ],
+  bhunp: [
+    "Waist",
+    "Belly",
+    "Hips",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "BHUNP Breast Height",
+    "BHUNP Breast Depth",
+    "BHUNP Breast Width",
+    "BHUNP Nipple Curve",
+  ],
+  uunp: [
+    "Waist",
+    "Belly",
+    "Hips",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+  ],
+  ube: [
+    "Waist",
+    "Belly",
+    "Hips",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+    "Hip Protrusion",
+    "Thigh Size",
+    "Back Width",
+  ],
+  "7base": [
+    "Waist",
+    "Belly",
+    "Hips",
+    "Butt",
+    "Breasts",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "Breast Height",
+    "Breast Depth",
+    "Breast Width",
+    "Nipple Curve",
+  ],
+  sam: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Glutes",
+    "Chest",
+    "Thighs",
+    "Arms",
+    "Calves",
+    "SAM Chest Width",
+    "SAM Chest Depth",
+    "SAM Shoulders",
+  ],
+  vanilla: [
+    "Waist",
+    "Belly",
+    "Hip",
+    "Butt",
+    "Chest",
+    "Thigh",
+    "Arms",
+    "Calves",
+  ],
+};
+
 function stripKnownBodyAliasRoot(shapeDataSubpath: string): string {
   const segments = shapeDataSubpath.split("/").filter(Boolean);
   if (segments.length <= 1) {
@@ -1444,6 +1638,7 @@ const SLIDERSET_OUTPUTFILE_RE = /<OutputFile>\s*([^<]+)\s*<\/OutputFile>/gi;
 const SLIDERSET_BLOCK_RE = /<SliderSet\b[\s\S]*?<\/SliderSet>/gi;
 const SLIDERSET_OUTPUTPATH_RE = /<OutputPath>\s*([^<]*)\s*<\/OutputPath>/i;
 const SLIDERSET_SOURCEFILE_RE = /<SourceFile>\s*([^<]*)\s*<\/SourceFile>/i;
+const SLIDER_NAME_RE = /<Slider\b[^>]*\bname=["']([^"']+)["'][^>]*\/?>/gi;
 
 function extractSliderSetNames(content: string): string[] {
   const names: string[] = [];
@@ -1459,6 +1654,17 @@ function extractSliderSetOutputFiles(content: string): string[] {
     if (match[1]) outputs.push(match[1].trim().toLowerCase());
   }
   return outputs;
+}
+
+function extractSliderNames(content: string): string[] {
+  const sliderNames: string[] = [];
+  for (const match of content.matchAll(SLIDER_NAME_RE)) {
+    const sliderName = match[1]?.trim();
+    if (sliderName) {
+      sliderNames.push(sliderName.replace(/\s+/g, " "));
+    }
+  }
+  return sliderNames;
 }
 
 function normalizeSliderSetOutputPath(path: string): string {
@@ -1557,6 +1763,50 @@ type SliderSetMeshGroup = {
   highWeightPath: string | null;
 };
 
+function canReuseProjectSliderHints(
+  sourceBodyType: BodyType,
+  targetBodyType: BodyType,
+): boolean {
+  const sourceInfo = BODY_TYPE_INFO[sourceBodyType];
+  const targetInfo = BODY_TYPE_INFO[targetBodyType];
+  return (
+    sourceBodyType === targetBodyType ||
+    (sourceInfo.gender === targetInfo.gender &&
+      sourceInfo.family === targetInfo.family &&
+      sourceInfo.gender !== "both")
+  );
+}
+
+function collectSynthesizedSliderNames(
+  sourceBodyType: BodyType,
+  targetBodyType: BodyType,
+  projectSliderNames: readonly string[],
+): string[] {
+  const fallbackSliderNames = BODY_TYPE_SLIDER_HINTS[targetBodyType] ?? [];
+  const preferredSliderNames = canReuseProjectSliderHints(
+    sourceBodyType,
+    targetBodyType,
+  )
+    ? [...projectSliderNames, ...fallbackSliderNames]
+    : [...fallbackSliderNames, ...projectSliderNames];
+  return [
+    ...new Set(preferredSliderNames.map((name) => name.trim()).filter(Boolean)),
+  ];
+}
+
+function buildSynthesizedSliderLines(sliderNames: readonly string[]): string[] {
+  if (sliderNames.length === 0) {
+    return ["    <Sliders/>"];
+  }
+  return [
+    "    <Sliders>",
+    ...sliderNames.map(
+      (sliderName) => `      <Slider name="${escapeXml(sliderName)}" />`,
+    ),
+    "    </Sliders>",
+  ];
+}
+
 function collectSliderSetMeshGroups(
   convertedFiles: ConversionResult["convertedFiles"],
 ): SliderSetMeshGroup[] {
@@ -1605,6 +1855,7 @@ function collectSliderSetMeshGroups(
  */
 async function synthesizeMissingSliderSetProject(
   outputDir: string,
+  sourceBodyType: BodyType,
   targetBodyType: BodyType,
   convertedFiles: ConversionResult["convertedFiles"],
   shapeDataMeshMap: ReadonlyMap<string, string>,
@@ -1622,9 +1873,11 @@ async function synthesizeMissingSliderSetProject(
 
   const projectOutputFiles = new Map<string, boolean>();
   const projectOutputPaths = new Map<string, boolean>();
+  const projectSliderNames: string[] = [];
   for (const projectFile of projectFiles) {
     const absPath = join(outputDir, ...projectFile.outputPath.split("/"));
     const content = await readFile(absPath, "utf8").catch(() => "");
+    projectSliderNames.push(...extractSliderNames(content));
     for (const entry of extractSliderSetCoverageEntries(content)) {
       if (!entry.hasExplicitOutputPath) {
         projectOutputFiles.set(
@@ -1661,6 +1914,14 @@ async function synthesizeMissingSliderSetProject(
   if (uncoveredMeshGroups.length === 0) return 0;
 
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+  const synthesizedSliderNames = collectSynthesizedSliderNames(
+    sourceBodyType,
+    targetBodyType,
+    projectSliderNames,
+  );
+  const synthesizedSliderLines = buildSynthesizedSliderLines(
+    synthesizedSliderNames,
+  );
   const baseDisplayNames = uncoveredMeshGroups.map((group) =>
     buildSliderSetDisplayName(group.key, targetAlias),
   );
@@ -1708,7 +1969,7 @@ async function synthesizeMissingSliderSetProject(
         `    <Groups>`,
         `      <Group name="${escapeXml(groupName)}"/>`,
         `    </Groups>`,
-        `    <Sliders/>`,
+        ...synthesizedSliderLines,
         "  </SliderSet>",
       ];
     })
@@ -2249,9 +2510,43 @@ async function synthesizeMissingCbpcStub(
   if (await hasCbpcIniConfig()) return;
 
   const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
-  const boneEntries = targetInfo.physicsBones
-    .map((bone) => `${bone}=${cbpcDefaultWeight(bone)}`)
-    .join("\n");
+  const physicsGroupLabels: Record<PhysicsBoneGroup, string> = {
+    "breast-root": "Breast root control chain",
+    breast: "Breast chain",
+    butt: "Butt chain",
+    belly: "Belly chain",
+    genitals: "Genitals chain",
+    scrotum: "Scrotum chain",
+    other: "Additional physics bones",
+  };
+  const orderedPhysicsGroups: readonly PhysicsBoneGroup[] = [
+    "breast-root",
+    "breast",
+    "butt",
+    "belly",
+    "genitals",
+    "scrotum",
+    "other",
+  ];
+  const groupedBones = new Map<PhysicsBoneGroup, string[]>();
+  for (const group of orderedPhysicsGroups) {
+    groupedBones.set(group, []);
+  }
+  for (const bone of targetInfo.physicsBones) {
+    const descriptor = parsePhysicsBoneDescriptor(bone);
+    groupedBones.get(descriptor.group)?.push(bone);
+  }
+  const boneEntries = orderedPhysicsGroups.flatMap((group) => {
+    const bones = groupedBones.get(group) ?? [];
+    if (bones.length === 0) {
+      return [];
+    }
+    return [
+      `; ${physicsGroupLabels[group]}`,
+      ...bones.map((bone) => `${bone}=${cbpcDefaultWeight(bone)}`),
+      "",
+    ];
+  });
 
   const iniContent = [
     `; Auto-generated CBPC physics stub for ${targetAlias}`,
@@ -2261,6 +2556,7 @@ async function synthesizeMissingCbpcStub(
     "; Default weight values are community-convention starting points.",
     "; Tune them in-game with CBPC Physics Tuner or edit this file directly.",
     ";",
+    `; Target skeleton: ${targetInfo.skeletonProfile}`,
     `; Required mod: ${targetInfo.referenceProject}`,
     "; Required mod: CBPC — Physics with Collisions for SSE and VR",
     ";   (https://www.nexusmods.com/skyrimspecialedition/mods/21224)",
@@ -2270,7 +2566,7 @@ async function synthesizeMissingCbpcStub(
     "; from a non-physics source those weights may be missing and runtime",
     "; physics can remain static until the mesh includes target-bone weights.",
     "",
-    boneEntries,
+    ...boneEntries,
     "",
   ].join("\n");
 
@@ -3140,6 +3436,7 @@ export async function convertMod(
 
   const synthesizedSliderSets = await synthesizeMissingSliderSetProject(
     outputDir,
+    sourceBodyType,
     targetBodyType,
     convertedFiles,
     shapeDataMeshes,

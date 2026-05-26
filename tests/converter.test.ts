@@ -2289,7 +2289,9 @@ describe("convertMod", () => {
     );
     expect(shapeDataOsd).toBe("osd payload");
     expect(sliderSetContent).toContain('<Group name="3BA Outfits"/>');
-    expect(sliderSetContent).toContain("<Sliders/>");
+    expect(sliderSetContent).toContain("<Sliders>");
+    expect(sliderSetContent).toContain('<Slider name="Breasts" />');
+    expect(sliderSetContent).toContain('<Slider name="Belly" />');
 
     const sliderGroupEntry = result.convertedFiles.find(
       (file) =>
@@ -2298,6 +2300,76 @@ describe("convertMod", () => {
         file.action === "synthesized",
     );
     expect(sliderGroupEntry).toBeDefined();
+  });
+
+  it("reuses same-family project slider hints when synthesizing supplemental SliderSets", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "CalienteTools", "BodySlide", "SliderSets"), {
+      recursive: true,
+    });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_existing_1.nif"),
+      "existing",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_uncovered_1.nif"),
+      "uncovered",
+      "utf8",
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "SliderSets",
+        "CBBE_Set.osp",
+      ),
+      [
+        "<SliderSetInfo>",
+        '  <SliderSet name="CBBE Existing">',
+        "    <OutputPath>meshes/armor/</OutputPath>",
+        "    <OutputFile>CBBE_existing_1.nif</OutputFile>",
+        "    <SourceFile>armor/CBBE_existing_1.nif</SourceFile>",
+        "    <Sliders>",
+        '      <Slider name="Breast Size" />',
+        '      <Slider name="Cleavage" />',
+        "    </Sliders>",
+        "  </SliderSet>",
+        "</SliderSetInfo>",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    const sliderSetEntry = result.convertedFiles.find(
+      (file) =>
+        file.outputPath ===
+          "CalienteTools/BodySlide/SliderSets/3BA_AutoSupplement.osp" &&
+        file.action === "synthesized",
+    );
+    expect(sliderSetEntry).toBeDefined();
+
+    const sliderSetContent = await readFile(
+      join(outputDir, sliderSetEntry?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(sliderSetContent).toContain('<Slider name="Breast Size" />');
+    expect(sliderSetContent).toContain('<Slider name="Cleavage" />');
+    expect(sliderSetContent).toContain('<Slider name="Breasts" />');
   });
 
   it("disambiguates synthesized SliderSet names when mesh basenames repeat", async () => {
@@ -2760,6 +2832,8 @@ describe("convertMod", () => {
       "utf8",
     );
     expect(stubContent).toContain("Auto-generated CBPC physics stub");
+    expect(stubContent).toContain("Target skeleton:");
+    expect(stubContent).toContain("; Breast chain");
     expect(stubContent).toContain("NPC L Breast01");
 
     // The cbpc-stub audit check should flag attention since no original config was present.
