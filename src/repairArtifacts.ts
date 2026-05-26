@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import type { BodyType, PythonEngineRunSummary } from "./types.js";
 
 type RepairIssueId =
@@ -163,54 +164,319 @@ function collectRepairIssues(summary: PythonEngineRunSummary): RepairIssue[] {
   return issues;
 }
 
+/**
+ * Known slider-name mappings per body type derived from the reference database.
+ * These are used to pre-populate repair scaffolding so TODO placeholders are
+ * replaced with real values and the templates are immediately actionable.
+ */
+const KNOWN_SLIDER_MAPPINGS: Partial<Record<BodyType, Record<string, string>>> =
+  {
+    cbbe: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    "3ba": {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+      breastHeight: "Breast Height",
+      breastDepth: "Breast Depth",
+      breastWidth: "Breast Width",
+      nippleCurve: "Nipple Curve",
+    },
+    coco: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    tbd: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    unp: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    bhunp: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    uunp: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    ube: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    "7base": {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Butt",
+      breast: "Breasts",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+    },
+    himbo: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Glutes",
+      breast: "Chest",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+      chestWidth: "Chest Width",
+      chestDepth: "Chest Depth",
+      shoulderWidth: "Shoulders",
+    },
+    bodytalk: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Glutes",
+      breast: "Chest",
+      thigh: "Thigh",
+      arm: "Arms",
+      calf: "Calves",
+      chestWidth: "Chest Width",
+      chestDepth: "Chest Depth",
+      shoulderWidth: "Shoulders",
+    },
+    sos: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Glutes",
+      breast: "Chest",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+      chestWidth: "Chest Width",
+      chestDepth: "Chest Depth",
+      shoulderWidth: "Shoulders",
+    },
+    sam: {
+      waist: "Waist",
+      belly: "Belly",
+      hip: "Hip",
+      butt: "Glutes",
+      breast: "Chest",
+      thigh: "Thighs",
+      arm: "Arms",
+      calf: "Calves",
+      chestWidth: "SAM Chest Width",
+      chestDepth: "SAM Chest Depth",
+      shoulderWidth: "SAM Shoulders",
+    },
+    vanilla: { waist: "Waist", belly: "Belly", hip: "Hip", breast: "Breasts" },
+  };
+
+/**
+ * Known morph-equivalent mappings per body type derived from the reference DB.
+ */
+const KNOWN_MORPH_EQUIVALENTS: Partial<
+  Record<BodyType, Record<string, string>>
+> = {
+  cbbe: {
+    heavy: "CBBE Curvy",
+    thin: "CBBE Slim",
+    natural: "CBBE Body",
+    zapCleavage: "CBBE NeverNude Top",
+  },
+  "3ba": {
+    heavy: "3BA Curvy",
+    thin: "3BA Slim",
+    muscle: "3BA Athletic",
+    pregnancy: "3BA Pregnant",
+    zapCleavage: "3BA Zap Cleavage",
+    zapBelly: "3BA Zap Belly",
+    natural: "3BA Body",
+  },
+  coco: {
+    heavy: "COCO Body Curvy",
+    thin: "COCO Body Slim",
+    natural: "COCO Body",
+    zapBelly: "COCO Zap Belly",
+  },
+  tbd: {
+    heavy: "TBD Curvy",
+    thin: "TBD Slim",
+    natural: "TBD Body",
+    zapBelly: "TBD Zap Belly",
+  },
+  unp: { heavy: "UNP Curvy", thin: "UNP Slim", natural: "UNP Body" },
+  bhunp: {
+    heavy: "BHUNP Curvy",
+    thin: "BHUNP Slim",
+    natural: "BHUNP Body",
+    zapBelly: "BHUNP Zap Belly",
+  },
+  uunp: {
+    heavy: "UUNP Curvy",
+    thin: "UUNP Slim",
+    natural: "UUNP Body",
+    zapBelly: "UUNP Zap Belly",
+  },
+  ube: {
+    heavy: "UBE Curvy",
+    thin: "UBE Slim",
+    natural: "UBE Body",
+    zapBelly: "UBE Zap Belly",
+  },
+  "7base": { heavy: "7Base Curvy", thin: "7Base Slim", natural: "7Base Body" },
+  himbo: {
+    heavy: "HIMBO Bulk",
+    thin: "HIMBO Lean",
+    muscle: "HIMBO Muscular",
+    pregnancy: "HIMBO Belly",
+    zapCleavage: "HIMBO Chest Zap",
+    zapBelly: "HIMBO Belly Zap",
+    natural: "HIMBO Body",
+  },
+  bodytalk: {
+    heavy: "BodyTalk Bulk",
+    thin: "BodyTalk Lean",
+    muscle: "BodyTalk Muscular",
+    pregnancy: "BodyTalk Belly",
+    zapCleavage: "BodyTalk Chest Zap",
+    zapBelly: "BodyTalk Belly Zap",
+    natural: "BodyTalk Body",
+  },
+  sos: {
+    heavy: "SOS Bulk",
+    thin: "SOS Lean",
+    muscle: "SOS Muscular",
+    pregnancy: "SOS Belly",
+    zapCleavage: "SOS Chest Zap",
+    zapBelly: "SOS Belly Zap",
+    natural: "SOS Body",
+  },
+  sam: {
+    heavy: "SAM Bulk",
+    thin: "SAM Lean",
+    muscle: "SAM Athletic",
+    pregnancy: "SAM Belly",
+    zapCleavage: "SAM Chest Zap",
+    zapBelly: "SAM Belly Zap",
+    natural: "SAM Body",
+  },
+  vanilla: {
+    heavy: "Vanilla Curvy",
+    thin: "Vanilla Slim",
+    natural: "Vanilla Body",
+  },
+};
+
 function buildBodyMetadataPatchTemplate(
   sourceBodyType: BodyType,
   targetBodyType: BodyType,
 ): Record<string, unknown> {
   const uniqueBodyTypes = [...new Set([sourceBodyType, targetBodyType])];
-  const bodyTemplate = {
-    topology: "TODO-topology-family",
-    topologyReference: "TODO-reference-project-name",
-    canonicalVertexMap: "TODO-canonical-vertex-map",
-    skeletonProfile: "TODO-skeleton-profile",
-    partitionProfile: "TODO-partition-profile",
-    physicsBones: ["TODO-physics-bone"],
-    sliderMappings: {
-      waist: "TODO-body-slider-name",
-      breast: "TODO-body-slider-name",
-    },
-    boneMap: {
-      pelvis: "TODO-body-bone-name",
-      spine: "TODO-body-bone-name",
-    },
-    morphEquivalents: {
-      heavy: "TODO-body-morph-name",
-      natural: "TODO-body-morph-name",
-    },
-    correctiveSmoothingZones: [
-      "armpit-left",
-      "armpit-right",
-      "breast-left",
-      "breast-right",
-      "crotch",
-      "elbow-left",
-      "elbow-right",
-      "knee-left",
-      "knee-right",
-    ],
-    physicsConfig: {
-      cbpcCompatible: false,
-      hdtSmpCompatible: false,
-      softbodySupported: false,
-      physicsLevel: "TODO-physics-level",
-      boneNamingConvention: "TODO-bone-naming-convention",
-      notes: "TODO-physics-notes",
-    },
-  };
 
   const bodies = Object.fromEntries(
-    uniqueBodyTypes.map((bodyType) => [bodyType, bodyTemplate]),
+    uniqueBodyTypes.map((bodyType) => {
+      const info = BODY_TYPE_INFO[bodyType];
+      const sliderMappings = KNOWN_SLIDER_MAPPINGS[bodyType] ?? {
+        waist: "TODO-slider-name",
+        breast: "TODO-slider-name",
+      };
+      const morphEquivalents = KNOWN_MORPH_EQUIVALENTS[bodyType] ?? {
+        heavy: "TODO-morph-name",
+        natural: "TODO-morph-name",
+      };
+
+      return [
+        bodyType,
+        {
+          topology: info.topology,
+          topologyReference: `TODO-reference-project-for-${bodyType}`,
+          canonicalVertexMap: `TODO-canonical-vertex-map-for-${bodyType}`,
+          skeletonProfile: info.skeletonProfile,
+          partitionProfile: `TODO-partition-profile-for-${bodyType}`,
+          physicsBones:
+            info.physicsBones.length > 0
+              ? info.physicsBones
+              : ["(none — no physics bones for this body type)"],
+          sliderMappings,
+          boneMap: {
+            pelvis: "NPC Pelvis",
+            spine: "NPC Spine",
+          },
+          morphEquivalents,
+          correctiveSmoothingZones: [
+            "armpit-left",
+            "armpit-right",
+            ...(info.gender !== "male"
+              ? ["breast-left", "breast-right"]
+              : ["pectoral-left", "pectoral-right"]),
+            "crotch",
+            "elbow-left",
+            "elbow-right",
+            "knee-left",
+            "knee-right",
+          ],
+          physicsConfig: {
+            cbpcCompatible: info.cbpcCompatible,
+            hdtSmpCompatible: info.hdtSmpCompatible,
+            softbodySupported: false,
+            physicsLevel: `TODO-physics-level-for-${bodyType}`,
+            boneNamingConvention: "TODO-bone-naming-convention",
+            notes: info.conversionNotes.slice(0, 200),
+          },
+        },
+      ];
+    }),
   );
+
   const adapters =
     sourceBodyType === targetBodyType
       ? []
@@ -285,23 +551,21 @@ function buildMorphMappingTemplate(
   return {
     schemaVersion: 3,
     bodies: Object.fromEntries(
-      uniqueBodyTypes.map((bodyType) => [
-        bodyType,
-        {
-          sliderMappings: {
-            waist: "TODO-slider-name",
-            belly: "TODO-slider-name",
-            butt: "TODO-slider-name",
-            breast: "TODO-slider-name",
-          },
-          morphEquivalents: {
-            heavy: "TODO-morph-name",
-            thin: "TODO-morph-name",
-            natural: "TODO-morph-name",
-            zapBelly: "TODO-zap-name",
-          },
-        },
-      ]),
+      uniqueBodyTypes.map((bodyType) => {
+        const sliderMappings = KNOWN_SLIDER_MAPPINGS[bodyType] ?? {
+          waist: "TODO-slider-name",
+          belly: "TODO-slider-name",
+          butt: "TODO-slider-name",
+          breast: "TODO-slider-name",
+        };
+        const morphEquivalents = KNOWN_MORPH_EQUIVALENTS[bodyType] ?? {
+          heavy: "TODO-morph-name",
+          thin: "TODO-morph-name",
+          natural: "TODO-morph-name",
+          zapBelly: "TODO-zap-name",
+        };
+        return [bodyType, { sliderMappings, morphEquivalents }];
+      }),
     ),
   };
 }
@@ -314,26 +578,56 @@ function buildPhysicsMetadataTemplate(
   return {
     schemaVersion: 3,
     bodies: Object.fromEntries(
-      uniqueBodyTypes.map((bodyType) => [
-        bodyType,
-        {
-          physicsBones: ["TODO-physics-bone"],
-          boneMap: {
-            pelvis: "TODO-body-bone-name",
-            belly: "TODO-body-bone-name",
-            leftBreast: "TODO-body-bone-name",
-            rightBreast: "TODO-body-bone-name",
+      uniqueBodyTypes.map((bodyType) => {
+        const info = BODY_TYPE_INFO[bodyType];
+        const hasPhysics = info.physicsBones.length > 0;
+        const physicsBones = hasPhysics
+          ? info.physicsBones
+          : ["(none — no physics bones for this body type)"];
+
+        // Build a bone-map scaffold using the known first breast/butt/belly bone for this body.
+        const firstLeftBreast = info.physicsBones.find(
+          (b) => /breast/i.test(b) && /l\b|left/i.test(b),
+        );
+        const firstRightBreast = info.physicsBones.find(
+          (b) => /breast/i.test(b) && /r\b|right/i.test(b),
+        );
+        const bellyBone =
+          info.physicsBones.find((b) => /belly/i.test(b)) ?? null;
+        const leftPectoral = info.physicsBones.find(
+          (b) => /pectoral/i.test(b) && /l\b|left/i.test(b),
+        );
+        const rightPectoral = info.physicsBones.find(
+          (b) => /pectoral/i.test(b) && /r\b|right/i.test(b),
+        );
+        const genitalBase = info.physicsBones.find((b) =>
+          /genitals/i.test(b),
+        );
+
+        const boneMap: Record<string, string> = { pelvis: "NPC Pelvis" };
+        if (firstLeftBreast) boneMap.leftBreast = firstLeftBreast;
+        if (firstRightBreast) boneMap.rightBreast = firstRightBreast;
+        if (bellyBone) boneMap.belly = bellyBone;
+        if (leftPectoral) boneMap.leftPectoral = leftPectoral;
+        if (rightPectoral) boneMap.rightPectoral = rightPectoral;
+        if (genitalBase) boneMap.genitalsBase = genitalBase;
+
+        return [
+          bodyType,
+          {
+            physicsBones,
+            boneMap,
+            physicsConfig: {
+              cbpcCompatible: info.cbpcCompatible,
+              hdtSmpCompatible: info.hdtSmpCompatible,
+              softbodySupported: false,
+              physicsLevel: `TODO-physics-level-for-${bodyType}`,
+              boneNamingConvention: `TODO-bone-naming-for-${bodyType}`,
+              notes: info.skeletonNotes.slice(0, 200),
+            },
           },
-          physicsConfig: {
-            cbpcCompatible: false,
-            hdtSmpCompatible: false,
-            softbodySupported: false,
-            physicsLevel: "TODO-physics-level",
-            boneNamingConvention: "TODO-bone-naming-convention",
-            notes: "TODO-physics-notes",
-          },
-        },
-      ]),
+        ];
+      }),
     ),
   };
 }

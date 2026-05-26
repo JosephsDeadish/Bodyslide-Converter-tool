@@ -1008,9 +1008,67 @@ const EXPLICIT_PHYSICS_BONE_MAPS: Partial<
   // HIMBO and BodyTalk both use NPC L/R Pectoral — no bone name remapping needed
   himbo: {
     bodytalk: {},
+    // HIMBO → SAM: pectoral physics bones are absent from SAM (morph-based body).
+    // Collapse pectoral bones to NPC Chest when present so CBPC refs are removed.
+    sam: {
+      "NPC L Pectoral": "NPC Chest",
+      "NPC R Pectoral": "NPC Chest",
+    },
+    // HIMBO → SOS: SOS uses genital physics only; collapse pectoral to NPC Chest.
+    sos: {
+      "NPC L Pectoral": "NPC Chest",
+      "NPC R Pectoral": "NPC Chest",
+    },
   },
   bodytalk: {
     himbo: {},
+    // BodyTalk → SAM: same pectoral collapse as HIMBO → SAM.
+    sam: {
+      "NPC L Pectoral": "NPC Chest",
+      "NPC R Pectoral": "NPC Chest",
+    },
+    // BodyTalk → SOS: collapse pectoral; SOS adds its own genital chain.
+    sos: {
+      "NPC L Pectoral": "NPC Chest",
+      "NPC R Pectoral": "NPC Chest",
+    },
+  },
+  // SAM uses BodyMorph — no dedicated physics bones — so conversion to physics
+  // bodies is a physics-introduction case handled by stub generation.
+  sam: {
+    himbo: {},
+    bodytalk: {},
+    sos: {},
+  },
+  // SOS genitals bones collapse to NPC Pelvis when converting to non-SOS targets.
+  sos: {
+    himbo: {
+      "NPC GenitalsBase01": "NPC Pelvis",
+      "NPC GenitalsBase02": "NPC Pelvis",
+      "NPC GenitalsBase03": "NPC Pelvis",
+      "NPC GenitalsBase04": "NPC Pelvis",
+      "NPC GenitalsBase05": "NPC Pelvis",
+      "NPC L GenitalsScrotum01": "NPC Pelvis",
+      "NPC R GenitalsScrotum01": "NPC Pelvis",
+    },
+    bodytalk: {
+      "NPC GenitalsBase01": "NPC Pelvis",
+      "NPC GenitalsBase02": "NPC Pelvis",
+      "NPC GenitalsBase03": "NPC Pelvis",
+      "NPC GenitalsBase04": "NPC Pelvis",
+      "NPC GenitalsBase05": "NPC Pelvis",
+      "NPC L GenitalsScrotum01": "NPC Pelvis",
+      "NPC R GenitalsScrotum01": "NPC Pelvis",
+    },
+    sam: {
+      "NPC GenitalsBase01": "NPC Pelvis",
+      "NPC GenitalsBase02": "NPC Pelvis",
+      "NPC GenitalsBase03": "NPC Pelvis",
+      "NPC GenitalsBase04": "NPC Pelvis",
+      "NPC GenitalsBase05": "NPC Pelvis",
+      "NPC L GenitalsScrotum01": "NPC Pelvis",
+      "NPC R GenitalsScrotum01": "NPC Pelvis",
+    },
   },
 };
 

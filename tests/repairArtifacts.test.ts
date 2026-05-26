@@ -235,10 +235,10 @@ describe("repair artifact generation", () => {
       >;
     };
     expect(morphTemplate.bodies.cbbe.sliderMappings?.breast).toBe(
-      "TODO-slider-name",
+      "Breasts",
     );
     expect(morphTemplate.bodies.bhunp.morphEquivalents?.zapBelly).toBe(
-      "TODO-zap-name",
+      "BHUNP Zap Belly",
     );
 
     const physicsTemplate = JSON.parse(
@@ -255,11 +255,13 @@ describe("repair artifact generation", () => {
         }
       >;
     };
+    // BHUNP has real physics bones — template should be pre-filled, not TODO.
     expect(physicsTemplate.bodies.bhunp.physicsBones).toContain(
-      "TODO-physics-bone",
+      "BHUNP Breast L01",
     );
-    expect(physicsTemplate.bodies.cbbe.physicsConfig?.notes).toBe(
-      "TODO-physics-notes",
+    // CBBE has no physics bones — notes come from its skeleton guidance.
+    expect(physicsTemplate.bodies.cbbe.physicsConfig?.notes).toContain(
+      "CBBE",
     );
   });
 

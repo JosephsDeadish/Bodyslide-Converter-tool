@@ -40,6 +40,13 @@ export type DetectionResult = {
     share: number;
   }>;
   matchedSignals: string[];
+  /** Gender asset signals detected in the scanned files. */
+  genderSignals: {
+    /** True when female-specific asset paths or body markers were found. */
+    hasFemaleAssets: boolean;
+    /** True when male-specific asset paths or body markers were found. */
+    hasMaleAssets: boolean;
+  };
 };
 
 export type ConversionOperation = {

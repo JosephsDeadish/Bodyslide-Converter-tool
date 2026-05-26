@@ -490,6 +490,33 @@ export function Sidebar({
 
         {bodyTypeInfo !== null && <BodyInfoBox info={bodyTypeInfo} />}
 
+        {/* ── Mixed-gender suggestion banner ── */}
+        {detectResult?.genderSignals?.hasFemaleAssets &&
+          detectResult.genderSignals.hasMaleAssets &&
+          !mixedGender && (
+            <div
+              style={{
+                marginTop: "0.75rem",
+                padding: "0.55rem 0.75rem",
+                borderRadius: "6px",
+                background: "rgba(255, 200, 80, 0.13)",
+                border: "1px solid rgba(255, 200, 80, 0.45)",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "0.5rem",
+                fontSize: "0.82rem",
+                color: "var(--text, #e0e0e0)",
+              }}
+            >
+              <span style={{ fontSize: "1rem", lineHeight: 1.4 }}>♀♂</span>
+              <span>
+                <strong style={{ color: "#ffd966" }}>Mixed-gender assets detected.</strong>{" "}
+                This mod appears to contain both female and male outfit files. Enable{" "}
+                <em>Mixed-gender mod</em> below to also run the male conversion pass.
+              </span>
+            </div>
+          )}
+
         {/* ── Mixed-gender mod toggle ── */}
         <div style={{ marginTop: "1rem" }}>
           <Tooltip

@@ -533,7 +533,10 @@ def stage_status(
             return (
                 "pass",
                 "Physics preservation is not required for this body pair.",
-                ["No physics chains detected in metadata."],
+                [
+                    "No physics chains detected in metadata.",
+                    "Both source and target are static (non-physics) bodies — no CBPC/HDT-SMP config generation needed.",
+                ],
             )
         # Physics introduction: source has no physics bones, target requires them.
         if source_bones == 0 and target_bones > 0:
@@ -545,12 +548,39 @@ def stage_status(
             physics_systems = ", ".join(
                 s for s, flag in [("CBPC", cbpc_compat), ("HDT-SMP", hdt_compat)] if flag
             )
+            # Identify which partition slot pattern applies to these physics bones.
+            has_genital_bones = any("genital" in b.lower() for b in target_physics_names)
+            has_pectoral_bones = any("pectoral" in b.lower() for b in target_physics_names)
+            has_breast_bones = any("breast" in b.lower() for b in target_physics_names)
+            has_belly_bones = any("belly" in b.lower() for b in target_physics_names)
+
             intro_details = [
                 f"Target body requires {target_bones} physics bone(s) absent from the source mesh.",
                 f"Physics bones to add: {', '.join(target_physics_names)}",
                 "These bone weights must be painted in Outfit Studio against the target reference body "
                 "before runtime physics will function.",
+                "Workflow: (1) Load target reference body in Outfit Studio, "
+                "(2) Paint bone weights for each physics bone listed above, "
+                "(3) Run 'Copy Bone Weights' from reference for automatic transfer, "
+                "(4) Rerun SlideSmith conversion to pick up the updated mesh.",
             ]
+            if has_genital_bones:
+                intro_details.append(
+                    "Partition note: SOS physics requires partition slot SBP 52 (Pelvis) to be clean. "
+                    "Verify no extra partition slots overlap the genital region before exporting."
+                )
+            if has_pectoral_bones:
+                intro_details.append(
+                    "Partition note: Male pectoral physics (NPC L/R Pectoral) are HDT-SMP only — "
+                    "no CBPC .ini entry is needed for pectoral bones. "
+                    "Ensure the HDT-SMP XML stub lists 'NPC L Pectoral' and 'NPC R Pectoral'."
+                )
+            if has_breast_bones and has_belly_bones:
+                intro_details.append(
+                    "Partition note: Female breast+belly physics require NiSkinData partitions for "
+                    "each physics bone group. For softbody targets, ensure the NIF has a separate "
+                    "NiSkinData partition per bone (not merged)."
+                )
             if physics_systems:
                 intro_details.append(
                     f"Target physics systems: {physics_systems}. "
@@ -560,11 +590,16 @@ def stage_status(
             if softbody:
                 intro_details.append(
                     "Target supports softbody (per-vertex HDT-SMP deformation): "
-                    "an HDT-SMP XML config with per-vertex skin data is required for full softbody output."
+                    "an HDT-SMP XML config with per-vertex skin data is required for full softbody output. "
+                    "The synthesized stub is a starting point — adjust per-vertex weights in Outfit Studio."
                 )
             bone_naming = target_cfg.get("boneNamingConvention") if isinstance(target_cfg, dict) else None
             if bone_naming:
                 intro_details.append(f"Target bone naming convention: {bone_naming}")
+            intro_details.append(
+                "A physics metadata repair scaffold (physics-metadata-template.json) with pre-filled "
+                "bone names has been written to _SlideSmith/repairs/ for reference."
+            )
             return (
                 "attention",
                 f"Physics bone introduction required: {target_bones} bone(s) must be weighted in the outfit mesh.",
@@ -682,35 +717,79 @@ def stage_status(
             and not missing_reference_maps
             and not required_libraries
         ):
-            return (
-                "pass",
-                "Delta-based morph transfer configured.",
-                [
-                    f"Detected {slider_assets} slider/morph-related source asset(s).",
-                    f"Morph equivalents map contains {len(morph_pairs)} canonical morph keys.",
-                    f"Slider mapping map contains {len(slider_pairs)} canonical slider keys.",
-                ],
-            )
+            morph_keys = list(morph_pairs.keys())[:5]
+            slider_keys = list(slider_pairs.keys())[:5]
+            pass_details = [
+                f"Detected {slider_assets} slider/morph-related source asset(s).",
+                f"Morph equivalents map contains {len(morph_pairs)} canonical morph keys "
+                f"({', '.join(morph_keys)}{'…' if len(morph_pairs) > 5 else ''}).",
+                f"Slider mapping map contains {len(slider_pairs)} canonical slider keys "
+                f"({', '.join(slider_keys)}{'…' if len(slider_pairs) > 5 else ''}).",
+            ]
+            if not has_tri:
+                pass_details.append(
+                    "No .TRI morph file detected — delta morphs will be synthesized from OSD/OSP slider data at build time."
+                )
+            return ("pass", "Delta-based morph transfer configured.", pass_details)
+
+        # Build actionable attention details.
         details = []
         if not has_nif:
-            details.append("A NIF mesh is required to compute delta morph transfer from reference bodies.")
+            details.append(
+                "A NIF mesh is required to compute delta morph transfer from reference bodies. "
+                "Expected: meshes/<mod>/<asset_name>_0.nif and _1.nif (weight-0 / weight-100 pair)."
+            )
         if slider_assets == 0:
-            details.append("No slider/morph-related source assets were detected.")
+            details.append(
+                "No slider/morph-related source assets were detected. "
+                "Expected file types: .osp (BodySlide slider project), .osd (BodySlide morph data), "
+                ".tri (RaceMenu/TRI morph file). "
+                "Place them alongside the NIF in the mod folder and rerun."
+            )
         if not morph_pairs:
-            details.append("Populate overlapping canonical morphEquivalents for both bodies.")
+            src_morph = source_meta.get("morphEquivalents") if isinstance(source_meta, dict) else None
+            tgt_morph = target_meta.get("morphEquivalents") if isinstance(target_meta, dict) else None
+            src_keys = list(src_morph.keys()) if isinstance(src_morph, dict) else []
+            tgt_keys = list(tgt_morph.keys()) if isinstance(tgt_morph, dict) else []
+            overlap = [k for k in src_keys if k in tgt_keys]
+            details.append(
+                "No overlapping canonical morphEquivalents found for this body pair. "
+                + (
+                    f"Source has: {', '.join(src_keys[:6])}. Target has: {', '.join(tgt_keys[:6])}. "
+                    f"Shared canonical keys needed: {', '.join(overlap) if overlap else '(none yet — add matching keys to both bodies)'}."
+                    if src_keys or tgt_keys
+                    else "Populate morphEquivalents in body_reference_db.json for both body types."
+                )
+            )
         if not slider_pairs:
-            details.append("Populate overlapping canonical sliderMappings for both bodies.")
+            src_sliders = source_meta.get("sliderMappings") if isinstance(source_meta, dict) else None
+            tgt_sliders = target_meta.get("sliderMappings") if isinstance(target_meta, dict) else None
+            src_keys = list(src_sliders.keys()) if isinstance(src_sliders, dict) else []
+            tgt_keys = list(tgt_sliders.keys()) if isinstance(tgt_sliders, dict) else []
+            overlap = [k for k in src_keys if k in tgt_keys]
+            details.append(
+                "No overlapping canonical sliderMappings found for this body pair. "
+                + (
+                    f"Source has: {', '.join(src_keys[:6])}. Target has: {', '.join(tgt_keys[:6])}. "
+                    f"Shared canonical keys needed: {', '.join(overlap) if overlap else '(none yet — add matching keys)'}."
+                    if src_keys or tgt_keys
+                    else "Populate sliderMappings in body_reference_db.json for both body types."
+                )
+            )
         details.extend(missing_reference_maps)
         if required_libraries:
             details.append(
-                f"Missing required Python libraries for delta morph transfer: {', '.join(required_libraries)}."
+                f"Missing required Python libraries for delta morph transfer: {', '.join(required_libraries)}. "
+                "Install numpy and scipy (pip install numpy scipy) and rerun."
             )
         return (
             "attention",
             "Morph-transfer prerequisites are incomplete.",
             details
             + [
-                "Zap/morph preservation should be manually validated.",
+                "Zap/morph preservation should be manually validated after addressing the items above.",
+                "A repair scaffold (morph-mapping-template.json) has been written to _SlideSmith/repairs/ "
+                "with pre-filled slider and morph names — use it as a starting point.",
             ],
         )
 

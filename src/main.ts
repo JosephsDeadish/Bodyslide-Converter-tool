@@ -273,10 +273,15 @@ async function executeConversion(
 
   const files = await scanModFiles(input);
   const autoDetection = detectBodyType(files);
-  const detection =
-    sourceOverride && sourceOverride !== autoDetection.bodyType
-      ? { ...autoDetection, bodyType: sourceOverride as BodyType | "unknown" }
-      : autoDetection;
+  const detection = sourceOverride
+    ? {
+        ...autoDetection,
+        bodyType: sourceOverride as BodyType,
+        // Confidence is 1.0 for an explicit user selection so low-confidence
+        // warnings are suppressed when the user overrides auto-detection.
+        confidence: 1.0,
+      }
+    : autoDetection;
 
   const plan = createConversionPlan(detection, target, files);
 

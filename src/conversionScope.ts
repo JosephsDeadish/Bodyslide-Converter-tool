@@ -9,6 +9,29 @@ const MALE_GENERAL_HINTS = [
   "/malehands",
   "/malefeet",
   "/malehead",
+  // common male skeleton/armor path fragments
+  "\\malebody",
+  "\\malehands",
+  "\\malefeet",
+  "\\malehead",
+  "/actors/character/character assets male",
+  "character assets male",
+  // BodySlide male group names (must not be substrings of female equivalents)
+  "male-only",
+  "males only",
+  "for males",
+  // Common male body replacer folder names
+  "/himbo/",
+  "/bodytalk/",
+  "/sam/",
+  // SOS partition marker
+  "sbp_52",
+  "schlongs",
+  // Male NIF bone markers found in binary preview
+  "npc l pectoral",
+  "npc r pectoral",
+  "npc genitalsbase",
+  "npc genitalscrotum",
 ];
 
 const FEMALE_BODY_HINTS = [
