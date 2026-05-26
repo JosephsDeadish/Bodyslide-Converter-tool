@@ -376,19 +376,37 @@ def stage_status(
         )
 
     if stage_id == "surface-reprojection":
+        source_topology = source_meta.get("topology", "") if isinstance(source_meta, dict) else ""
+        target_topology = target_meta.get("topology", "") if isinstance(target_meta, dict) else ""
+        cross_topology = bool(source_topology and target_topology and source_topology != target_topology)
+        vanilla_source = source_topology == "vanilla"
+
         required_libraries = [
             *missing_nif_io_support(libraries),
             *missing_libraries(libraries, "numpy", "scipy", "trimesh"),
         ]
         if has_nif and not missing_reference_maps and not required_libraries:
+            pass_details = [
+                "Barycentric interpolation route initialized.",
+                f"Source canonical map: {source_map}",
+                f"Target canonical map: {target_map}",
+            ]
+            if vanilla_source:
+                pass_details.append(
+                    "Vanilla topology detected: the source outfit uses Bethesda's original vertex layout. "
+                    "A full re-weight pass in Outfit Studio against the target reference body is required "
+                    "before BodySlide slider outputs will be accurate."
+                )
+            elif cross_topology:
+                pass_details.append(
+                    f"Cross-topology conversion ({source_topology} → {target_topology}): "
+                    "mesh vertices will be reprojected onto the target body surface. "
+                    "Verify weighting quality in Outfit Studio after conversion."
+                )
             return (
                 "pass",
                 "Nearest-triangle surface reprojection is available for mesh assets.",
-                [
-                    "Barycentric interpolation route initialized.",
-                    f"Source canonical map: {source_map}",
-                    f"Target canonical map: {target_map}",
-                ],
+                pass_details,
             )
         details: list[str] = []
         if not has_nif:
@@ -398,6 +416,15 @@ def stage_status(
         if required_libraries:
             details.append(
                 f"Missing required Python libraries for nearest-surface reprojection: {', '.join(required_libraries)}."
+            )
+        if vanilla_source:
+            details.append(
+                "Vanilla topology detected: the source outfit must be re-weighted against the target reference body in Outfit Studio."
+            )
+        elif cross_topology:
+            details.append(
+                f"Cross-topology conversion ({source_topology} → {target_topology}): "
+                "manual weight verification in Outfit Studio is strongly recommended."
             )
         return (
             "attention",
@@ -507,6 +534,41 @@ def stage_status(
                 "pass",
                 "Physics preservation is not required for this body pair.",
                 ["No physics chains detected in metadata."],
+            )
+        # Physics introduction: source has no physics bones, target requires them.
+        if source_bones == 0 and target_bones > 0:
+            target_physics_names = [b for b in target_physics if isinstance(b, str) and b]
+            target_cfg = target_meta.get("physicsConfig") if isinstance(target_meta, dict) else None
+            cbpc_compat = isinstance(target_cfg, dict) and bool(target_cfg.get("cbpcCompatible"))
+            hdt_compat = isinstance(target_cfg, dict) and bool(target_cfg.get("hdtSmpCompatible"))
+            softbody = isinstance(target_cfg, dict) and bool(target_cfg.get("softbodySupported"))
+            physics_systems = ", ".join(
+                s for s, flag in [("CBPC", cbpc_compat), ("HDT-SMP", hdt_compat)] if flag
+            )
+            intro_details = [
+                f"Target body requires {target_bones} physics bone(s) absent from the source mesh.",
+                f"Physics bones to add: {', '.join(target_physics_names)}",
+                "These bone weights must be painted in Outfit Studio against the target reference body "
+                "before runtime physics will function.",
+            ]
+            if physics_systems:
+                intro_details.append(
+                    f"Target physics systems: {physics_systems}. "
+                    "A CBPC .ini stub and/or HDT-SMP XML stub will be synthesized automatically at "
+                    "conversion time when no source physics config is detected."
+                )
+            if softbody:
+                intro_details.append(
+                    "Target supports softbody (per-vertex HDT-SMP deformation): "
+                    "an HDT-SMP XML config with per-vertex skin data is required for full softbody output."
+                )
+            bone_naming = target_cfg.get("boneNamingConvention") if isinstance(target_cfg, dict) else None
+            if bone_naming:
+                intro_details.append(f"Target bone naming convention: {bone_naming}")
+            return (
+                "attention",
+                f"Physics bone introduction required: {target_bones} bone(s) must be weighted in the outfit mesh.",
+                intro_details,
             )
         required_libraries = missing_nif_io_support(libraries)
         if not has_nif:

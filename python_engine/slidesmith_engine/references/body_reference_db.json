@@ -67,7 +67,13 @@
       },
       "physicsUpgradePath": "3ba",
       "physicsDowngradePath": null,
-      "physicsCollapseMap": {}
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
     },
     "3ba": {
       "topology": "cbbe",
@@ -713,7 +719,13 @@
       },
       "physicsUpgradePath": "bhunp",
       "physicsDowngradePath": null,
-      "physicsCollapseMap": {}
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
     },
     "bhunp": {
       "topology": "unp",
@@ -982,7 +994,13 @@
       },
       "physicsUpgradePath": "bhunp",
       "physicsDowngradePath": null,
-      "physicsCollapseMap": {}
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
     },
     "sam": {
       "topology": "male",
@@ -1050,7 +1068,13 @@
       },
       "physicsUpgradePath": null,
       "physicsDowngradePath": null,
-      "physicsCollapseMap": {}
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "This body has no physics bones. Physics-capable clothing physics will require converting to a physics body (e.g. 3BA/TBD/UUNP Special/UBE) or manually adding bone weights in Outfit Studio."
+      }
     },
     "ube": {
       "topology": "unp",
@@ -1214,7 +1238,13 @@
       },
       "physicsUpgradePath": "3ba",
       "physicsDowngradePath": null,
-      "physicsCollapseMap": {}
+      "physicsCollapseMap": {},
+      "physicsConfig": {
+        "cbpcCompatible": false,
+        "hdtSmpCompatible": false,
+        "softbodySupported": false,
+        "notes": "Vanilla Skyrim body has no physics bones and uses the original Bethesda skeleton topology. Outfits targeting a physics body (3BA, TBD, UUNP Special, UBE, BHUNP) require a full re-weight pass in Outfit Studio against the target reference body before BodySlide sliders will output correctly."
+      }
     }
   },
   "adapters": [
@@ -1316,7 +1346,7 @@
     {
       "source": "cbbe",
       "target": "ube",
-      "profile": "female-cross-family"
+      "profile": "female-cross-family-physics-upgrade"
     },
     {
       "source": "himbo",
@@ -1346,7 +1376,7 @@
     {
       "source": "cbbe",
       "target": "uunp",
-      "profile": "female-cross-family"
+      "profile": "female-cross-family-physics-upgrade"
     },
     {
       "source": "unp",

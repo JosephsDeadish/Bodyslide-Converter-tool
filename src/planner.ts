@@ -132,8 +132,7 @@ function targetSpecificOperations(targetType: BodyType): ConversionOperation[] {
     ops.push({
       id: "3ba-belly",
       name: `Add ${label} belly physics group`,
-      description:
-        `${label} supports a belly physics chain in addition to breast/butt. Confirm NPC Belly is weighted in the mesh and that both NPC Belly and NPC BellyRoot are listed in the CBPC/HDT-SMP config for full ${label} physics support.`,
+      description: `${label} supports a belly physics chain in addition to breast/butt. Confirm NPC Belly is weighted in the mesh and that both NPC Belly and NPC BellyRoot are listed in the CBPC/HDT-SMP config for full ${label} physics support.`,
     });
   }
 
@@ -208,10 +207,51 @@ function relationshipOperations(
   }
 
   if (sourceInfo.topology !== targetInfo.topology) {
+    if (sourceInfo.topology === "vanilla") {
+      ops.push({
+        id: "deform-repair",
+        name: "Full mesh re-weight: vanilla → modern body topology",
+        description:
+          `The source outfit uses vanilla Skyrim vertex topology which is incompatible with ${targetType.toUpperCase()} weighting. ` +
+          "Open the converted NIF in Outfit Studio, load the target body as a reference, copy bone weights from the reference, " +
+          "then run the Conform All Sliders pass. Without this step BodySlide slider outputs and in-game fit will be incorrect.",
+      });
+    } else {
+      ops.push({
+        id: "topology-delta",
+        name: "Review topology-driven seam differences",
+        description:
+          `Source topology '${sourceInfo.topology}' differs from target topology '${targetInfo.topology}'. ` +
+          "Verify neck, wrist, ankle, and weight-slider seam behavior after conversion.",
+      });
+    }
+  }
+
+  // Physics introduction: source has no physics, target requires physics bones
+  if (
+    !sourceInfo.physicsSupport &&
+    targetInfo.physicsSupport &&
+    targetInfo.physicsBones.length > 0
+  ) {
+    const boneList = targetInfo.physicsBones.slice(0, 6).join(", ");
+    const more =
+      targetInfo.physicsBones.length > 6
+        ? ` …and ${targetInfo.physicsBones.length - 6} more`
+        : "";
+    const configType =
+      targetInfo.cbpcCompatible && targetInfo.hdtSmpCompatible
+        ? "CBPC .ini and/or HDT-SMP XML"
+        : targetInfo.cbpcCompatible
+          ? "CBPC .ini"
+          : "HDT-SMP XML";
     ops.push({
-      id: "topology-delta",
-      name: "Review topology-driven seam differences",
-      description: `Source topology '${sourceInfo.topology}' differs from target topology '${targetInfo.topology}'. Verify neck, wrist, ankle, and weight-slider seam behavior after conversion.`,
+      id: "physics-introduce",
+      name: `Introduce physics bones for ${targetType.toUpperCase()}`,
+      description:
+        `Source mesh has no physics bone weights. ${targetType.toUpperCase()} requires: ${boneList}${more}. ` +
+        "In Outfit Studio: load the target reference body, use Copy Bone Weights to transfer physics chain weights to the outfit, " +
+        `then verify the synthesized ${configType} stub lists all required bones. ` +
+        "Physics will be silently inoperative at runtime until bone weights are present in the mesh.",
     });
   }
 
@@ -223,6 +263,14 @@ function relationshipOperations(
     "tbd:3ba",
     "bhunp:tbd",
     "tbd:bhunp",
+    "uunp:3ba",
+    "3ba:uunp",
+    "uunp:tbd",
+    "tbd:uunp",
+    "ube:3ba",
+    "3ba:ube",
+    "ube:bhunp",
+    "bhunp:ube",
   ]);
   if (
     sourceInfo.physicsSupport &&
@@ -232,7 +280,10 @@ function relationshipOperations(
     ops.push({
       id: "cross-physics-family",
       name: "Remap cross-physics-family bone names",
-      description: `Both bodies support physics but use different bone naming conventions (${sourceType.toUpperCase()} vs ${targetType.toUpperCase()}). Physics bone names are automatically remapped during conversion (e.g. BHUNP Breast L01 ↔ NPC L Breast01). Verify the generated physics config (.ini or .xml) uses the correct target-body bone names before testing in-game.`,
+      description:
+        `Both bodies support physics but use different bone naming conventions (${sourceType.toUpperCase()} vs ${targetType.toUpperCase()}). ` +
+        "Physics bone names are automatically remapped during conversion (e.g. BHUNP Breast L01 ↔ NPC L Breast01). " +
+        "Verify the generated physics config (.ini or .xml) uses the correct target-body bone names before testing in-game.",
     });
   }
 

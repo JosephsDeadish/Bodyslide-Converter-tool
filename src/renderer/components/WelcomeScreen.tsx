@@ -16,8 +16,8 @@ export function WelcomeScreen() {
             text="Detects 15 body types including all major female bodies (CBBE, 3BA, COCO, TBD, UNP, BHUNP, UUNP, UBE, 7base), male bodies (HIMBO, BodyTalk, SOS, SAM), and Vanilla."
           >
             <li>
-              ✓ Detects CBBE, 3BA, COCO, HIMBO, TBD, SOS, UNP, BHUNP, UUNP,
-              UBE, 7base, SAM, BodyTalk, and Vanilla
+              ✓ Detects CBBE, 3BA, COCO, HIMBO, TBD, SOS, UNP, BHUNP, UUNP, UBE,
+              7base, SAM, BodyTalk, and Vanilla
             </li>
           </Tooltip>
           <Tooltip

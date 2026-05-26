@@ -3270,14 +3270,40 @@ function createWarnings(
   }
 
   if (sourceInfo.topology !== targetInfo.topology) {
-    warnings.push(
-      `Source topology '${sourceInfo.topology}' differs from target topology '${targetInfo.topology}'. Review ${targetInfo.adaptationFocus.slice(0, 3).join(", ")} before release.`,
-    );
+    if (sourceInfo.topology === "vanilla") {
+      warnings.push(
+        `Vanilla topology → ${targetInfo.topology}: source outfit uses Bethesda's original vertex layout. ` +
+          `Open the converted NIF in Outfit Studio, load the ${target.toUpperCase()} reference body, ` +
+          "copy bone weights from the reference, then run Conform All Sliders. " +
+          "Skipping this step will produce incorrect BodySlide outputs and in-game clipping.",
+      );
+    } else {
+      warnings.push(
+        `Source topology '${sourceInfo.topology}' differs from target topology '${targetInfo.topology}'. Review ${targetInfo.adaptationFocus.slice(0, 3).join(", ")} before release.`,
+      );
+    }
   }
 
   if (sourceInfo.family === "addon" || targetInfo.family === "addon") {
     warnings.push(
       "Addon-style body support (for example SOS) keeps partition-sensitive meshes intact. Verify slot assignments and exposed seams before release.",
+    );
+  }
+
+  if (
+    !sourceInfo.physicsSupport &&
+    targetInfo.physicsSupport &&
+    targetInfo.physicsBones.length > 0
+  ) {
+    const boneList = targetInfo.physicsBones.slice(0, 4).join(", ");
+    const more =
+      targetInfo.physicsBones.length > 4
+        ? ` …and ${targetInfo.physicsBones.length - 4} more`
+        : "";
+    warnings.push(
+      `Physics bone introduction required for ${target.toUpperCase()}: source mesh has no physics weights. ` +
+        `Add skinning weights for: ${boneList}${more} in Outfit Studio. ` +
+        "A CBPC .ini stub has been synthesized — verify bone names match before testing in-game.",
     );
   }
 
