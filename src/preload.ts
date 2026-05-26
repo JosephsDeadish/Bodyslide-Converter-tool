@@ -24,6 +24,7 @@ const JOB_EVENT_CHANNEL = "scan:jobEvent";
 contextBridge.exposeInMainWorld("bodyslideAPI", {
   openDirectory: (): Promise<string | null> =>
     ipcRenderer.invoke("dialog:openDirectory"),
+  openNifFile: (): Promise<string | null> => ipcRenderer.invoke("dialog:openNifFile"),
 
   getBodyTypes: (): Promise<BodyTypeOption[]> =>
     ipcRenderer.invoke("get:bodyTypes"),

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { extname, join, resolve } from "node:path";
 import {
   app,
   BrowserWindow,
@@ -177,6 +177,16 @@ ipcMain.handle("dialog:openDirectory", async (event: IpcMainInvokeEvent) => {
   return canceled ? null : (filePaths[0] ?? null);
 });
 
+ipcMain.handle("dialog:openNifFile", async (event: IpcMainInvokeEvent) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return null;
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    properties: ["openFile"],
+    filters: [{ name: "NIF Mesh", extensions: ["nif"] }],
+  });
+  return canceled ? null : (filePaths[0] ?? null);
+});
+
 ipcMain.handle("get:bodyTypes", () => listBodyTypeOptions());
 
 ipcMain.handle(
@@ -293,6 +303,7 @@ async function executeConversion(
     target,
     output,
     sourceOverride,
+    referenceBodyNifPath,
     maleSource,
     maleTarget,
     malePhysicsProfile,
@@ -303,6 +314,25 @@ async function executeConversion(
     throw new Error(
       "Input and output directories must be different. Using the same folder as both input and output would overwrite your source files.",
     );
+  }
+
+  let resolvedReferenceBodyNifPath: string | undefined;
+  if (typeof referenceBodyNifPath === "string" && referenceBodyNifPath.trim()) {
+    const trimmedReferencePath = referenceBodyNifPath.trim();
+    const candidatePath = resolve(trimmedReferencePath);
+    if (extname(candidatePath).toLowerCase() !== ".nif") {
+      throw new Error(
+        "Reference body must be a .nif mesh file (for example femalebody_0.nif or malebody_0.nif).",
+      );
+    }
+    try {
+      await access(candidatePath, constants.R_OK);
+    } catch {
+      throw new Error(
+        `Reference body NIF is not readable: ${candidatePath}. Pick a valid body mesh file and try again.`,
+      );
+    }
+    resolvedReferenceBodyNifPath = candidatePath;
   }
 
   onStatus?.({
@@ -405,6 +435,7 @@ async function executeConversion(
       outputPath: output,
       sourceBodyType: pythonSourceType,
       targetBodyType: target,
+      referenceBodyNifPath: resolvedReferenceBodyNifPath,
       files: outputFiles,
     },
     {
@@ -476,6 +507,7 @@ async function executeConversion(
       ``,
       `SOURCE: ${detection.bodyType} (confidence ${Math.round(detection.confidence * 100)}%)`,
       `TARGET: ${target}`,
+      `REFERENCE BODY NIF: ${resolvedReferenceBodyNifPath ?? "Not provided (using built-in reference metadata)."}`,
       `MODE: ${result.conversionMode}`,
       `PATH: ${result.conversionPath}`,
       `PHYSICS PROFILE (SELECTED): ${result.requestedPhysicsProfile}`,

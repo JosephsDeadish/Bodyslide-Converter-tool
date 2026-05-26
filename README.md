@@ -131,6 +131,7 @@ Use Python **3.10-3.16 (64-bit)** (including all `3.14.x` patch releases). Avoid
 - The CLI summary, JSON report, and desktop app all include the generated conversion path metadata plus structured conversion-plan operations for manual follow-up.
 - Generated outputs now apply automatic naming, gender-marker, and physics-reference harmonization; use BodySlide preview plus in-game checks for high-risk topology/cross-gender cases.
 - Desktop conversion now includes a **Physics Profile** selector (`Auto`, `CBPC`, `HDT-SMP`, `No physics`) so CBPC-specific patching/stub generation can match the intended runtime setup.
+- Desktop conversion now includes an optional **Reference Body NIF** picker. Use the target body's base mesh (`femalebody_0.nif` for female targets, `malebody_0.nif` for male targets) so Python reference-body checks can validate the selected reference file during conversion.
 - Installer-style layouts are now handled more safely: embedded `Data/` roots inside option folders are normalized to canonical game paths, while `fomod/` installer metadata files are preserved without body-alias rewrites.
 - Native conversion now auto-synthesizes missing `_0`/`_1` `.nif` weight-pair meshes when only one side exists, improving in-game weight-slider completeness.
 - Native conversion now auto-synthesizes a BodySlide SliderSet `.osp` file when mesh outputs exist but no project file was provided, so converted outfits still appear directly in BodySlide without manual project setup.

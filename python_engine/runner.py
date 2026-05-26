@@ -99,6 +99,36 @@ def is_non_empty_string(value: Any) -> bool:
     return isinstance(value, str) and value.strip() != ""
 
 
+def inspect_reference_body_nif(req: dict[str, Any]) -> tuple[str, str]:
+    reference_path = req.get("referenceBodyNifPath")
+    if not is_non_empty_string(reference_path):
+        return (
+            "pass",
+            "No user-provided reference body NIF selected; using built-in body reference metadata.",
+        )
+
+    candidate = Path(str(reference_path)).expanduser()
+    if candidate.suffix.lower() != ".nif":
+        return (
+            "attention",
+            f"User-provided reference body file is not a .nif mesh: {candidate}",
+        )
+    if not candidate.exists():
+        return (
+            "attention",
+            f"User-provided reference body NIF was not found: {candidate}",
+        )
+    if not candidate.is_file():
+        return (
+            "attention",
+            f"User-provided reference body path is not a file: {candidate}",
+        )
+    return (
+        "pass",
+        f"User-provided reference body NIF is available: {candidate}",
+    )
+
+
 def to_string_map(value: Any) -> dict[str, str]:
     if not isinstance(value, dict):
         return {}
@@ -850,6 +880,7 @@ def stage_status(
     )
     source_map = source_meta.get("canonicalVertexMap") if isinstance(source_meta, dict) else None
     target_map = target_meta.get("canonicalVertexMap") if isinstance(target_meta, dict) else None
+    reference_nif_status, reference_nif_detail = inspect_reference_body_nif(req)
     missing_reference_maps: list[str] = []
     if not is_non_empty_string(source_map):
         missing_reference_maps.append(f"Source canonical vertex map is missing for {source}.")
@@ -867,6 +898,7 @@ def stage_status(
                     [
                         f"Missing explicit adapter profile for high-risk conversion pair {source} -> {target}.",
                         "Add a body-specific adapter profile entry to body_reference_db.json adapters for reliable surface/weight/morph transfer behavior.",
+                        reference_nif_detail,
                     ],
                 )
             topology_source = (
@@ -880,9 +912,10 @@ def stage_status(
                 else "unknown"
             )
             return (
-                "pass",
+                "attention" if reference_nif_status == "attention" else "pass",
                 f"Reference mapping resolved for {source} -> {target} using adapter profile '{mappings['adapterProfile']}'.",
                 [
+                    reference_nif_detail,
                     f"Source topology reference: {topology_source}",
                     f"Target topology reference: {topology_target}",
                     f"Adapter profile source: {mappings.get('adapterProfileSource', 'default')}",
@@ -898,6 +931,7 @@ def stage_status(
             "Reference body metadata is incomplete for this pair.",
             reference_issues
             + [
+                reference_nif_detail,
                 "Populate topology, topologyReference, canonicalVertexMap, sliderMappings, boneMap, and morphEquivalents for both source and target bodies.",
                 "Prefer explicit adapter profiles for high-risk cross-family conversions.",
             ],

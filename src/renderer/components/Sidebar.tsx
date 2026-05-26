@@ -18,6 +18,7 @@ interface SidebarProps {
   detecting: boolean;
   detectResult: DetectionResult | null;
   sourceOverride: string;
+  referenceBodyNifPath: string;
   physicsProfile: ConversionPhysicsProfile;
   maleBodyTypeInfo: BodyTypeInfo | null;
   malePhysicsProfile: ConversionPhysicsProfile;
@@ -32,6 +33,8 @@ interface SidebarProps {
   onClearOutput(): void;
   onTargetChange(value: string): void;
   onSourceOverrideChange(value: string): void;
+  onBrowseReferenceBodyNif(): void;
+  onClearReferenceBodyNif(): void;
   onPhysicsProfileChange(value: ConversionPhysicsProfile): void;
   onMalePhysicsProfileChange(value: ConversionPhysicsProfile): void;
   onMixedGenderChange(value: boolean): void;
@@ -171,6 +174,7 @@ export function Sidebar({
   detecting,
   detectResult,
   sourceOverride,
+  referenceBodyNifPath,
   physicsProfile,
   maleBodyTypeInfo,
   malePhysicsProfile,
@@ -185,6 +189,8 @@ export function Sidebar({
   onClearOutput,
   onTargetChange,
   onSourceOverrideChange,
+  onBrowseReferenceBodyNif,
+  onClearReferenceBodyNif,
   onPhysicsProfileChange,
   onMalePhysicsProfileChange,
   onMixedGenderChange,
@@ -431,6 +437,72 @@ export function Sidebar({
           otherOptions={otherOptions}
           onChange={onSourceOverrideChange}
         />
+
+        {/* ── Reference Body NIF (optional) ── */}
+        <div style={{ marginTop: "1rem" }}>
+          <Tooltip
+            dir="right"
+            text="Optional helper mesh for conversion QA/readiness checks. Pick the base body NIF that matches your selected target body and game slot (usually _0 weight). Example: femalebody_0.nif for CBBE/3BA/UNP-family targets, or malebody_0.nif for HIMBO/BodyTalk/SOS/SAM targets."
+          >
+            <div className="field-label">Reference Body NIF (optional)</div>
+          </Tooltip>
+          <div className="field-hint">
+            Use a target-body base mesh (.nif) to improve conversion-stage
+            reference checks. Recommended file: <code>femalebody_0.nif</code> or{" "}
+            <code>malebody_0.nif</code> from the body mod you are converting TO.
+          </div>
+          <div className="path-row">
+            <Tooltip
+              dir="right"
+              text={
+                referenceBodyNifPath
+                  ? `Full path: ${referenceBodyNifPath}`
+                  : "No optional reference body NIF selected."
+              }
+            >
+              <input
+                className="path-input"
+                type="text"
+                placeholder="Select .nif file…"
+                value={referenceBodyNifPath}
+                readOnly
+              />
+            </Tooltip>
+            <Tooltip
+              dir="right"
+              text="Choose a target-body reference mesh file (*.nif)."
+            >
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={onBrowseReferenceBodyNif}
+                aria-label="Browse for reference body NIF"
+              >
+                📄
+              </button>
+            </Tooltip>
+            {referenceBodyNifPath && (
+              <Tooltip
+                dir="right"
+                text="Clear the optional reference body NIF and continue with built-in body metadata only."
+              >
+                <button
+                  type="button"
+                  className="btn-clear"
+                  onClick={onClearReferenceBodyNif}
+                  aria-label="Clear reference body NIF"
+                >
+                  ✕
+                </button>
+              </Tooltip>
+            )}
+          </div>
+          {referenceBodyNifPath && (
+            <div className="path-basename">
+              {pathBasename(referenceBodyNifPath)}
+            </div>
+          )}
+        </div>
 
         {/* ── Female Convert To ── */}
         <div style={{ marginTop: "1rem" }}>

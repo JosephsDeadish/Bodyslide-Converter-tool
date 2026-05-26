@@ -18,6 +18,7 @@ type PythonEngineInput = {
   outputPath: string;
   sourceBodyType: BodyType;
   targetBodyType: BodyType;
+  referenceBodyNifPath?: string;
   files: Array<{
     relativePath: string;
     extension: string;
@@ -344,6 +345,7 @@ export async function runPythonEngine(
     outputPath: string;
     sourceBodyType: BodyType;
     targetBodyType: BodyType;
+    referenceBodyNifPath?: string;
     files: ScannedFile[];
   },
   options: PythonEngineOptions = {},
@@ -355,6 +357,7 @@ export async function runPythonEngine(
     outputPath: args.outputPath,
     sourceBodyType: args.sourceBodyType,
     targetBodyType: args.targetBodyType,
+    referenceBodyNifPath: args.referenceBodyNifPath,
     // Forward a compact manifest of both text/config and mesh files.
     // Python stage readiness checks require mesh extensions (.nif/.tri/.osd),
     // while only text/config files need preview snippets.

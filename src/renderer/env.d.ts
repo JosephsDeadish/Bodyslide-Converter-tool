@@ -15,6 +15,7 @@ declare global {
   interface Window {
     bodyslideAPI: {
       openDirectory(): Promise<string | null>;
+      openNifFile(): Promise<string | null>;
       getBodyTypes(): Promise<BodyTypeOption[]>;
       detectSource(input: string): Promise<DetectionResult>;
       getBodyTypeInfo(bodyType: BodyType): Promise<BodyTypeInfo | null>;
