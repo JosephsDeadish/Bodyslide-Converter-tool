@@ -6,10 +6,17 @@ type ReferenceBody = {
   topology: string;
   topologyReference: string;
   canonicalVertexMap: string;
+  partitionProfile?: string;
   sliderMappings: Record<string, string>;
   boneMap: Record<string, string>;
   morphEquivalents: Record<string, string>;
   physicsBones: string[];
+  physicsConfig?: {
+    cbpcCompatible?: boolean;
+    hdtSmpCompatible?: boolean;
+    softbodySupported?: boolean;
+    boneNamingConvention?: string;
+  };
   correctiveSmoothingZones: string[];
 };
 
@@ -22,6 +29,111 @@ type ReferenceDb = {
     profile: string;
   }>;
 };
+
+function normalizeBodyKey(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function invertAdapterProfileDirection(profile: string): string {
+  if (profile.includes("upgrade") && !profile.includes("downgrade")) {
+    return profile.replace("upgrade", "downgrade");
+  }
+  if (profile.includes("downgrade") && !profile.includes("upgrade")) {
+    return profile.replace("downgrade", "upgrade");
+  }
+  return profile;
+}
+
+function resolveAdapterProfile(
+  db: ReferenceDb,
+  source: string,
+  target: string,
+): string {
+  const adapters = db.adapters ?? [];
+  const sourceKey = normalizeBodyKey(source);
+  const targetKey = normalizeBodyKey(target);
+  const resolutionOrder: Array<{
+    source: string;
+    target: string;
+    reverse: boolean;
+  }> = [
+    { source: sourceKey, target: targetKey, reverse: false },
+    { source: sourceKey, target: "*", reverse: false },
+    { source: "*", target: targetKey, reverse: false },
+    { source: "*", target: "*", reverse: false },
+    { source: targetKey, target: sourceKey, reverse: true },
+    { source: targetKey, target: "*", reverse: true },
+    { source: "*", target: sourceKey, reverse: true },
+  ];
+
+  for (const candidate of resolutionOrder) {
+    for (const adapter of adapters) {
+      if (
+        normalizeBodyKey(adapter.source) !== candidate.source ||
+        normalizeBodyKey(adapter.target) !== candidate.target
+      ) {
+        continue;
+      }
+
+      const profile = adapter.profile.trim();
+      if (!profile) {
+        continue;
+      }
+
+      return candidate.reverse
+        ? invertAdapterProfileDirection(profile)
+        : profile;
+    }
+  }
+
+  return "default";
+}
+
+function bodyHasPhysics(body: ReferenceBody): boolean {
+  if (body.physicsBones.length > 0) {
+    return true;
+  }
+
+  return Boolean(
+    body.physicsConfig?.cbpcCompatible ||
+      body.physicsConfig?.hdtSmpCompatible ||
+      body.physicsConfig?.softbodySupported,
+  );
+}
+
+function requiresExplicitAdapterProfile(
+  source: ReferenceBody,
+  target: ReferenceBody,
+  profile: string,
+): boolean {
+  if (profile !== "default") {
+    return false;
+  }
+
+  if (source.topology !== target.topology) {
+    return true;
+  }
+
+  const sourcePartition = source.partitionProfile ?? "";
+  const targetPartition = target.partitionProfile ?? "";
+  if (sourcePartition !== targetPartition) {
+    return true;
+  }
+
+  const sourceConvention =
+    source.physicsConfig?.boneNamingConvention?.trim().toLowerCase() ?? "";
+  const targetConvention =
+    target.physicsConfig?.boneNamingConvention?.trim().toLowerCase() ?? "";
+  if (
+    sourceConvention &&
+    targetConvention &&
+    sourceConvention !== targetConvention
+  ) {
+    return true;
+  }
+
+  return bodyHasPhysics(source) !== bodyHasPhysics(target);
+}
 
 async function loadReferenceDb(): Promise<ReferenceDb> {
   const raw = await readFile(
@@ -136,5 +248,37 @@ describe("body reference database", () => {
         ).toBe(true);
       }
     }
+  });
+
+  it("has adapter coverage for every high-risk body-to-body conversion pair", async () => {
+    const db = await loadReferenceDb();
+    const missingProfiles: string[] = [];
+
+    for (const sourceType of BODY_TYPES) {
+      for (const targetType of BODY_TYPES) {
+        if (sourceType === targetType) {
+          continue;
+        }
+
+        const sourceBody = db.bodies[sourceType];
+        const targetBody = db.bodies[targetType];
+        const resolvedProfile = resolveAdapterProfile(
+          db,
+          sourceType,
+          targetType,
+        );
+        if (
+          requiresExplicitAdapterProfile(
+            sourceBody,
+            targetBody,
+            resolvedProfile,
+          )
+        ) {
+          missingProfiles.push(`${sourceType}->${targetType}`);
+        }
+      }
+    }
+
+    expect(missingProfiles).toEqual([]);
   });
 });

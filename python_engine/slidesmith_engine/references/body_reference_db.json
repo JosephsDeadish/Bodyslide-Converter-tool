@@ -1565,6 +1565,66 @@
       "source": "ube",
       "target": "unp",
       "profile": "female-cross-family-physics-downgrade"
+    },
+    {
+      "source": "*",
+      "target": "himbo",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "*",
+      "target": "bodytalk",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "*",
+      "target": "sam",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "*",
+      "target": "sos",
+      "profile": "male-physics-upgrade"
+    },
+    {
+      "source": "himbo",
+      "target": "*",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "bodytalk",
+      "target": "*",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sam",
+      "target": "*",
+      "profile": "male-cross-family"
+    },
+    {
+      "source": "sos",
+      "target": "*",
+      "profile": "male-physics-downgrade"
+    },
+    {
+      "source": "7base",
+      "target": "ube",
+      "profile": "female-legacy-physics-upgrade"
+    },
+    {
+      "source": "ube",
+      "target": "7base",
+      "profile": "female-legacy-physics-downgrade"
+    },
+    {
+      "source": "vanilla",
+      "target": "ube",
+      "profile": "female-baseline-physics-upgrade"
+    },
+    {
+      "source": "ube",
+      "target": "vanilla",
+      "profile": "female-baseline-physics-downgrade"
     }
   ]
 }
