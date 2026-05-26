@@ -411,6 +411,71 @@ function detectGenderHint(haystack) {
         return "male";
     return "neutral";
 }
+// Patterns that signal female-specific assets in a mod's file paths or content.
+const FEMALE_ASSET_PATTERNS = [
+    /character[ _./\\-]*assets[ _./\\-]*female/i,
+    /\/femalebody/i,
+    /\/femalehands/i,
+    /\/femalefeet/i,
+    /\/femalehead/i,
+    /1stpersonfemalehands/i,
+    /\bcbbe\b/i,
+    /\b3ba\b/i,
+    /\b3bbb\b/i,
+    /\bbhunp\b/i,
+    /\buunp\b/i,
+    /\b7base\b/i,
+    /\btbd\b.*body/i,
+    /\bcocobody\b/i,
+];
+// Patterns that signal male-specific assets in a mod's file paths or content.
+const MALE_ASSET_PATTERNS = [
+    /character[ _./\\-]*assets[ _./\\-]*male/i,
+    /\/malebody/i,
+    /\/malehands/i,
+    /\/malefeet/i,
+    /\/malehead/i,
+    /1stpersonmalehands/i,
+    /\bhimbo\b/i,
+    /\bbodytalk\b/i,
+    /\bbt3\b/i,
+    /\bsos\b.*schlong/i,
+    /\bschlongs[ _-]*of[ _-]*skyrim\b/i,
+    /npc[ _]genitals/i,
+    /npc[ _][lr][ _]pectoral/i,
+    /\bsam\b.*body/i,
+    /shape[ _-]*atlas[ _-]*for[ _-]*men/i,
+];
+/**
+ * Detects whether the scanned mod files contain female and/or male asset signals.
+ * Returns an object with `hasFemaleAssets` and `hasMaleAssets` booleans.
+ */
+function detectGenderSignals(files) {
+    let hasFemaleAssets = false;
+    let hasMaleAssets = false;
+    for (const file of files) {
+        if (hasFemaleAssets && hasMaleAssets)
+            break;
+        const blob = `${file.relativePath.toLowerCase()}\n${file.basename.toLowerCase()}\n${file.preview}`;
+        if (!hasFemaleAssets) {
+            for (const pattern of FEMALE_ASSET_PATTERNS) {
+                if (pattern.test(blob)) {
+                    hasFemaleAssets = true;
+                    break;
+                }
+            }
+        }
+        if (!hasMaleAssets) {
+            for (const pattern of MALE_ASSET_PATTERNS) {
+                if (pattern.test(blob)) {
+                    hasMaleAssets = true;
+                    break;
+                }
+            }
+        }
+    }
+    return { hasFemaleAssets, hasMaleAssets };
+}
 function scoreKeywordHit(haystack, bodyType) {
     const keywords = getBodyKeywords(bodyType);
     const normalizedHaystack = normalizeKeywordText(haystack);
@@ -491,6 +556,7 @@ function scoreFileForType(file, patterns, bodyType) {
 }
 export function detectBodyType(files) {
     const packaging = detectPackagingSignals(files);
+    const genderSignals = detectGenderSignals(files);
     const scores = BODY_TYPES.reduce((acc, bodyType) => {
         acc[bodyType] = 0;
         return acc;
@@ -534,6 +600,7 @@ export function detectBodyType(files) {
             packaging,
             rankedCandidates: [],
             matchedSignals: [],
+            genderSignals,
         };
     }
     const bestScore = scores[bestType];
@@ -546,6 +613,7 @@ export function detectBodyType(files) {
             packaging,
             rankedCandidates: [],
             matchedSignals: [],
+            genderSignals,
         };
     }
     const totalSafe = Math.max(total, 1);
@@ -564,6 +632,7 @@ export function detectBodyType(files) {
         packaging,
         rankedCandidates,
         matchedSignals: [...matchedSignals].slice(0, 30),
+        genderSignals,
     };
 }
 //# sourceMappingURL=detector.js.map

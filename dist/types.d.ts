@@ -22,6 +22,13 @@ export type DetectionResult = {
         share: number;
     }>;
     matchedSignals: string[];
+    /** Gender asset signals detected in the scanned files. */
+    genderSignals: {
+        /** True when female-specific asset paths or body markers were found. */
+        hasFemaleAssets: boolean;
+        /** True when male-specific asset paths or body markers were found. */
+        hasMaleAssets: boolean;
+    };
 };
 export type ConversionOperation = {
     id: string;
@@ -137,5 +144,17 @@ export type ConversionJobEvent = {
     jobId: string;
     type: "error";
     error: string;
+};
+export type UserPreferences = {
+    inputPath?: string;
+    outputPath?: string;
+    targetBodyType?: string;
+    sourceOverride?: string;
+    physicsProfile?: string;
+    mixedGender?: boolean;
+    maleSource?: string;
+    maleTarget?: string;
+    malePhysicsProfile?: string;
+    bodyslidePath?: string;
 };
 //# sourceMappingURL=types.d.ts.map

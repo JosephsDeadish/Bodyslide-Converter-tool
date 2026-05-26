@@ -167,8 +167,8 @@ function relationshipOperations(sourceType, targetType) {
                 id: "deform-repair",
                 name: "Full mesh re-weight: vanilla → modern body topology",
                 description: `The source outfit uses vanilla Skyrim vertex topology which is incompatible with ${targetType.toUpperCase()} weighting. ` +
-                    "Open the converted NIF in Outfit Studio, load the target body as a reference, copy bone weights from the reference, " +
-                    "then run the Conform All Sliders pass. Without this step BodySlide slider outputs and in-game fit will be incorrect.",
+                    "SlideSmith will automatically transfer bone weights and conform sliders, but a manual review pass in Outfit Studio is recommended " +
+                    "to verify neck, wrist, ankle seams and BodySlide slider outputs are correct in-game.",
             });
         }
         else {
@@ -197,8 +197,8 @@ function relationshipOperations(sourceType, targetType) {
             id: "physics-introduce",
             name: `Introduce physics bones for ${targetType.toUpperCase()}`,
             description: `Source mesh has no physics bone weights. ${targetType.toUpperCase()} requires: ${boneList}${more}. ` +
-                "In Outfit Studio: load the target reference body, use Copy Bone Weights to transfer physics chain weights to the outfit, " +
-                `then verify the synthesized ${configType} stub lists all required bones. ` +
+                "SlideSmith will automatically transfer physics bone weights to the converted mesh using the target reference body. " +
+                `The synthesized ${configType} stub lists all required bones. ` +
                 "Physics will be silently inoperative at runtime until bone weights are present in the mesh.",
         });
     }

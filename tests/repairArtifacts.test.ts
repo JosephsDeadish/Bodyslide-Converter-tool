@@ -234,9 +234,7 @@ describe("repair artifact generation", () => {
         }
       >;
     };
-    expect(morphTemplate.bodies.cbbe.sliderMappings?.breast).toBe(
-      "Breasts",
-    );
+    expect(morphTemplate.bodies.cbbe.sliderMappings?.breast).toBe("Breasts");
     expect(morphTemplate.bodies.bhunp.morphEquivalents?.zapBelly).toBe(
       "BHUNP Zap Belly",
     );
@@ -260,9 +258,7 @@ describe("repair artifact generation", () => {
       "BHUNP Breast L01",
     );
     // CBBE has no physics bones — notes come from its skeleton guidance.
-    expect(physicsTemplate.bodies.cbbe.physicsConfig?.notes).toContain(
-      "CBBE",
-    );
+    expect(physicsTemplate.bodies.cbbe.physicsConfig?.notes).toContain("CBBE");
   });
 
   it("detects repair issues from quality gates and warnings when stage summaries are sparse", async () => {
@@ -357,10 +353,12 @@ describe("repair artifact generation", () => {
 
     for (const artifact of artifacts) {
       const fileName = artifact.relativePath.split("/").pop();
-      expect(fileName).toBeTruthy();
-      await expect(access(join(reportsDir, "repairs", fileName!))).resolves
+      if (!fileName) {
+        throw new Error("Generated repair artifact must include a file name.");
+      }
+      await expect(access(join(reportsDir, "repairs", fileName))).resolves
         .toBeUndefined;
-      await expect(access(join(userDataDir, "repairs", fileName!))).resolves
+      await expect(access(join(userDataDir, "repairs", fileName))).resolves
         .toBeUndefined;
     }
 

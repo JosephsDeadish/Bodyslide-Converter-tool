@@ -682,7 +682,11 @@ export async function generateRepairArtifacts(
       "Structured list of detected repair issues and stage coverage.",
   });
   if (args.userDataDir) {
-    await writeToUserDataDir(args.userDataDir, manifestFileName, manifestContent);
+    await writeToUserDataDir(
+      args.userDataDir,
+      manifestFileName,
+      manifestContent,
+    );
   }
 
   const checklistFileName = "repair-checklist.txt";
