@@ -3482,9 +3482,16 @@ describe("convertMod", () => {
 
     const files = await scanModFiles(inputDir);
     const detection = detectBodyType(files);
-    const result = await convertMod(inputDir, outputDir, files, detection, "3ba", {
-      physicsProfile: "none",
-    });
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+      {
+        physicsProfile: "none",
+      },
+    );
 
     const convertedConfigEntry = result.convertedFiles.find(
       (f) =>

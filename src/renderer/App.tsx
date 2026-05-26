@@ -3,8 +3,8 @@ import type {
   BodyType,
   BodyTypeInfo,
   BodyTypeOption,
-  ConversionPhysicsProfile,
   ConversionJobEvent,
+  ConversionPhysicsProfile,
   DetectionResult,
   ScanResult,
 } from "./api-types";
