@@ -482,6 +482,353 @@ def _run_mesh_cleanup(
         }
 
 
+def _run_weight_transfer(
+    output_path: str,
+    bone_pairs: list[tuple[str, str, str]],
+    libraries: dict[str, bool],
+    has_nif: bool,
+) -> dict[str, Any]:
+    """
+    Execute bone renaming (weight-transfer stage) over the output directory.
+    *bone_pairs* is the output of ``paired_mappings(source_bones, target_bones)`` —
+    a list of ``(canonical_key, source_bone_name, target_bone_name)`` tuples.
+    Returns a result dict with keys: status, message, bones_renamed, errors.
+    """
+    if not has_nif:
+        return {
+            "status": "skip",
+            "message": "No NIF files detected — bone weight transfer skipped.",
+            "bones_renamed": [],
+            "errors": [],
+        }
+
+    if not has_nif_io_support(libraries):
+        return {
+            "status": "skip",
+            "message": (
+                "pyffi is not installed — bone weight transfer skipped. "
+                "Install pyffi (pip install pyffi) to enable automated NIF bone remapping."
+            ),
+            "bones_renamed": [],
+            "errors": [],
+        }
+
+    if not output_path:
+        return {
+            "status": "skip",
+            "message": "Output path not provided — bone weight transfer skipped.",
+            "bones_renamed": [],
+            "errors": [],
+        }
+
+    # Build a source→target rename dict from pairs (skip identity mappings).
+    bone_remap = {src: tgt for _, src, tgt in bone_pairs if src != tgt}
+    if not bone_remap:
+        return {
+            "status": "pass",
+            "message": "Bone names are already aligned between source and target — no renaming needed.",
+            "bones_renamed": [],
+            "errors": [],
+        }
+
+    try:
+        from slidesmith_engine.pipeline import remap_bones_for_output_dir
+
+        result = remap_bones_for_output_dir(output_path, bone_remap)
+        modified = int(result.get("files_modified", 0))
+        processed = int(result.get("files_processed", 0))
+        bones_renamed = result.get("bones_renamed", [])
+        errors = result.get("errors", [])
+
+        if errors:
+            return {
+                "status": "partial" if modified > 0 else "error",
+                "message": (
+                    f"Bone weight transfer processed {processed} NIF(s), "
+                    f"modified {modified}, encountered {len(errors)} error(s)."
+                ),
+                "bones_renamed": bones_renamed,
+                "errors": errors,
+            }
+
+        return {
+            "status": "pass",
+            "message": (
+                f"Bone weight transfer complete: {len(bones_renamed)} bone rename(s) applied "
+                f"across {modified} of {processed} NIF(s)."
+            ),
+            "bones_renamed": bones_renamed,
+            "errors": [],
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": f"Bone weight transfer pipeline error: {exc}",
+            "bones_renamed": [],
+            "errors": [str(exc)],
+        }
+
+
+def _run_corrective_smoothing_exec(
+    output_path: str,
+    shared_zones: list[str],
+    libraries: dict[str, bool],
+    has_nif: bool,
+) -> dict[str, Any]:
+    """
+    Execute corrective smoothing (corrective-smoothing stage) over the output directory.
+    *shared_zones* is the list of zone names common to both source and target bodies.
+    Returns a result dict with keys: status, message, vertices_smoothed, errors.
+    """
+    if not has_nif:
+        return {
+            "status": "skip",
+            "message": "No NIF files detected — corrective smoothing skipped.",
+            "vertices_smoothed": 0,
+            "errors": [],
+        }
+
+    if not has_nif_io_support(libraries):
+        return {
+            "status": "skip",
+            "message": (
+                "pyffi is not installed — corrective smoothing skipped. "
+                "Install pyffi (pip install pyffi) to enable automated NIF processing."
+            ),
+            "vertices_smoothed": 0,
+            "errors": [],
+        }
+
+    if missing_libraries(libraries, "numpy"):
+        return {
+            "status": "skip",
+            "message": (
+                "numpy is not installed — corrective smoothing skipped. "
+                "Install numpy (pip install numpy) to enable zone-based Laplacian smoothing."
+            ),
+            "vertices_smoothed": 0,
+            "errors": [],
+        }
+
+    if not output_path:
+        return {
+            "status": "skip",
+            "message": "Output path not provided — corrective smoothing skipped.",
+            "vertices_smoothed": 0,
+            "errors": [],
+        }
+
+    if not shared_zones:
+        return {
+            "status": "pass",
+            "message": "No shared corrective zones between source and target — smoothing not required.",
+            "vertices_smoothed": 0,
+            "errors": [],
+        }
+
+    try:
+        from slidesmith_engine.pipeline import smooth_zones_for_output_dir
+
+        result = smooth_zones_for_output_dir(output_path, shared_zones)
+        modified = int(result.get("files_modified", 0))
+        skipped = int(result.get("files_skipped", 0))
+        processed = int(result.get("files_processed", 0))
+        vertices_smoothed = int(result.get("vertices_smoothed", 0))
+        errors = result.get("errors", [])
+
+        if errors:
+            return {
+                "status": "partial" if modified > 0 else "error",
+                "message": (
+                    f"Corrective smoothing processed {processed} NIF(s), "
+                    f"modified {modified}, skipped {skipped}, encountered {len(errors)} error(s)."
+                ),
+                "vertices_smoothed": vertices_smoothed,
+                "errors": errors,
+            }
+
+        return {
+            "status": "pass",
+            "message": (
+                f"Corrective smoothing applied to {vertices_smoothed} vertex(ices) "
+                f"across {modified} of {processed} NIF(s) "
+                f"for zone(s): {', '.join(shared_zones)}."
+            ),
+            "vertices_smoothed": vertices_smoothed,
+            "errors": [],
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": f"Corrective smoothing pipeline error: {exc}",
+            "vertices_smoothed": 0,
+            "errors": [str(exc)],
+        }
+
+
+def _run_surface_reprojection_exec(
+    output_path: str,
+    source_meta: Any,
+    target_meta: Any,
+    bone_pairs: list[tuple[str, str, str]],
+    libraries: dict[str, bool],
+    has_nif: bool,
+    missing_reference_maps: list[str],
+) -> dict[str, Any]:
+    """
+    Execute the surface-reprojection stage for the output directory.
+    Returns a result dict with keys:
+        status, message, same_topology, bones_renamed, vertices_smoothed,
+        guidance, errors.
+    """
+    if not has_nif:
+        return {
+            "status": "skip",
+            "message": "No NIF files detected — surface reprojection skipped.",
+            "same_topology": False,
+            "bones_renamed": [],
+            "vertices_smoothed": 0,
+            "guidance": [],
+            "errors": [],
+        }
+
+    if not output_path:
+        return {
+            "status": "skip",
+            "message": "Output path not provided — surface reprojection skipped.",
+            "same_topology": False,
+            "bones_renamed": [],
+            "vertices_smoothed": 0,
+            "guidance": [],
+            "errors": [],
+        }
+
+    source_topology = source_meta.get("canonicalVertexMap", "") if isinstance(source_meta, dict) else ""
+    target_topology = target_meta.get("canonicalVertexMap", "") if isinstance(target_meta, dict) else ""
+    same_topology = bool(source_topology and target_topology and source_topology == target_topology)
+
+    bone_remap = {src: tgt for _, src, tgt in bone_pairs if src != tgt}
+
+    try:
+        from slidesmith_engine.pipeline import reproject_surface_for_output_dir
+
+        result = reproject_surface_for_output_dir(
+            output_path,
+            same_topology=same_topology,
+            source_topology=source_topology,
+            target_topology=target_topology,
+            bone_remap=bone_remap,
+        )
+
+        return {
+            "status": result.get("status", "skip"),
+            "message": result.get("message", ""),
+            "same_topology": bool(result.get("same_topology", same_topology)),
+            "bones_renamed": result.get("bones_renamed", []),
+            "vertices_smoothed": int(result.get("vertices_smoothed", 0)),
+            "guidance": result.get("guidance", []),
+            "errors": result.get("errors", []),
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": f"Surface reprojection pipeline error: {exc}",
+            "same_topology": same_topology,
+            "bones_renamed": [],
+            "vertices_smoothed": 0,
+            "guidance": [],
+            "errors": [str(exc)],
+        }
+
+
+def _run_morph_transfer_exec(
+    output_path: str,
+    slider_pairs: list[tuple[str, str, str]],
+    morph_pairs: list[tuple[str, str, str]],
+    libraries: dict[str, bool],
+) -> dict[str, Any]:
+    """
+    Execute OSD slider/morph name remapping (morph-transfer stage).
+    *slider_pairs* and *morph_pairs* are outputs of ``paired_mappings()`` —
+    lists of ``(canonical_key, source_name, target_name)`` tuples.
+    Returns a result dict with keys:
+        status, message, files_processed, files_modified,
+        sliders_remapped, morphs_remapped, errors.
+    """
+    if not output_path:
+        return {
+            "status": "skip",
+            "message": "Output path not provided — morph transfer skipped.",
+            "files_processed": 0,
+            "files_modified": 0,
+            "sliders_remapped": 0,
+            "morphs_remapped": 0,
+            "errors": [],
+        }
+
+    slider_remap = {src: tgt for _, src, tgt in slider_pairs if src != tgt}
+    morph_remap = {src: tgt for _, src, tgt in morph_pairs if src != tgt}
+
+    if not slider_remap and not morph_remap:
+        return {
+            "status": "pass",
+            "message": "Slider and morph names are already aligned — no OSD renaming needed.",
+            "files_processed": 0,
+            "files_modified": 0,
+            "sliders_remapped": 0,
+            "morphs_remapped": 0,
+            "errors": [],
+        }
+
+    try:
+        from slidesmith_engine.pipeline import remap_morph_sliders_for_output_dir
+
+        result = remap_morph_sliders_for_output_dir(output_path, slider_remap, morph_remap)
+        files_processed = int(result.get("files_processed", 0))
+        files_modified = int(result.get("files_modified", 0))
+        sliders_remapped = int(result.get("sliders_remapped", 0))
+        morphs_remapped = int(result.get("morphs_remapped", 0))
+        errors = result.get("errors", [])
+
+        if errors:
+            return {
+                "status": "partial" if files_modified > 0 else "error",
+                "message": (
+                    f"Morph transfer processed {files_processed} OSD file(s), "
+                    f"modified {files_modified}, encountered {len(errors)} error(s)."
+                ),
+                "files_processed": files_processed,
+                "files_modified": files_modified,
+                "sliders_remapped": sliders_remapped,
+                "morphs_remapped": morphs_remapped,
+                "errors": errors,
+            }
+
+        return {
+            "status": "pass",
+            "message": (
+                f"Morph transfer complete: {sliders_remapped} slider name(s) and "
+                f"{morphs_remapped} morph name(s) remapped across "
+                f"{files_modified} of {files_processed} OSD file(s)."
+            ),
+            "files_processed": files_processed,
+            "files_modified": files_modified,
+            "sliders_remapped": sliders_remapped,
+            "morphs_remapped": morphs_remapped,
+            "errors": [],
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": f"Morph transfer pipeline error: {exc}",
+            "files_processed": 0,
+            "files_modified": 0,
+            "sliders_remapped": 0,
+            "morphs_remapped": 0,
+            "errors": [str(exc)],
+        }
+
+
 def stage_status(
     stage_id: str, req: dict[str, Any], db: dict[str, Any], libraries: dict[str, bool]
 ) -> tuple[str, str, list[str]]:
@@ -557,138 +904,218 @@ def stage_status(
         )
 
     if stage_id == "surface-reprojection":
-        source_topology = source_meta.get("topology", "") if isinstance(source_meta, dict) else ""
-        target_topology = target_meta.get("topology", "") if isinstance(target_meta, dict) else ""
-        cross_topology = bool(source_topology and target_topology and source_topology != target_topology)
-        vanilla_source = source_topology == "vanilla"
+        source_topology_str = source_meta.get("topology", "") if isinstance(source_meta, dict) else ""
+        target_topology_str = target_meta.get("topology", "") if isinstance(target_meta, dict) else ""
+        cross_topology = bool(
+            source_topology_str and target_topology_str and source_topology_str != target_topology_str
+        )
+        vanilla_source = source_topology_str == "vanilla"
+        output_path_str = req.get("outputPath", "")
 
-        required_libraries = [
-            *missing_nif_io_support(libraries),
-            *missing_libraries(libraries, "numpy", "scipy", "trimesh"),
-        ]
-        if has_nif and not missing_reference_maps and not required_libraries:
-            pass_details = [
-                "Barycentric interpolation route initialized.",
-                f"Source canonical map: {source_map}",
-                f"Target canonical map: {target_map}",
-            ]
-            if vanilla_source:
-                pass_details.append(
-                    "Vanilla topology detected: the source outfit uses Bethesda's original vertex layout. "
-                    "A full re-weight pass in Outfit Studio against the target reference body is required "
-                    "before BodySlide slider outputs will be accurate."
-                )
-            elif cross_topology:
-                pass_details.append(
-                    f"Cross-topology conversion ({source_topology} → {target_topology}): "
-                    "mesh vertices will be reprojected onto the target body surface. "
-                    "Verify weighting quality in Outfit Studio after conversion."
-                )
-            return (
-                "pass",
-                "Nearest-triangle surface reprojection is available for mesh assets.",
-                pass_details,
+        exec_result = _run_surface_reprojection_exec(
+            output_path_str,
+            source_meta,
+            target_meta,
+            mappings["bonePairs"],
+            libraries,
+            has_nif,
+            missing_reference_maps,
+        )
+
+        exec_status = exec_result.get("status", "skip")
+        exec_message = exec_result.get("message", "")
+        exec_details: list[str] = []
+
+        if exec_message:
+            exec_details.append(exec_message)
+        exec_details.extend(exec_result.get("guidance", []))
+        if exec_result.get("bones_renamed"):
+            exec_details.append(
+                f"Bones renamed: {', '.join(exec_result['bones_renamed'][:10])}"
+                + ("…" if len(exec_result["bones_renamed"]) > 10 else "")
             )
-        details: list[str] = []
-        if not has_nif:
-            details.append("No NIF mesh detected for surface reprojection.")
-            details.append("Stage executed with metadata-only fallback.")
-        details.extend(missing_reference_maps)
-        if required_libraries:
-            details.append(
-                f"Missing required Python libraries for nearest-surface reprojection: {', '.join(required_libraries)}."
+        if int(exec_result.get("vertices_smoothed", 0)) > 0:
+            exec_details.append(
+                f"Corrective smoothing applied to {exec_result['vertices_smoothed']} vertex(ices)."
             )
+        exec_details.extend(str(e) for e in exec_result.get("errors", [])[:5])
+
         if vanilla_source:
-            details.append(
-                "Vanilla topology detected: the source outfit must be re-weighted against the target reference body in Outfit Studio."
+            exec_details.append(
+                "Vanilla topology detected: the source outfit uses Bethesda's original vertex layout. "
+                "A full re-weight pass in Outfit Studio against the target reference body is required "
+                "before BodySlide slider outputs will be accurate."
             )
         elif cross_topology:
-            details.append(
-                f"Cross-topology conversion ({source_topology} → {target_topology}): "
-                "manual weight verification in Outfit Studio is strongly recommended."
+            exec_details.append(
+                f"Cross-topology conversion ({source_topology_str} → {target_topology_str}): "
+                "verify weighting quality in Outfit Studio after conversion."
             )
+
+        if exec_status in ("pass", "partial"):
+            summary = (
+                "Surface reprojection executed on mesh assets."
+                if exec_status == "pass"
+                else "Surface reprojection executed in partial/fallback mode."
+            )
+            return (exec_status, summary, exec_details or ["Reprojection pass complete."])
+
+        if exec_status == "skip":
+            attention_details: list[str] = []
+            if not has_nif:
+                attention_details.append("No NIF mesh detected for surface reprojection.")
+                attention_details.append("Stage executed with metadata-only fallback.")
+            attention_details.extend(missing_reference_maps)
+            missing_libs = [
+                *missing_nif_io_support(libraries),
+                *missing_libraries(libraries, "numpy"),
+            ]
+            if missing_libs:
+                attention_details.append(
+                    f"Missing required Python libraries for nearest-surface reprojection: {', '.join(missing_libs)}. "
+                    "Install them to enable automated NIF processing."
+                )
+            if vanilla_source:
+                attention_details.append(
+                    "Vanilla topology detected: re-weight in Outfit Studio against the target reference body."
+                )
+            elif cross_topology:
+                attention_details.append(
+                    f"Cross-topology ({source_topology_str} → {target_topology_str}): "
+                    "manual weight verification in Outfit Studio is strongly recommended."
+                )
+            return (
+                "attention",
+                "Surface reprojection is running in degraded fallback mode.",
+                attention_details or exec_details,
+            )
+
         return (
             "attention",
-            "Surface reprojection is running in degraded fallback mode.",
-            details,
+            "Surface reprojection encountered errors.",
+            exec_details or ["Check output directory and Python environment."],
         )
 
     if stage_id == "weight-transfer":
         bone_pairs = mappings["bonePairs"]
-        required_libraries = [
-            *missing_nif_io_support(libraries),
-            *missing_libraries(libraries, "numpy", "scipy", "trimesh"),
-        ]
-        if has_nif and bone_pairs and not missing_reference_maps and not required_libraries:
+        output_path_str = req.get("outputPath", "")
+
+        transfer_result = _run_weight_transfer(output_path_str, bone_pairs, libraries, has_nif)
+        transfer_status = transfer_result.get("status", "skip")
+        transfer_message = transfer_result.get("message", "")
+        transfer_details: list[str] = []
+        if transfer_message:
+            transfer_details.append(transfer_message)
+        if transfer_result.get("bones_renamed"):
+            transfer_details.append(
+                f"Bone renames applied: {', '.join(transfer_result['bones_renamed'][:10])}"
+                + ("…" if len(transfer_result["bones_renamed"]) > 10 else "")
+            )
+        transfer_details.extend(str(e) for e in transfer_result.get("errors", [])[:5])
+
+        if transfer_status == "pass":
+            transfer_details.append(
+                f"Bone-weight interpolation map contains {len(bone_pairs)} canonical bone chain(s)."
+            )
             return (
                 "pass",
-                "Weight transfer pipeline initialized with smoothing pass.",
-                [
-                    "Nearest-surface interpolation enabled.",
-                    f"Bone-weight interpolation map contains {len(bone_pairs)} canonical bone chains.",
-                ],
+                "Weight transfer executed: bone names remapped to target convention.",
+                transfer_details,
             )
-        details = []
+
+        if transfer_status == "partial":
+            return (
+                "attention",
+                "Weight transfer partially completed — review errors.",
+                transfer_details,
+            )
+
+        # skip or error: fall back to metadata-only report with guidance
+        fallback_details: list[str] = list(transfer_details)
         if not has_nif:
-            details.append("A NIF mesh is required for nearest-surface weight interpolation.")
+            fallback_details.append("A NIF mesh is required for nearest-surface weight interpolation.")
         if not bone_pairs:
-            details.append(
+            fallback_details.append(
                 "Populate overlapping canonical boneMap entries for both bodies to enable weight interpolation."
             )
-        details.extend(missing_reference_maps)
-        if required_libraries:
-            details.append(
-                f"Missing required Python libraries for weight transfer: {', '.join(required_libraries)}."
+        fallback_details.extend(missing_reference_maps)
+        missing_libs = [*missing_nif_io_support(libraries)]
+        if missing_libs:
+            fallback_details.append(
+                f"Missing Python libraries for weight transfer: {', '.join(missing_libs)}. "
+                "Install pyffi to enable automated NIF bone remapping."
             )
+        fallback_details.append("Bone remap quality may require manual verification.")
         return (
             "attention",
             "Weight transfer metadata is incomplete for this body pair.",
-            details
-            + [
-                "Bone remap quality may require manual verification.",
-            ],
+            fallback_details,
         )
 
     if stage_id == "corrective-smoothing":
         source_zones = source_meta.get("correctiveSmoothingZones", []) if isinstance(source_meta, dict) else []
         target_zones = target_meta.get("correctiveSmoothingZones", []) if isinstance(target_meta, dict) else []
-        required_libraries = missing_libraries(libraries, "numpy", "scipy")
-        if (
-            has_nif
-            and isinstance(source_zones, list)
-            and source_zones
-            and isinstance(target_zones, list)
-            and target_zones
-            and not required_libraries
-        ):
-            shared_zones = sorted(set(source_zones) & set(target_zones))
-            unique_to_target = sorted(set(target_zones) - set(source_zones))
-            detail_lines = [f"Shared corrective zones: {', '.join(shared_zones)}"] if shared_zones else []
-            if unique_to_target:
-                detail_lines.append(f"Target-only zones (will use fallback smoothing): {', '.join(unique_to_target)}")
+        shared_zones = (
+            sorted(set(source_zones) & set(target_zones))
+            if isinstance(source_zones, list) and isinstance(target_zones, list)
+            else []
+        )
+        unique_to_target = (
+            sorted(set(target_zones) - set(source_zones))
+            if isinstance(source_zones, list) and isinstance(target_zones, list)
+            else []
+        )
+        output_path_str = req.get("outputPath", "")
+
+        smooth_result = _run_corrective_smoothing_exec(output_path_str, shared_zones, libraries, has_nif)
+        smooth_status = smooth_result.get("status", "skip")
+        smooth_message = smooth_result.get("message", "")
+        smooth_details: list[str] = []
+        if smooth_message:
+            smooth_details.append(smooth_message)
+        if shared_zones:
+            smooth_details.append(f"Shared corrective zones: {', '.join(shared_zones)}")
+        if unique_to_target:
+            smooth_details.append(
+                f"Target-only zones (no source reference — smoothing skipped for these): {', '.join(unique_to_target)}"
+            )
+        smooth_details.extend(str(e) for e in smooth_result.get("errors", [])[:5])
+
+        if smooth_status == "pass":
             return (
                 "pass",
-                f"Corrective smoothing profiles loaded for {len(shared_zones)} shared zone(s).",
-                detail_lines or ["All smoothing zones resolved."],
+                f"Corrective smoothing executed for {len(shared_zones)} shared zone(s).",
+                smooth_details or ["All smoothing zones resolved."],
             )
+
+        if smooth_status == "partial":
+            return (
+                "attention",
+                "Corrective smoothing partially completed — review errors.",
+                smooth_details,
+            )
+
+        # skip/error: fall back to metadata report with guidance
+        fallback_details: list[str] = list(smooth_details)
         if not has_nif:
-            return (
-                "attention",
-                "Corrective smoothing skipped because no NIF mesh was found.",
-                ["Armpit, breast/chest, crotch, elbow, and knee zones could not be evaluated."],
+            fallback_details.append(
+                "Corrective smoothing skipped because no NIF mesh was found. "
+                "Armpit, breast/chest, crotch, elbow, and knee zones could not be evaluated."
             )
-        if required_libraries:
-            return (
-                "attention",
-                "Corrective smoothing is unavailable in the active Python environment.",
-                [
-                    f"Missing required Python libraries for corrective smoothing: {', '.join(required_libraries)}."
-                ],
+        missing_libs = missing_libraries(libraries, "numpy")
+        if missing_libs:
+            fallback_details.append(
+                f"Missing Python libraries for corrective smoothing: {', '.join(missing_libs)}. "
+                "Install numpy (pip install numpy) to enable zone-based Laplacian smoothing."
+            )
+        if not shared_zones:
+            fallback_details.append(
+                "Populate correctiveSmoothingZones in body_reference_db.json for both source and target bodies."
             )
         return (
             "attention",
-            "Corrective smoothing zone definitions are missing from body metadata.",
-            ["Populate correctiveSmoothingZones in body_reference_db.json for both source and target bodies."],
+            "Corrective smoothing is running in fallback mode.",
+            fallback_details or ["Corrective smoothing could not be applied."],
         )
 
     if stage_id == "mesh-cleanup":
@@ -934,32 +1361,48 @@ def stage_status(
     if stage_id == "morph-transfer":
         morph_pairs = mappings["morphPairs"]
         slider_pairs = mappings["sliderPairs"]
-        required_libraries = missing_libraries(libraries, "numpy", "scipy")
-        if (
-            has_nif
-            and slider_assets > 0
-            and morph_pairs
-            and slider_pairs
-            and not missing_reference_maps
-            and not required_libraries
-        ):
-            morph_keys = list(morph_pairs.keys())[:5]
-            slider_keys = list(slider_pairs.keys())[:5]
-            pass_details = [
+        output_path_str = req.get("outputPath", "")
+
+        # Execute OSD slider/morph name remapping regardless of has_nif, since
+        # OSD files live alongside the NIF and need renaming for BodySlide to load.
+        morph_result = _run_morph_transfer_exec(output_path_str, slider_pairs, morph_pairs, libraries)
+        morph_status = morph_result.get("status", "skip")
+        morph_message = morph_result.get("message", "")
+
+        # Fix: morph_pairs / slider_pairs are list[tuple] from paired_mappings(),
+        # not dicts, so use index access instead of .keys().
+        morph_keys = [pair[0] for pair in morph_pairs[:5]]
+        slider_keys = [pair[0] for pair in slider_pairs[:5]]
+
+        if morph_status == "pass":
+            pass_details = [morph_message] if morph_message else []
+            pass_details += [
                 f"Detected {slider_assets} slider/morph-related source asset(s).",
-                f"Morph equivalents map contains {len(morph_pairs)} canonical morph keys "
-                f"({', '.join(morph_keys)}{'…' if len(morph_pairs) > 5 else ''}).",
-                f"Slider mapping map contains {len(slider_pairs)} canonical slider keys "
-                f"({', '.join(slider_keys)}{'…' if len(slider_pairs) > 5 else ''}).",
+                f"Morph equivalents map contains {len(morph_pairs)} canonical morph key(s)"
+                + (f" ({', '.join(morph_keys)}{'…' if len(morph_pairs) > 5 else ''})" if morph_keys else "") + ".",
+                f"Slider mapping map contains {len(slider_pairs)} canonical slider key(s)"
+                + (f" ({', '.join(slider_keys)}{'…' if len(slider_pairs) > 5 else ''})" if slider_keys else "") + ".",
             ]
             if not has_tri:
                 pass_details.append(
                     "No .TRI morph file detected — delta morphs will be synthesized from OSD/OSP slider data at build time."
                 )
-            return ("pass", "Delta-based morph transfer configured.", pass_details)
+            return ("pass", "Delta-based morph transfer executed.", pass_details)
 
-        # Build actionable attention details.
-        details = []
+        if morph_status == "partial":
+            partial_details = [morph_message] if morph_message else []
+            partial_details.extend(str(e) for e in morph_result.get("errors", [])[:5])
+            return (
+                "attention",
+                "Morph transfer partially completed — review errors.",
+                partial_details,
+            )
+
+        # skip or error: fall back to metadata-only report with guidance
+        details: list[str] = []
+        if morph_message:
+            details.append(morph_message)
+        details.extend(str(e) for e in morph_result.get("errors", [])[:5])
         if not has_nif:
             details.append(
                 "A NIF mesh is required to compute delta morph transfer from reference bodies. "
@@ -1003,11 +1446,6 @@ def stage_status(
                 )
             )
         details.extend(missing_reference_maps)
-        if required_libraries:
-            details.append(
-                f"Missing required Python libraries for delta morph transfer: {', '.join(required_libraries)}. "
-                "Install numpy and scipy (pip install numpy scipy) and rerun."
-            )
         return (
             "attention",
             "Morph-transfer prerequisites are incomplete.",
