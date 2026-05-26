@@ -90,7 +90,8 @@ function isPhysicsOptionSupported(
   if (!info.physicsSupport) return false;
   if (option === "dual") return info.cbpcCompatible && info.hdtSmpCompatible;
   if (option === "cbpc") return info.cbpcCompatible;
-  if (option === "hdt-smp" || option === "softbody") return info.hdtSmpCompatible;
+  if (option === "hdt-smp" || option === "softbody")
+    return info.hdtSmpCompatible;
   return true;
 }
 

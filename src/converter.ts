@@ -3280,31 +3280,32 @@ function resolveEffectivePhysicsProfile(
     if (targetInfo.hdtSmpCompatible) {
       return { effectiveProfile: "hdt-smp", note: null };
     }
-
-    if (requestedPhysicsProfile === "softbody") {
-      if (targetInfo.hdtSmpCompatible) {
-        return { effectiveProfile: "softbody", note: null };
-      }
-      if (targetInfo.cbpcCompatible) {
-        return {
-          effectiveProfile: "cbpc",
-          note: `Physics profile 'Softbody' requires HDT-SMP compatibility. ${targetBodyType.toUpperCase()} does not support HDT-SMP, so SlideSmith is using 'CBPC'.`,
-        };
-      }
-      return {
-        effectiveProfile: "none",
-        note: `Physics profile 'Softbody' is unsupported for ${targetBodyType.toUpperCase()}. Falling back to 'No physics'.`,
-      };
-    }
     if (targetInfo.cbpcCompatible) {
       return {
         effectiveProfile: "cbpc",
         note: `Physics profile 'HDT-SMP' is not supported by ${targetBodyType.toUpperCase()}. Falling back to 'CBPC' for this target.`,
       };
     }
+
     return {
       effectiveProfile: "none",
       note: `Physics profile 'HDT-SMP' is unsupported for ${targetBodyType.toUpperCase()}. Falling back to 'No physics'.`,
+    };
+  }
+
+  if (requestedPhysicsProfile === "softbody") {
+    if (targetInfo.hdtSmpCompatible) {
+      return { effectiveProfile: "softbody", note: null };
+    }
+    if (targetInfo.cbpcCompatible) {
+      return {
+        effectiveProfile: "cbpc",
+        note: `Physics profile 'Softbody' requires HDT-SMP compatibility. ${targetBodyType.toUpperCase()} does not support HDT-SMP, so SlideSmith is using 'CBPC'.`,
+      };
+    }
+    return {
+      effectiveProfile: "none",
+      note: `Physics profile 'Softbody' is unsupported for ${targetBodyType.toUpperCase()}. Falling back to 'No physics'.`,
     };
   }
 

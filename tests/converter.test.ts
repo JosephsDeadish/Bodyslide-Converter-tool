@@ -4310,10 +4310,13 @@ describe("convertMod", () => {
           `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
         f.action === "synthesized",
     );
-    expect(hdtStub, "should synthesize HDT-SMP fallback for HIMBO").toBeDefined();
     expect(
-      result.warnings.some((warning) =>
-        warning.includes("Dual") && warning.includes("HDT-SMP"),
+      hdtStub,
+      "should synthesize HDT-SMP fallback for HIMBO",
+    ).toBeDefined();
+    expect(
+      result.warnings.some(
+        (warning) => warning.includes("Dual") && warning.includes("HDT-SMP"),
       ),
     ).toBe(true);
     expect(result.requestedPhysicsProfile).toBe("dual");
