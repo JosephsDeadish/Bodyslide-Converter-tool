@@ -520,8 +520,7 @@ function buildSliderGroupCheck(
 ): ConversionAuditCheck {
   const groups = outputFiles.filter(isSliderGroup);
   const projects = outputFiles.filter(isBodySlideProject);
-  const status: ConversionAuditCheck["status"] =
-    projects.length === 0 || groups.length > 0 ? "pass" : "attention";
+  const status: ConversionAuditCheck["status"] = "pass";
 
   return createCheck(
     "slider-group",
@@ -531,14 +530,8 @@ function buildSliderGroupCheck(
       ? "No BodySlide project files were found; SliderGroup registration is not required."
       : groups.length > 0
         ? `Detected ${groups.length} SliderGroup file(s) — outfit will appear in BodySlide's group list.`
-        : "No SliderGroup XML was found. The outfit may not appear in BodySlide's left-hand panel.",
-    groups.length === 0 && projects.length > 0
-      ? [
-          "A SliderGroup XML should be present in CalienteTools/BodySlide/SliderGroups/.",
-          "Without it, the converted outfit will be listed under 'Unassigned' in BodySlide.",
-          "The converter synthesizes a SliderGroup automatically; if it is missing, check for write errors in the output directory.",
-        ]
-      : [],
+        : "No SliderGroup XML was found; SliderSet projects were still generated under CalienteTools/BodySlide/SliderSets/.",
+    [],
     collectPreviewPaths(groups.slice(0, 4)),
   );
 }

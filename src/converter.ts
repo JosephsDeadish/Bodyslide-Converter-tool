@@ -4172,11 +4172,6 @@ export async function convertMod(
     });
   }
 
-  // Synthesize a BodySlide SliderGroup XML when project files exist but no
-  // group file was part of the source mod.  Without a group registration
-  // BodySlide cannot list the outfit in its left-hand panel.
-  await synthesizeMissingSliderGroup(outputDir, targetBodyType, convertedFiles);
-
   // Synthesize a CBPC physics config stub when the target body supports
   // physics but the source mod contained no physics config files at all.
   // For HDT-SMP-only bodies (cbpcCompatible: false) under "auto" profile,

@@ -2209,24 +2209,11 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    // A synthesized SliderGroup file should appear in the converted files list.
-    const groupEntry = result.convertedFiles.find(
+    const synthesizedGroups = result.convertedFiles.filter(
       (f) =>
-        f.outputPath.includes("SliderGroups") &&
-        f.outputPath.endsWith(".xml") &&
-        f.action === "synthesized",
+        f.outputPath.includes("SliderGroups") && f.action === "synthesized",
     );
-    expect(groupEntry).toBeDefined();
-
-    // The SliderGroup file should physically exist and contain the expected XML.
-    const groupContent = await readFile(
-      join(outputDir, groupEntry?.outputPath ?? ""),
-      "utf8",
-    );
-    expect(groupContent).toContain("3BA");
-    expect(groupContent).toContain("3BA Iron Cuirass");
-    expect(groupContent).toContain("3BA Iron Gauntlets");
-    expect(groupContent).toContain("<Member");
+    expect(synthesizedGroups).toHaveLength(0);
 
     // The audit check for slider-group should pass.
     expect(
@@ -2327,13 +2314,12 @@ describe("convertMod", () => {
     expect(sliderSetContent).toContain('<Slider name="Breasts" />');
     expect(sliderSetContent).toContain('<Slider name="Belly" />');
 
-    const sliderGroupEntry = result.convertedFiles.find(
+    const synthesizedGroups = result.convertedFiles.filter(
       (file) =>
-        file.outputPath ===
-          "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml" &&
+        file.outputPath.includes("SliderGroups") &&
         file.action === "synthesized",
     );
-    expect(sliderGroupEntry).toBeDefined();
+    expect(synthesizedGroups).toHaveLength(0);
   });
 
   it("reuses same-family project slider hints when synthesizing supplemental SliderSets", async () => {
@@ -2713,7 +2699,7 @@ describe("convertMod", () => {
     );
   });
 
-  it("does not synthesize a duplicate SliderGroup when one already exists in the source", async () => {
+  it("does not synthesize SliderGroup files when project files already exist", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -3903,24 +3889,11 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    const generatedGroup = result.convertedFiles.find(
+    const generatedGroups = result.convertedFiles.filter(
       (file) =>
-        file.outputPath ===
-        "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
+        file.outputPath.includes("SliderGroups") && file.action === "synthesized",
     );
-    expect(generatedGroup).toBeDefined();
-    const groupContent = await readFile(
-      join(
-        outputDir,
-        "CalienteTools",
-        "BodySlide",
-        "SliderGroups",
-        "3BA_Outfits.xml",
-      ),
-      "utf8",
-    );
-    expect(groupContent).toContain('<Group name="3BA Outfits">');
-    expect(groupContent).toContain('<Member name="3BA Plated"/>');
+    expect(generatedGroups).toHaveLength(0);
   });
 
   it("synthesizes supplemental SliderSet data when source projects lack SourceFile entries", async () => {
