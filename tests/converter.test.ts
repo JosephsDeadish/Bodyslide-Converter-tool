@@ -3018,7 +3018,7 @@ describe("convertMod", () => {
     expect(stubContent).toContain("PerBoneShape");
   });
 
-  it("does not synthesize a CBPC stub when the source already has a physics config", async () => {
+  it("does not synthesize a duplicate CBPC stub when source already has CBPC config", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -3044,13 +3044,21 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    // No additional stub should be synthesized since a real config was present.
-    const synthStubs = result.convertedFiles.filter(
+    const cbpcStubs = result.convertedFiles.filter(
       (f) =>
+        f.outputPath.toLowerCase().includes("/cbpc/") &&
         f.outputPath.toLowerCase().includes("physicsstub") &&
         f.action === "synthesized",
     );
-    expect(synthStubs).toHaveLength(0);
+    expect(cbpcStubs).toHaveLength(0);
+
+    const hdtStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("/hdtsmp64/") &&
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.action === "synthesized",
+    );
+    expect(hdtStub).toBeDefined();
 
     // The cbpc-stub audit check should pass since the source had a config.
     const cbpcCheck = result.audit.checks.find(

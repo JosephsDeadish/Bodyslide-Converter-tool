@@ -3890,7 +3890,10 @@ export async function convertMod(
           continue;
         }
         for (const targetBone of targetInfo.physicsBones) {
-          const lookupKeys = getTargetBoneLookupKeys(targetBodyType, targetBone);
+          const lookupKeys = getTargetBoneLookupKeys(
+            targetBodyType,
+            targetBone,
+          );
           for (const key of lookupKeys) {
             if (declaredBones.has(key)) {
               return true;
