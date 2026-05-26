@@ -3891,7 +3891,8 @@ describe("convertMod", () => {
 
     const generatedGroups = result.convertedFiles.filter(
       (file) =>
-        file.outputPath.includes("SliderGroups") && file.action === "synthesized",
+        file.outputPath.includes("SliderGroups") &&
+        file.action === "synthesized",
     );
     expect(generatedGroups).toHaveLength(0);
   });

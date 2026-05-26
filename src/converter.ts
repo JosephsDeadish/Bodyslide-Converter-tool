@@ -1751,8 +1751,6 @@ function escapeXml(value: string): string {
   );
 }
 
-// Matches a `name="…"` or `name='…'` attribute inside a <SliderSet …> opening tag.
-const SLIDERSET_NAME_RE = /<SliderSet\b[^>]*\bname=["']([^"']+)["'][^>]*>/gi;
 const SLIDERSET_OUTPUTFILE_RE = /<OutputFile>\s*([^<]+)\s*<\/OutputFile>/gi;
 const SLIDERSET_BLOCK_RE = /<SliderSet\b[\s\S]*?<\/SliderSet>/gi;
 const SLIDERSET_OUTPUTPATH_RE = /<OutputPath>\s*([^<]*)\s*<\/OutputPath>/i;
@@ -1763,14 +1761,6 @@ const KNOWN_SOURCEFILE_ALIAS_ROOTS = new Set(
     .flatMap((bodyType) => getBodyTypeAliases(bodyType))
     .map((alias) => alias.toLowerCase()),
 );
-
-function extractSliderSetNames(content: string): string[] {
-  const names: string[] = [];
-  for (const match of content.matchAll(SLIDERSET_NAME_RE)) {
-    if (match[1]) names.push(match[1].trim());
-  }
-  return names;
-}
 
 function extractSliderSetOutputFiles(content: string): string[] {
   const outputs: string[] = [];
@@ -2354,86 +2344,6 @@ async function synthesizeMissingRuntimeMeshesFromShapeData(
   }
 
   return runtimeToShapeDataPath;
-}
-
-/**
- * Synthesizes a BodySlide SliderGroup XML into the output directory whenever
- * the conversion produced BodySlide project files (OSP / SliderSetInfo XML)
- * but no SliderGroup XML.  Without a group registration BodySlide cannot list
- * the converted outfit in its left-hand panel.
- */
-async function synthesizeMissingSliderGroup(
-  outputDir: string,
-  targetBodyType: BodyType,
-  convertedFiles: ConversionResult["convertedFiles"],
-): Promise<void> {
-  const projectFiles = convertedFiles.filter(
-    (f) =>
-      f.kind === "text" &&
-      (f.outputPath.endsWith(".osp") ||
-        (f.outputPath.endsWith(".xml") &&
-          /\/slidersets\//i.test(f.outputPath))),
-  );
-  if (projectFiles.length === 0) return;
-
-  // Extract slider-set names from the already-written converted project files.
-  const setNames: string[] = [];
-  for (const file of projectFiles) {
-    const absPath = join(outputDir, ...file.outputPath.split("/"));
-    const content = await readFile(absPath, "utf8").catch(() => "");
-    setNames.push(...extractSliderSetNames(content));
-  }
-
-  const uniqueNames = [...new Set(setNames)];
-  if (uniqueNames.length === 0) return;
-
-  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
-  const groupName = `${targetAlias} Outfits`;
-  const memberLines = uniqueNames
-    .map((name) => `        <Member name="${escapeXml(name)}"/>`)
-    .join("\n");
-  const xmlContent = [
-    '<?xml version="1.0" encoding="utf-8"?>',
-    "<SliderGroups>",
-    `    <Group name="${escapeXml(groupName)}">`,
-    memberLines,
-    "    </Group>",
-    "</SliderGroups>",
-    "",
-  ].join("\n");
-
-  const fileName = `${targetAlias}_Outfits.xml`;
-  const outputRelPath = `CalienteTools/BodySlide/SliderGroups/${fileName}`;
-  const outputAbsPath = join(
-    outputDir,
-    "CalienteTools",
-    "BodySlide",
-    "SliderGroups",
-    fileName,
-  );
-
-  const existingEntryIndex = convertedFiles.findIndex(
-    (file) => file.outputPath.toLowerCase() === outputRelPath.toLowerCase(),
-  );
-  const hadExistingGroupFile =
-    existingEntryIndex >= 0 || (await pathExists(outputAbsPath));
-
-  await mkdir(dirname(outputAbsPath), { recursive: true });
-  await writeFile(outputAbsPath, xmlContent, "utf8");
-
-  const nextGroupEntry = {
-    sourcePath: "(native post-process)",
-    outputPath: outputRelPath,
-    kind: "text" as const,
-    action: hadExistingGroupFile
-      ? ("rewritten" as const)
-      : ("synthesized" as const),
-  };
-  if (existingEntryIndex >= 0) {
-    convertedFiles[existingEntryIndex] = nextGroupEntry;
-    return;
-  }
-  convertedFiles.push(nextGroupEntry);
 }
 
 // Default CBPC weights used when generating a physics config stub.
