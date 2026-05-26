@@ -52,6 +52,7 @@ declare module "electron" {
   export const app: {
     whenReady(): Promise<void>;
     on(event: "activate" | "window-all-closed", listener: () => void): void;
+    getPath(name: string): string;
     quit(): void;
   };
 
