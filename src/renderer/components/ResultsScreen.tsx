@@ -304,7 +304,9 @@ function PipelineCard({
       {conversion.skippedFiles.length > 0 && (
         <>
           <Tooltip text="Files that were preserved, synthesized, or excluded based on conversion scope and post-processing safeguards.">
-            <div className="result-section-title">Non-converted file decisions</div>
+            <div className="result-section-title">
+              Non-converted file decisions
+            </div>
           </Tooltip>
           <ul className="op-list">
             {conversion.skippedFiles.map((f) => (

@@ -3711,7 +3711,7 @@ describe("convertMod", () => {
     );
     await writeFile(
       join(inputDir, "docs", "installation_notes.txt"),
-      "This file is unrelated to body conversion output.",
+      "This file contains changelog notes and troubleshooting steps.",
       "utf8",
     );
 
