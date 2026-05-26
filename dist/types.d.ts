@@ -115,6 +115,7 @@ export type ConversionRunArgs = {
     physicsProfile?: ConversionPhysicsProfile;
     maleSource?: BodyType;
     maleTarget?: BodyType;
+    malePhysicsProfile?: ConversionPhysicsProfile;
 };
 export type ConversionJobEvent = {
     jobId: string;

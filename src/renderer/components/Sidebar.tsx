@@ -97,7 +97,8 @@ function pathBasename(p: string): string {
 
 function getPhysicsSupportHint(info: BodyTypeInfo | null): string {
   if (!info) return "Select a target body to see available physics engines.";
-  if (!info.physicsSupport) return "Target body has no runtime physics support.";
+  if (!info.physicsSupport)
+    return "Target body has no runtime physics support.";
   if (info.cbpcCompatible && info.hdtSmpCompatible) {
     return "Supports CBPC and HDT-SMP/Softbody configs.";
   }
@@ -459,7 +460,7 @@ export function Sidebar({
             <div className="field-label">♀ Female Physics Profile</div>
           </Tooltip>
           <div className="field-hint">
-          {getPhysicsSupportHint(bodyTypeInfo)}
+            {getPhysicsSupportHint(bodyTypeInfo)}
           </div>
           <select
             className="select-control"
