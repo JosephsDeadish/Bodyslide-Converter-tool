@@ -3905,7 +3905,8 @@ describe("convertMod", () => {
 
     const generatedGroup = result.convertedFiles.find(
       (file) =>
-        file.outputPath === "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
+        file.outputPath ===
+        "CalienteTools/BodySlide/SliderGroups/3BA_Outfits.xml",
     );
     expect(generatedGroup).toBeDefined();
     const groupContent = await readFile(

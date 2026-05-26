@@ -2424,8 +2424,10 @@ async function synthesizeMissingSliderGroup(
   const nextGroupEntry = {
     sourcePath: "(native post-process)",
     outputPath: outputRelPath,
-    kind: "text",
-    action: hadExistingGroupFile ? ("rewritten" as const) : ("synthesized" as const),
+    kind: "text" as const,
+    action: hadExistingGroupFile
+      ? ("rewritten" as const)
+      : ("synthesized" as const),
   };
   if (existingEntryIndex >= 0) {
     convertedFiles[existingEntryIndex] = nextGroupEntry;
