@@ -248,8 +248,15 @@ async function executeConversion(
   args: ConversionRunArgs,
   onStatus?: (status: JobStatus) => void,
 ): Promise<ScanResult> {
-  const { input, target, output, sourceOverride, maleSource, maleTarget } =
-    args;
+  const {
+    input,
+    target,
+    output,
+    sourceOverride,
+    maleSource,
+    maleTarget,
+    malePhysicsProfile,
+  } = args;
   const physicsProfile = args.physicsProfile ?? "auto";
 
   if (resolve(input) === resolve(output)) {
@@ -326,6 +333,7 @@ async function executeConversion(
     const maleFiles = filterFilesForMalePass(files, maleSourceType);
     if (maleFiles.length > 0) {
       const maleDetection = { ...detection, bodyType: maleSourceType };
+      const maleRequestedPhysicsProfile = malePhysicsProfile ?? physicsProfile;
       const maleResult = await convertMod(
         input,
         output,
@@ -333,7 +341,7 @@ async function executeConversion(
         maleDetection,
         maleTargetType,
         {
-          physicsProfile,
+          physicsProfile: maleRequestedPhysicsProfile,
         },
       );
       result.convertedFiles = [
@@ -344,11 +352,15 @@ async function executeConversion(
         ...result.skippedFiles,
         ...maleResult.skippedFiles,
       ];
-      result.warnings = [
-        ...new Set([...result.warnings, ...maleResult.warnings]),
-      ];
       result.namingNotes = [
         ...new Set([...result.namingNotes, ...maleResult.namingNotes]),
+      ];
+      result.warnings = [
+        ...new Set([
+          ...result.warnings,
+          ...maleResult.warnings,
+          `Mixed-gender male pass physics: selected '${maleResult.requestedPhysicsProfile}', effective '${maleResult.effectivePhysicsProfile}' for ${maleTargetType.toUpperCase()}.`,
+        ]),
       ];
     } else {
       result.warnings = [

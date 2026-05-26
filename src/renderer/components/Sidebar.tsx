@@ -19,6 +19,8 @@ interface SidebarProps {
   detectResult: DetectionResult | null;
   sourceOverride: string;
   physicsProfile: ConversionPhysicsProfile;
+  maleBodyTypeInfo: BodyTypeInfo | null;
+  malePhysicsProfile: ConversionPhysicsProfile;
   mixedGender: boolean;
   maleSource: string;
   maleTarget: string;
@@ -31,6 +33,7 @@ interface SidebarProps {
   onTargetChange(value: string): void;
   onSourceOverrideChange(value: string): void;
   onPhysicsProfileChange(value: ConversionPhysicsProfile): void;
+  onMalePhysicsProfileChange(value: ConversionPhysicsProfile): void;
   onMixedGenderChange(value: boolean): void;
   onMaleSourceChange(value: string): void;
   onMaleTargetChange(value: string): void;
@@ -71,8 +74,8 @@ const PHYSICS_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "auto", label: "Auto (recommended)" },
-  { value: "cbpc", label: "CBPC" },
-  { value: "hdt-smp", label: "HDT-SMP" },
+  { value: "cbpc", label: "CBPC (INI physics)" },
+  { value: "hdt-smp", label: "HDT-SMP / Softbody (XML physics)" },
   { value: "none", label: "No physics" },
 ];
 
@@ -90,6 +93,17 @@ function isPhysicsOptionSupported(
 
 function pathBasename(p: string): string {
   return p.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? p;
+}
+
+function getPhysicsSupportHint(info: BodyTypeInfo | null): string {
+  if (!info) return "Select a target body to see available physics engines.";
+  if (!info.physicsSupport) return "Target body has no runtime physics support.";
+  if (info.cbpcCompatible && info.hdtSmpCompatible) {
+    return "Supports CBPC and HDT-SMP/Softbody configs.";
+  }
+  if (info.hdtSmpCompatible) return "Supports HDT-SMP/Softbody configs only.";
+  if (info.cbpcCompatible) return "Supports CBPC configs only.";
+  return "Physics support metadata is limited for this target.";
 }
 
 function BodySelect({
@@ -153,6 +167,8 @@ export function Sidebar({
   detectResult,
   sourceOverride,
   physicsProfile,
+  maleBodyTypeInfo,
+  malePhysicsProfile,
   mixedGender,
   maleSource,
   maleTarget,
@@ -165,6 +181,7 @@ export function Sidebar({
   onTargetChange,
   onSourceOverrideChange,
   onPhysicsProfileChange,
+  onMalePhysicsProfileChange,
   onMixedGenderChange,
   onMaleSourceChange,
   onMaleTargetChange,
@@ -437,12 +454,12 @@ export function Sidebar({
         <div style={{ marginTop: "1rem" }}>
           <Tooltip
             dir="right"
-            text="Choose the physics setup you intend to use in-game. Unsupported options are disabled for the selected target body. Auto keeps compatibility behavior, CBPC prioritizes INI generation/completion, HDT-SMP prioritizes XML behavior, and No physics avoids physics-specific patching."
+            text="Choose the female target physics setup for this conversion pass. Unsupported options are disabled per target metadata. HDT-SMP includes softbody XML workflows."
           >
-            <div className="field-label">Physics Profile</div>
+            <div className="field-label">♀ Female Physics Profile</div>
           </Tooltip>
           <div className="field-hint">
-            Select the intended runtime physics for this conversion
+          {getPhysicsSupportHint(bodyTypeInfo)}
           </div>
           <select
             className="select-control"
@@ -517,9 +534,9 @@ export function Sidebar({
             <BodySelect
               value={maleSource}
               placeholder="— Select male source body —"
-              femaleOptions={femaleOptions}
+              femaleOptions={[]}
               maleOptions={maleOptions}
-              otherOptions={otherOptions}
+              otherOptions={[]}
               onChange={onMaleSourceChange}
             />
 
@@ -540,11 +557,44 @@ export function Sidebar({
             <BodySelect
               value={maleTarget}
               placeholder="— Select male target body —"
-              femaleOptions={femaleOptions}
+              femaleOptions={[]}
               maleOptions={maleOptions}
-              otherOptions={otherOptions}
+              otherOptions={[]}
               onChange={onMaleTargetChange}
             />
+            <div style={{ marginTop: "1rem" }}>
+              <Tooltip
+                dir="right"
+                text="Choose the male-target physics setup for the mixed-gender male pass. HDT-SMP includes softbody XML workflows."
+              >
+                <div className="field-label">♂ Male Physics Profile</div>
+              </Tooltip>
+              <div className="field-hint">
+                {getPhysicsSupportHint(maleBodyTypeInfo)}
+              </div>
+              <select
+                className="select-control"
+                style={{ marginTop: "4px" }}
+                value={malePhysicsProfile}
+                onChange={(event) =>
+                  onMalePhysicsProfileChange(
+                    event.target.value as ConversionPhysicsProfile,
+                  )
+                }
+              >
+                {PHYSICS_OPTIONS.map((option) => (
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    disabled={
+                      !isPhysicsOptionSupported(option.value, maleBodyTypeInfo)
+                    }
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </>
         )}
       </div>

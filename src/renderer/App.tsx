@@ -56,6 +56,11 @@ export function App() {
   const [mixedGender, setMixedGender] = useState(false);
   const [maleSource, setMaleSource] = useState("");
   const [maleTarget, setMaleTarget] = useState("");
+  const [maleBodyTypeInfo, setMaleBodyTypeInfo] = useState<BodyTypeInfo | null>(
+    null,
+  );
+  const [malePhysicsProfile, setMalePhysicsProfile] =
+    useState<ConversionPhysicsProfile>("auto");
   const [screen, setScreen] = useState<Screen>("welcome");
   const [status, setStatus] = useState<Status>("idle");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -110,6 +115,16 @@ export function App() {
     }
   }, [bodyTypeInfo, physicsProfile]);
 
+  useEffect(() => {
+    const normalized = normalizePhysicsProfileForTarget(
+      malePhysicsProfile,
+      maleBodyTypeInfo,
+    );
+    if (normalized !== malePhysicsProfile) {
+      setMalePhysicsProfile(normalized);
+    }
+  }, [maleBodyTypeInfo, malePhysicsProfile]);
+
   async function handleBrowseInput() {
     const path = await api.openDirectory();
     if (!path) return;
@@ -145,6 +160,8 @@ export function App() {
     setMixedGender(false);
     setMaleSource("");
     setMaleTarget("");
+    setMaleBodyTypeInfo(null);
+    setMalePhysicsProfile("auto");
     if (outputPathAuto) {
       setOutputPath("");
       setOutputPathAuto(false);
@@ -166,6 +183,16 @@ export function App() {
     setBodyTypeInfo(info);
   }
 
+  async function handleMaleTargetChange(value: string) {
+    setMaleTarget(value);
+    if (!value) {
+      setMaleBodyTypeInfo(null);
+      return;
+    }
+    const info = await api.getBodyTypeInfo(value as BodyType);
+    setMaleBodyTypeInfo(info);
+  }
+
   async function handleConvert() {
     if (!inputPath || !outputPath || !targetBodyType || !sourceOverride) return;
     if (mixedGender && (!maleSource || !maleTarget)) return;
@@ -185,6 +212,7 @@ export function App() {
           ? {
               maleSource: maleSource as BodyType,
               maleTarget: maleTarget as BodyType,
+              malePhysicsProfile,
             }
           : {}),
       });
@@ -233,6 +261,8 @@ export function App() {
         detectResult={detectResult}
         sourceOverride={sourceOverride}
         physicsProfile={physicsProfile}
+        maleBodyTypeInfo={maleBodyTypeInfo}
+        malePhysicsProfile={malePhysicsProfile}
         mixedGender={mixedGender}
         maleSource={maleSource}
         maleTarget={maleTarget}
@@ -259,7 +289,10 @@ export function App() {
         onMixedGenderChange={setMixedGender}
         onPhysicsProfileChange={setPhysicsProfile}
         onMaleSourceChange={setMaleSource}
-        onMaleTargetChange={setMaleTarget}
+        onMaleTargetChange={(v) => {
+          void handleMaleTargetChange(v);
+        }}
+        onMalePhysicsProfileChange={setMalePhysicsProfile}
         onConvert={() => {
           void handleConvert();
         }}
