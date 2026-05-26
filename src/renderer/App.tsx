@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   BodyType,
   BodyTypeInfo,
@@ -7,6 +7,7 @@ import type {
   ConversionPhysicsProfile,
   DetectionResult,
   ScanResult,
+  UserPreferences,
 } from "./api-types";
 import { ErrorScreen } from "./components/ErrorScreen";
 import { LoadingScreen } from "./components/LoadingScreen";
@@ -79,6 +80,61 @@ export function App() {
   );
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [loadingStage, setLoadingStage] = useState<string>("");
+
+  // Track whether preferences have been loaded so we don't save before loading.
+  const prefsLoaded = useRef(false);
+
+  // ── Load preferences on startup ──────────────────────────────────────────
+  useEffect(() => {
+    void api.loadPreferences().then((prefs) => {
+      if (prefs.inputPath) setInputPath(prefs.inputPath);
+      if (prefs.outputPath) {
+        setOutputPath(prefs.outputPath);
+        setOutputPathAuto(false);
+      }
+      if (prefs.targetBodyType) setTargetBodyType(prefs.targetBodyType);
+      if (prefs.sourceOverride) setSourceOverride(prefs.sourceOverride);
+      if (prefs.physicsProfile)
+        setPhysicsProfile(prefs.physicsProfile as ConversionPhysicsProfile);
+      if (typeof prefs.mixedGender === "boolean")
+        setMixedGender(prefs.mixedGender);
+      if (prefs.maleSource) setMaleSource(prefs.maleSource);
+      if (prefs.maleTarget) setMaleTarget(prefs.maleTarget);
+      if (prefs.malePhysicsProfile)
+        setMalePhysicsProfile(
+          prefs.malePhysicsProfile as ConversionPhysicsProfile,
+        );
+      prefsLoaded.current = true;
+    });
+  }, []);
+
+  // ── Save preferences whenever relevant state changes ─────────────────────
+  useEffect(() => {
+    if (!prefsLoaded.current) return;
+    const prefs: UserPreferences = {
+      inputPath,
+      outputPath,
+      targetBodyType,
+      sourceOverride,
+      physicsProfile,
+      mixedGender,
+      maleSource,
+      maleTarget,
+      malePhysicsProfile,
+    };
+    void api.savePreferences(prefs);
+  }, [
+    inputPath,
+    outputPath,
+    targetBodyType,
+    sourceOverride,
+    physicsProfile,
+    mixedGender,
+    maleSource,
+    maleTarget,
+    malePhysicsProfile,
+  ]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     void api.getBodyTypes().then(setBodyTypes);

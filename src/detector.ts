@@ -505,8 +505,7 @@ function detectGenderSignals(files: ScannedFile[]): {
 
   for (const file of files) {
     if (hasFemaleAssets && hasMaleAssets) break;
-    const blob =
-      `${file.relativePath.toLowerCase()}\n${file.basename.toLowerCase()}\n${file.preview}`;
+    const blob = `${file.relativePath.toLowerCase()}\n${file.basename.toLowerCase()}\n${file.preview}`;
 
     if (!hasFemaleAssets) {
       for (const pattern of FEMALE_ASSET_PATTERNS) {

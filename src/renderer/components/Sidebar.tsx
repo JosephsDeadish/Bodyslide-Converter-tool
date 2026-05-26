@@ -510,9 +510,12 @@ export function Sidebar({
             >
               <span style={{ fontSize: "1rem", lineHeight: 1.4 }}>♀♂</span>
               <span>
-                <strong style={{ color: "#ffd966" }}>Mixed-gender assets detected.</strong>{" "}
-                This mod appears to contain both female and male outfit files. Enable{" "}
-                <em>Mixed-gender mod</em> below to also run the male conversion pass.
+                <strong style={{ color: "#ffd966" }}>
+                  Mixed-gender assets detected.
+                </strong>{" "}
+                This mod appears to contain both female and male outfit files.
+                Enable <em>Mixed-gender mod</em> below to also run the male
+                conversion pass.
               </span>
             </div>
           )}

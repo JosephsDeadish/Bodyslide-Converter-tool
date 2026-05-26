@@ -49,6 +49,10 @@ type PythonEngineEvent =
 
 type PythonEngineOptions = {
   onProgress?: (event: PythonEngineProgressEvent) => void;
+  /** Electron userData dir — when set, used to find the user-patched reference
+   *  DB (`body_reference_db.json`) and inject SLIDESMITH_REFERENCE_DB into the
+   *  subprocess environment. */
+  userDataDir?: string;
 };
 
 type BootstrapCommandResult = {
@@ -365,6 +369,19 @@ export async function runPythonEngine(
       })),
   };
 
+  // Resolve optional user-patched reference DB path so the Python engine uses
+  // accumulated repair patches from previous conversion runs.
+  let userReferenceDbPath: string | undefined;
+  if (options.userDataDir) {
+    const candidate = join(options.userDataDir, "body_reference_db.json");
+    try {
+      await access(candidate, constants.R_OK);
+      userReferenceDbPath = candidate;
+    } catch {
+      // No user-patched DB yet — that's fine.
+    }
+  }
+
   const runnerPath = await resolvePythonRunnerPath();
   if (!runnerPath) {
     return createFallbackRun(
@@ -427,6 +444,7 @@ export async function runPythonEngine(
       payload,
       index === 0 ? options : {},
       pythonPath,
+      userReferenceDbPath,
     );
     if (run === null) {
       continue;
@@ -1035,11 +1053,19 @@ async function tryInterpreter(
   payload: PythonEngineInput,
   options: PythonEngineOptions,
   pythonPath: string,
+  userReferenceDbPath?: string,
 ): Promise<PythonEngineRunSummary | null> {
+  const extraEnv: NodeJS.ProcessEnv = {};
+  if (userReferenceDbPath) {
+    extraEnv.SLIDESMITH_REFERENCE_DB = userReferenceDbPath;
+  }
   return new Promise<PythonEngineRunSummary | null>((resolve) => {
     const child = spawn(command, args, {
       stdio: ["pipe", "pipe", "pipe"],
-      env: buildPythonSubprocessEnv(process.env, { pythonPath }),
+      env: {
+        ...buildPythonSubprocessEnv(process.env, { pythonPath }),
+        ...extraEnv,
+      },
     });
 
     let stdoutBuffer = "";

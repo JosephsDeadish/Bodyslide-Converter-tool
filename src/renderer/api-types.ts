@@ -44,3 +44,5 @@ export type ScanResult = {
   reportPath: string;
   summaryPath: string;
 };
+
+export type { UserPreferences } from "../types.js";

@@ -7,6 +7,7 @@ import type {
   ConversionResult,
   ConversionRunArgs,
   DetectionResult,
+  UserPreferences,
 } from "./types.js";
 
 export type BodyTypeOption = { value: BodyType; label: string };
@@ -56,4 +57,10 @@ contextBridge.exposeInMainWorld("bodyslideAPI", {
 
   openOutputFolder: (folderPath: string): Promise<boolean> =>
     ipcRenderer.invoke("open:outputFolder", folderPath),
+
+  loadPreferences: (): Promise<UserPreferences> =>
+    ipcRenderer.invoke("settings:load"),
+
+  savePreferences: (prefs: UserPreferences): Promise<boolean> =>
+    ipcRenderer.invoke("settings:save", prefs),
 });

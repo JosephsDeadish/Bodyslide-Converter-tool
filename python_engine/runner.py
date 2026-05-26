@@ -301,6 +301,85 @@ def mapping_snapshot(req: dict[str, Any], db: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _run_physics_bone_transfer(
+    output_path: str,
+    physics_bone_names: list[str],
+    libraries: dict[str, bool],
+    has_nif: bool,
+) -> dict[str, Any]:
+    """
+    Invoke the pipeline bone-weight transfer on the output directory.
+    Returns a result dict with keys: status, message, bones_added, errors.
+    """
+    if not physics_bone_names:
+        return {"status": "pass", "message": "No physics bones to transfer.", "bones_added": [], "errors": []}
+
+    if not has_nif_io_support(libraries):
+        return {
+            "status": "skip",
+            "message": (
+                "pyffi is not installed — physics bone weight transfer skipped. "
+                "Install pyffi (pip install pyffi) to enable automated NIF processing."
+            ),
+            "bones_added": [],
+            "errors": [],
+        }
+
+    if not has_nif:
+        return {
+            "status": "skip",
+            "message": "No NIF files detected in output directory — physics bone transfer skipped.",
+            "bones_added": [],
+            "errors": [],
+        }
+
+    if not output_path:
+        return {
+            "status": "skip",
+            "message": "Output path not provided — physics bone transfer skipped.",
+            "bones_added": [],
+            "errors": [],
+        }
+
+    try:
+        from slidesmith_engine.pipeline import transfer_bones_for_output_dir
+
+        result = transfer_bones_for_output_dir(output_path, physics_bone_names)
+        modified = result.get("files_modified", 0)
+        processed = result.get("files_processed", 0)
+        bones_added = result.get("bones_added", [])
+        errors = result.get("errors", [])
+
+        if errors:
+            return {
+                "status": "partial" if modified > 0 else "error",
+                "message": (
+                    f"Physics bone transfer processed {processed} NIF(s), "
+                    f"modified {modified}, encountered {len(errors)} error(s)."
+                ),
+                "bones_added": bones_added,
+                "errors": errors,
+            }
+
+        return {
+            "status": "pass",
+            "message": (
+                f"Physics bone weight transfer automated: "
+                f"{modified} of {processed} NIF(s) updated with proportional weights "
+                "from anatomy-matched donor bones."
+            ),
+            "bones_added": bones_added,
+            "errors": [],
+        }
+    except Exception as exc:
+        return {
+            "status": "error",
+            "message": f"Physics bone transfer pipeline error: {exc}",
+            "bones_added": [],
+            "errors": [str(exc)],
+        }
+
+
 def stage_status(
     stage_id: str, req: dict[str, Any], db: dict[str, Any], libraries: dict[str, bool]
 ) -> tuple[str, str, list[str]]:
@@ -548,61 +627,92 @@ def stage_status(
             physics_systems = ", ".join(
                 s for s, flag in [("CBPC", cbpc_compat), ("HDT-SMP", hdt_compat)] if flag
             )
-            # Identify which partition slot pattern applies to these physics bones.
             has_genital_bones = any("genital" in b.lower() for b in target_physics_names)
             has_pectoral_bones = any("pectoral" in b.lower() for b in target_physics_names)
             has_breast_bones = any("breast" in b.lower() for b in target_physics_names)
             has_belly_bones = any("belly" in b.lower() for b in target_physics_names)
+            bone_naming = target_cfg.get("boneNamingConvention") if isinstance(target_cfg, dict) else None
 
-            intro_details = [
-                f"Target body requires {target_bones} physics bone(s) absent from the source mesh.",
-                f"Physics bones to add: {', '.join(target_physics_names)}",
-                "These bone weights must be painted in Outfit Studio against the target reference body "
-                "before runtime physics will function.",
-                "Workflow: (1) Load target reference body in Outfit Studio, "
-                "(2) Paint bone weights for each physics bone listed above, "
-                "(3) Run 'Copy Bone Weights' from reference for automatic transfer, "
-                "(4) Rerun SlideSmith conversion to pick up the updated mesh.",
-            ]
+            # --- Attempt automated physics bone weight transfer via pipeline ---
+            output_path_str = req.get("outputPath", "")
+            transfer_result = _run_physics_bone_transfer(
+                output_path_str, target_physics_names, libraries, has_nif
+            )
+
+            partition_notes: list[str] = []
             if has_genital_bones:
-                intro_details.append(
+                partition_notes.append(
                     "Partition note: SOS physics requires partition slot SBP 52 (Pelvis) to be clean. "
                     "Verify no extra partition slots overlap the genital region before exporting."
                 )
             if has_pectoral_bones:
-                intro_details.append(
+                partition_notes.append(
                     "Partition note: Male pectoral physics (NPC L/R Pectoral) are HDT-SMP only — "
                     "no CBPC .ini entry is needed for pectoral bones. "
                     "Ensure the HDT-SMP XML stub lists 'NPC L Pectoral' and 'NPC R Pectoral'."
                 )
             if has_breast_bones and has_belly_bones:
-                intro_details.append(
+                partition_notes.append(
                     "Partition note: Female breast+belly physics require NiSkinData partitions for "
                     "each physics bone group. For softbody targets, ensure the NIF has a separate "
                     "NiSkinData partition per bone (not merged)."
                 )
             if physics_systems:
-                intro_details.append(
+                partition_notes.append(
                     f"Target physics systems: {physics_systems}. "
-                    "A CBPC .ini stub and/or HDT-SMP XML stub will be synthesized automatically at "
-                    "conversion time when no source physics config is detected."
+                    "CBPC .ini and/or HDT-SMP XML stubs are synthesized automatically at conversion time."
                 )
             if softbody:
-                intro_details.append(
+                partition_notes.append(
                     "Target supports softbody (per-vertex HDT-SMP deformation): "
                     "an HDT-SMP XML config with per-vertex skin data is required for full softbody output. "
-                    "The synthesized stub is a starting point — adjust per-vertex weights in Outfit Studio."
+                    "The synthesized stub is a starting point — fine-tune per-vertex weights as needed."
                 )
-            bone_naming = target_cfg.get("boneNamingConvention") if isinstance(target_cfg, dict) else None
             if bone_naming:
-                intro_details.append(f"Target bone naming convention: {bone_naming}")
-            intro_details.append(
+                partition_notes.append(f"Target bone naming convention: {bone_naming}")
+
+            if transfer_result["status"] == "pass":
+                intro_details = [
+                    f"Automated physics bone weight transfer completed: "
+                    f"{target_bones} bone(s) introduced for {target}.",
+                    f"Physics bones added: {', '.join(target_physics_names)}",
+                    transfer_result["message"],
+                    *[f"  \u2713 {b}" for b in transfer_result.get("bones_added", [])],
+                    *partition_notes,
+                ]
+                return (
+                    "pass",
+                    f"Physics bone introduction automated: {target_bones} bone(s) transferred to output NIF(s).",
+                    intro_details,
+                )
+
+            if transfer_result["status"] == "partial":
+                intro_details = [
+                    f"Physics bone transfer partially completed for {target}.",
+                    f"Physics bones requested: {', '.join(target_physics_names)}",
+                    transfer_result["message"],
+                    *[f"  \u2713 {b}" for b in transfer_result.get("bones_added", [])],
+                    *[f"  \u2717 {e}" for e in transfer_result.get("errors", [])],
+                    *partition_notes,
+                ]
+                return (
+                    "attention",
+                    f"Physics bone introduction partially automated: review errors above.",
+                    intro_details,
+                )
+
+            # Transfer was skipped (no pyffi, SE NIF, etc.) or failed
+            intro_details = [
+                f"Target body requires {target_bones} physics bone(s) absent from the source mesh.",
+                f"Physics bones to add: {', '.join(target_physics_names)}",
+                transfer_result["message"],
+                *partition_notes,
                 "A physics metadata repair scaffold (physics-metadata-template.json) with pre-filled "
-                "bone names has been written to _SlideSmith/repairs/ for reference."
-            )
+                "bone names has been written to _SlideSmith/repairs/ for reference.",
+            ]
             return (
                 "attention",
-                f"Physics bone introduction required: {target_bones} bone(s) must be weighted in the outfit mesh.",
+                f"Physics bone introduction required: {target_bones} bone(s) need weight assignment.",
                 intro_details,
             )
         required_libraries = missing_nif_io_support(libraries)

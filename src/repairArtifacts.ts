@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { BODY_TYPE_INFO } from "./bodyTypeInfo.js";
 import type { BodyType, PythonEngineRunSummary } from "./types.js";
@@ -24,6 +24,10 @@ export type RepairArtifact = {
 
 type RepairArtifactGenerationArgs = {
   reportsDir: string;
+  /** Optional Electron userData dir — when set, repairs are also written here
+   *  and the reference-DB patch is auto-merged so the Python engine uses it
+   *  on the next conversion run. */
+  userDataDir?: string;
   sourceBodyType: BodyType;
   targetBodyType: BodyType;
   pythonSummary: PythonEngineRunSummary;
@@ -600,9 +604,7 @@ function buildPhysicsMetadataTemplate(
         const rightPectoral = info.physicsBones.find(
           (b) => /pectoral/i.test(b) && /r\b|right/i.test(b),
         );
-        const genitalBase = info.physicsBones.find((b) =>
-          /genitals/i.test(b),
-        );
+        const genitalBase = info.physicsBones.find((b) => /genitals/i.test(b));
 
         const boneMap: Record<string, string> = { pelvis: "NPC Pelvis" };
         if (firstLeftBreast) boneMap.leftBreast = firstLeftBreast;
@@ -630,6 +632,76 @@ function buildPhysicsMetadataTemplate(
       }),
     ),
   };
+}
+
+// ---------------------------------------------------------------------------
+// User-data dir helpers: write repairs to ~/.slidesmith and auto-merge DB patch
+// ---------------------------------------------------------------------------
+
+type ReferenceDbPatch = {
+  bodies?: Record<string, unknown>;
+  adapters?: unknown[];
+};
+
+async function mergeReferenceDbPatch(
+  userDataDir: string,
+  patch: ReferenceDbPatch,
+): Promise<void> {
+  const userDbPath = join(userDataDir, "body_reference_db.json");
+
+  // Read existing user DB or start from an empty structure.
+  let existing: { bodies?: Record<string, unknown>; adapters?: unknown[] } = {
+    bodies: {},
+    adapters: [],
+  };
+  try {
+    const raw = await readFile(userDbPath, "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      existing = parsed as typeof existing;
+    }
+  } catch {
+    // No existing user DB — starting fresh is fine.
+  }
+
+  // Merge bodies: patch entries override existing ones.
+  if (patch.bodies && typeof patch.bodies === "object") {
+    existing.bodies = { ...(existing.bodies ?? {}), ...patch.bodies };
+  }
+
+  // Append new adapters that don't already exist (match on source+target).
+  if (Array.isArray(patch.adapters)) {
+    const existingAdapters = Array.isArray(existing.adapters)
+      ? existing.adapters
+      : [];
+    const adapterKey = (a: unknown) => {
+      if (a && typeof a === "object") {
+        const obj = a as Record<string, unknown>;
+        return `${String(obj.source ?? "")}:${String(obj.target ?? "")}`;
+      }
+      return "";
+    };
+    const existingKeys = new Set(existingAdapters.map(adapterKey));
+    for (const adapter of patch.adapters) {
+      if (!existingKeys.has(adapterKey(adapter))) {
+        existingAdapters.push(adapter);
+        existingKeys.add(adapterKey(adapter));
+      }
+    }
+    existing.adapters = existingAdapters;
+  }
+
+  await writeFile(userDbPath, `${JSON.stringify(existing, null, 2)}\n`, "utf8");
+}
+
+async function writeToUserDataDir(
+  userDataDir: string,
+  fileName: string,
+  content: string,
+): Promise<void> {
+  const repairsDir = join(userDataDir, "repairs");
+  await mkdir(repairsDir, { recursive: true });
+  await writeFile(join(repairsDir, fileName), content, "utf8");
 }
 
 export async function generateRepairArtifacts(
@@ -680,9 +752,10 @@ export async function generateRepairArtifacts(
     "",
     "Apply the generated templates in this folder, then rerun conversion.",
   ];
+  const checklistContent = `${checklistLines.join("\n")}\n`;
   await writeFile(
     join(repairsDir, checklistFileName),
-    `${checklistLines.join("\n")}\n`,
+    checklistContent,
     "utf8",
   );
   artifacts.push({
@@ -690,6 +763,13 @@ export async function generateRepairArtifacts(
     description:
       "Human-readable repair checklist for follow-up conversion runs.",
   });
+  if (args.userDataDir) {
+    await writeToUserDataDir(
+      args.userDataDir,
+      checklistFileName,
+      checklistContent,
+    );
+  }
 
   if (issues.some((issue) => issue.id === "missing-nif-mesh")) {
     const meshTemplateFileName = "missing-nif-mesh-template.txt";
@@ -701,15 +781,23 @@ export async function generateRepairArtifacts(
       "If slider data exists, ensure project output paths point to these meshes.",
       "After adding meshes, rerun conversion so smoothing/physics/morph stages can execute fully.",
     ];
+    const meshContent = `${meshTemplateLines.join("\n")}\n`;
     await writeFile(
       join(repairsDir, meshTemplateFileName),
-      `${meshTemplateLines.join("\n")}\n`,
+      meshContent,
       "utf8",
     );
     artifacts.push({
       relativePath: `_SlideSmith/repairs/${meshTemplateFileName}`,
       description: "Template guidance for restoring missing mesh pair inputs.",
     });
+    if (args.userDataDir) {
+      await writeToUserDataDir(
+        args.userDataDir,
+        meshTemplateFileName,
+        meshContent,
+      );
+    }
   }
 
   if (issues.some((issue) => issue.id === "incomplete-body-metadata")) {
@@ -718,27 +806,38 @@ export async function generateRepairArtifacts(
       args.sourceBodyType,
       args.targetBodyType,
     );
-    await writeFile(
-      join(repairsDir, metadataPatchFileName),
-      `${JSON.stringify(patch, null, 2)}\n`,
-      "utf8",
-    );
+    const patchJson = `${JSON.stringify(patch, null, 2)}\n`;
+    await writeFile(join(repairsDir, metadataPatchFileName), patchJson, "utf8");
     artifacts.push({
       relativePath: `_SlideSmith/repairs/${metadataPatchFileName}`,
       description:
         "Metadata patch scaffold for topology, canonical maps, slider/bone/morph mappings, and adapter profiles.",
     });
+    // Auto-merge into the user-data reference DB so the Python engine picks it
+    // up on the next conversion run without any manual file copying.
+    if (args.userDataDir) {
+      await writeToUserDataDir(
+        args.userDataDir,
+        metadataPatchFileName,
+        patchJson,
+      );
+      await mergeReferenceDbPatch(
+        args.userDataDir,
+        patch as ReferenceDbPatch,
+      ).catch(() => undefined);
+    }
   }
 
   if (issues.some((issue) => issue.id === "missing-adapter-profile")) {
     const adapterPatchFileName = "adapter-profile-template.json";
+    const adapterContent = `${JSON.stringify(
+      buildAdapterProfileTemplate(args.sourceBodyType, args.targetBodyType),
+      null,
+      2,
+    )}\n`;
     await writeFile(
       join(repairsDir, adapterPatchFileName),
-      `${JSON.stringify(
-        buildAdapterProfileTemplate(args.sourceBodyType, args.targetBodyType),
-        null,
-        2,
-      )}\n`,
+      adapterContent,
       "utf8",
     );
     artifacts.push({
@@ -746,20 +845,28 @@ export async function generateRepairArtifacts(
       description:
         "Adapter-profile scaffold for high-risk body-pair automation routes.",
     });
+    if (args.userDataDir) {
+      await writeToUserDataDir(
+        args.userDataDir,
+        adapterPatchFileName,
+        adapterContent,
+      );
+    }
   }
 
   if (issues.some((issue) => issue.id === "missing-smoothing-profile")) {
     const smoothingPatchFileName = "corrective-smoothing-template.json";
+    const smoothingContent = `${JSON.stringify(
+      buildCorrectiveSmoothingTemplate(
+        args.sourceBodyType,
+        args.targetBodyType,
+      ),
+      null,
+      2,
+    )}\n`;
     await writeFile(
       join(repairsDir, smoothingPatchFileName),
-      `${JSON.stringify(
-        buildCorrectiveSmoothingTemplate(
-          args.sourceBodyType,
-          args.targetBodyType,
-        ),
-        null,
-        2,
-      )}\n`,
+      smoothingContent,
       "utf8",
     );
     artifacts.push({
@@ -767,35 +874,47 @@ export async function generateRepairArtifacts(
       description:
         "Corrective smoothing-zone scaffold for deformation cleanup coverage.",
     });
+    if (args.userDataDir) {
+      await writeToUserDataDir(
+        args.userDataDir,
+        smoothingPatchFileName,
+        smoothingContent,
+      );
+    }
   }
 
   if (issues.some((issue) => issue.id === "incomplete-morph-mappings")) {
     const morphPatchFileName = "morph-mapping-template.json";
-    await writeFile(
-      join(repairsDir, morphPatchFileName),
-      `${JSON.stringify(
-        buildMorphMappingTemplate(args.sourceBodyType, args.targetBodyType),
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
+    const morphContent = `${JSON.stringify(
+      buildMorphMappingTemplate(args.sourceBodyType, args.targetBodyType),
+      null,
+      2,
+    )}\n`;
+    await writeFile(join(repairsDir, morphPatchFileName), morphContent, "utf8");
     artifacts.push({
       relativePath: `_SlideSmith/repairs/${morphPatchFileName}`,
       description:
         "Slider/morph mapping scaffold for zap, preset, and TRI transfer coverage.",
     });
+    if (args.userDataDir) {
+      await writeToUserDataDir(
+        args.userDataDir,
+        morphPatchFileName,
+        morphContent,
+      );
+    }
   }
 
   if (issues.some((issue) => issue.id === "incomplete-physics-metadata")) {
     const physicsPatchFileName = "physics-metadata-template.json";
+    const physicsContent = `${JSON.stringify(
+      buildPhysicsMetadataTemplate(args.sourceBodyType, args.targetBodyType),
+      null,
+      2,
+    )}\n`;
     await writeFile(
       join(repairsDir, physicsPatchFileName),
-      `${JSON.stringify(
-        buildPhysicsMetadataTemplate(args.sourceBodyType, args.targetBodyType),
-        null,
-        2,
-      )}\n`,
+      physicsContent,
       "utf8",
     );
     artifacts.push({
@@ -803,6 +922,13 @@ export async function generateRepairArtifacts(
       description:
         "Physics metadata scaffold for bone remaps, CBPC/HDT-SMP naming, and softbody notes.",
     });
+    if (args.userDataDir) {
+      await writeToUserDataDir(
+        args.userDataDir,
+        physicsPatchFileName,
+        physicsContent,
+      );
+    }
   }
 
   return artifacts;

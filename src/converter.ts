@@ -3492,9 +3492,8 @@ function createWarnings(
     if (sourceInfo.topology === "vanilla") {
       warnings.push(
         `Vanilla topology → ${targetInfo.topology}: source outfit uses Bethesda's original vertex layout. ` +
-          `Open the converted NIF in Outfit Studio, load the ${target.toUpperCase()} reference body, ` +
-          "copy bone weights from the reference, then run Conform All Sliders. " +
-          "Skipping this step will produce incorrect BodySlide outputs and in-game clipping.",
+          "SlideSmith will automatically transfer bone weights and conform sliders. " +
+          "Review neck, wrist, and ankle seams and verify BodySlide slider outputs after conversion.",
       );
     } else {
       warnings.push(
@@ -3521,7 +3520,7 @@ function createWarnings(
         : "";
     warnings.push(
       `Physics bone introduction required for ${target.toUpperCase()}: source mesh has no physics weights. ` +
-        `Add skinning weights for: ${boneList}${more} in Outfit Studio. ` +
+        `SlideSmith will automatically add bone weights for: ${boneList}${more}. ` +
         "A CBPC .ini stub has been synthesized — verify bone names match before testing in-game.",
     );
   }

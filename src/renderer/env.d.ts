@@ -8,6 +8,7 @@ import type {
   ConversionRunArgs,
   DetectionResult,
   ScanResult,
+  UserPreferences,
 } from "./api-types";
 
 declare global {
@@ -22,6 +23,8 @@ declare global {
       onScanJobEvent(listener: (event: ConversionJobEvent) => void): () => void;
       openPatreonSupport(): Promise<boolean>;
       openOutputFolder(folderPath: string): Promise<boolean>;
+      loadPreferences(): Promise<UserPreferences>;
+      savePreferences(prefs: UserPreferences): Promise<boolean>;
     };
   }
 }

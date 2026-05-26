@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
   app,
@@ -31,10 +31,40 @@ import type {
   EngineQualityGate,
   EngineStageReport,
   PythonEngineRunSummary,
+  UserPreferences,
 } from "./types.js";
+
+export type { UserPreferences };
 
 const PATREON_SUPPORT_URL = "https://www.patreon.com/cw/DeadOnTheInside";
 const ICON_CANDIDATES = ["build/icon.ico", "build/icon.icns", "build/icon.png"];
+
+function getPreferencesPath(): string {
+  return join(app.getPath("userData"), "preferences.json");
+}
+
+async function loadPreferences(): Promise<UserPreferences> {
+  try {
+    const raw = await readFile(getPreferencesPath(), "utf8");
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as UserPreferences;
+    }
+  } catch {
+    // File missing or unreadable — return empty preferences.
+  }
+  return {};
+}
+
+async function savePreferences(prefs: UserPreferences): Promise<void> {
+  const dir = app.getPath("userData");
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    getPreferencesPath(),
+    `${JSON.stringify(prefs, null, 2)}\n`,
+    "utf8",
+  );
+}
 
 type ScanResult = {
   detection: Awaited<ReturnType<typeof detectBodyType>>;
@@ -205,6 +235,16 @@ ipcMain.handle(
   },
 );
 
+ipcMain.handle("settings:load", async () => loadPreferences());
+
+ipcMain.handle(
+  "settings:save",
+  async (_event: IpcMainInvokeEvent, prefs: UserPreferences) => {
+    await savePreferences(prefs);
+    return true;
+  },
+);
+
 function sendJobEvent(
   contents: IpcMainInvokeEvent["sender"],
   event: ConversionJobEvent,
@@ -284,54 +324,25 @@ async function executeConversion(
     : autoDetection;
 
   const plan = createConversionPlan(detection, target, files);
-
-  onStatus?.({
-    stage: "python-engine",
-    message: "Running Python core geometry pipeline.",
-    progress: 20,
-  });
-
   const pythonSourceType =
     detection.bodyType === "unknown" ? target : detection.bodyType;
-  const pythonSummary = await runPythonEngine(
-    {
-      inputPath: input,
-      outputPath: output,
-      sourceBodyType: pythonSourceType,
-      targetBodyType: target,
-      files,
-    },
-    {
-      onProgress: (event) => {
-        onStatus?.({
-          stage: "python-engine",
-          message: event.message,
-          progress: Math.min(
-            65,
-            Math.max(20, Math.round(20 + event.progress * 0.45)),
-          ),
-        });
-      },
-    },
-  );
 
   onStatus?.({
     stage: "conversion",
     message: "Applying conversion outputs and compatibility remaps.",
-    progress: 70,
+    progress: 20,
   });
 
   const result = await convertMod(input, output, files, detection, target, {
     physicsProfile,
   });
-  applyPythonSummaryToAudit(result, pythonSummary);
 
   // ── Male conversion pass (mixed-gender mods) ─────────────────────────────
   if (maleSource && maleTarget) {
     onStatus?.({
       stage: "conversion",
       message: "Running male body conversion pass.",
-      progress: 75,
+      progress: 35,
     });
     const maleSourceType = maleSource as BodyType;
     const maleTargetType = maleTarget as BodyType;
@@ -378,6 +389,41 @@ async function executeConversion(
   }
   // ─────────────────────────────────────────────────────────────────────────
 
+  // ── Python core geometry pipeline (runs on output files so it can perform
+  //    NIF post-processing such as physics bone weight transfer) ─────────────
+  onStatus?.({
+    stage: "python-engine",
+    message: "Running Python core geometry pipeline.",
+    progress: 50,
+  });
+
+  const outputFiles = await scanModFiles(output);
+  const userDataDir = app.getPath("userData");
+  const pythonSummary = await runPythonEngine(
+    {
+      inputPath: output,
+      outputPath: output,
+      sourceBodyType: pythonSourceType,
+      targetBodyType: target,
+      files: outputFiles,
+    },
+    {
+      onProgress: (event) => {
+        onStatus?.({
+          stage: "python-engine",
+          message: event.message,
+          progress: Math.min(
+            85,
+            Math.max(50, Math.round(50 + event.progress * 0.35)),
+          ),
+        });
+      },
+      userDataDir,
+    },
+  );
+  applyPythonSummaryToAudit(result, pythonSummary);
+  // ─────────────────────────────────────────────────────────────────────────
+
   onStatus?.({
     stage: "reports",
     message: "Writing conversion report and summary files.",
@@ -388,6 +434,7 @@ async function executeConversion(
   await mkdir(reportsDir, { recursive: true });
   const repairArtifacts = await generateRepairArtifacts({
     reportsDir,
+    userDataDir,
     sourceBodyType: pythonSourceType,
     targetBodyType: target,
     pythonSummary,

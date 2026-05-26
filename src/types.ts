@@ -208,3 +208,16 @@ export type ConversionJobEvent =
       type: "error";
       error: string;
     };
+
+export type UserPreferences = {
+  inputPath?: string;
+  outputPath?: string;
+  targetBodyType?: string;
+  sourceOverride?: string;
+  physicsProfile?: string;
+  mixedGender?: boolean;
+  maleSource?: string;
+  maleTarget?: string;
+  malePhysicsProfile?: string;
+  bodyslidePath?: string;
+};
