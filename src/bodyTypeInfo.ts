@@ -7,6 +7,10 @@ export type BodyTypeInfo = {
   family: "cbbe" | "unp" | "male" | "addon" | "vanilla";
   topology: "cbbe" | "unp" | "male" | "legacy-female" | "vanilla";
   physicsSupport: boolean;
+  /** Whether this body's physics chains are compatible with CBPC (CPU physics). */
+  cbpcCompatible: boolean;
+  /** Whether this body's physics chains are compatible with HDT-SMP (GPU softbody). */
+  hdtSmpCompatible: boolean;
   skeletonProfile: string;
   skeletonNotes: string;
   referenceProject: string;
@@ -26,6 +30,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: false,
+    cbpcCompatible: false,
+    hdtSmpCompatible: false,
     skeletonProfile: "Vanilla female-compatible (XPMSSE recommended)",
     skeletonNotes:
       "Base CBBE can run on the vanilla female skeleton, but XPMSSE (XP32 Maximum Skeleton Special Extended) is the Skyrim SE/AE compatibility standard for mixed BodySlide setups.",
@@ -60,6 +66,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: true,
+    cbpcCompatible: true,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE / XP32 Extended required",
     skeletonNotes:
       "3BA expects XPMSSE-style extended breast/butt/belly chains (including L/R BreastRoot). Using a non-XP32 skeleton usually breaks runtime physics behavior. 3BA Softbody requires a correctly configured HDT-SMP XML alongside the NIF.",
@@ -124,6 +132,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: true,
+    cbpcCompatible: true,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE / XP32 Extended required",
     skeletonNotes:
       "COCO uses the same XPMSSE-compatible physics node layout as 3BA (NPC L/R BreastRoot plus standard breast/butt/belly chains). An HDT-SMP XML (COCOBody.xml or equivalent) is required for SMP softbody; CBPC works with standard CBBE-family CBPC configs that list NPC L/R Breast01-03 and NPC L/R Butt.",
@@ -181,6 +191,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "male",
     topology: "male",
     physicsSupport: true,
+    cbpcCompatible: false,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE male skeleton recommended",
     skeletonNotes:
       "HIMBO armor conversion is most reliable with XPMSSE-compatible male skeleton paths and modern animation behavior packs. The optional HIMBO Physics Addon requires XPMSSE with pectoral node support and an HDT-SMP XML config; CBPC is not used for HIMBO pectoral physics.",
@@ -226,6 +238,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "male",
     topology: "male",
     physicsSupport: true,
+    cbpcCompatible: false,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE male skeleton recommended",
     skeletonNotes:
       "BodyTalk packs generally assume XP32/XPMSSE-era skeleton layouts in Skyrim SE ports, especially when mixed with modern animation and physics mods. The BodyTalk Physics addon requires XPMSSE pectoral node support and an HDT-SMP XML config.",
@@ -266,6 +280,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "cbbe",
     topology: "cbbe",
     physicsSupport: true,
+    cbpcCompatible: true,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE / XP32-compatible skeleton recommended",
     skeletonNotes:
       "TBD uses CBBE-family physics naming and is typically deployed on XPMSSE in Skyrim SE modlists to keep CBPC/HDT-SMP behavior consistent. TBD Softbody requires a correctly configured HDT-SMP XML.",
@@ -318,6 +334,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "addon",
     topology: "male",
     physicsSupport: true,
+    cbpcCompatible: false,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE + SOS-compatible skeleton nodes required",
     skeletonNotes:
       "SOS Regular relies on extended genital/scrotum nodes provided by XPMSSE-compatible skeleton setups; missing nodes prevent expected runtime motion. SOS AE (Anniversary Edition) uses the same node structure.",
@@ -359,6 +377,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "unp",
     physicsSupport: false,
+    cbpcCompatible: false,
+    hdtSmpCompatible: false,
     skeletonProfile: "Vanilla UNP-compatible (XPMSSE recommended)",
     skeletonNotes:
       "Legacy UNP conversions can run on vanilla-compatible female skeletons, but XPMSSE remains the common Skyrim SE baseline for mixed BodySlide ecosystems.",
@@ -394,6 +414,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "unp",
     physicsSupport: true,
+    cbpcCompatible: true,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE / XP32 Extended required",
     skeletonNotes:
       "BHUNP physics chains are deployed through XPMSSE-compatible setups; confirm BHUNP-prefixed breast/butt node support before shipping. BHUNP Softbody requires a matching HDT-SMP XML config alongside the NIF.",
@@ -448,6 +470,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "unp",
     physicsSupport: true,
+    cbpcCompatible: true,
+    hdtSmpCompatible: true,
     skeletonProfile: "XPMSSE / XP32-compatible skeleton recommended",
     skeletonNotes:
       "UUNP Special physics deployments in Skyrim SE usually rely on XPMSSE-compatible bone layouts for breast/butt/belly runtime motion. UUNP Special Softbody requires a matching HDT-SMP XML alongside the NIF.",
@@ -503,6 +527,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "unp",
     physicsSupport: true,
+    cbpcCompatible: true,
+    hdtSmpCompatible: true,
     skeletonProfile:
       "XPMSSE / XP32-compatible skeleton required (same as UUNP Special)",
     skeletonNotes:
@@ -558,6 +584,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "unp",
     topology: "legacy-female",
     physicsSupport: false,
+    cbpcCompatible: false,
+    hdtSmpCompatible: false,
     skeletonProfile: "Legacy UNP-family (XPMSSE recommended)",
     skeletonNotes:
       "Most Skyrim SE 7Base ports are paired with XPMSSE-compatible skeleton stacks even when the conversion itself is non-physics.",
@@ -590,6 +618,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "male",
     topology: "male",
     physicsSupport: false,
+    cbpcCompatible: false,
+    hdtSmpCompatible: false,
     skeletonProfile: "XPMSSE / SAM-compatible male skeleton required",
     skeletonNotes:
       "SAM and SAM Light typically expect XP32/XPMSSE-style male skeleton extensions and bodymorph-compatible setup in Skyrim SE. SAM Light is the version with active SE/AE support.",
@@ -632,6 +662,8 @@ export const BODY_TYPE_INFO: Record<BodyType, BodyTypeInfo> = {
     family: "vanilla",
     topology: "vanilla",
     physicsSupport: false,
+    cbpcCompatible: false,
+    hdtSmpCompatible: false,
     skeletonProfile: "Vanilla Skyrim skeleton",
     skeletonNotes:
       "Vanilla targets should stay compatible with Bethesda's default skeleton paths; XPMSSE is optional unless physics-heavy body mods are mixed in.",

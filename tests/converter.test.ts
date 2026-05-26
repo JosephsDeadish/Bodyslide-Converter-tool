@@ -2981,7 +2981,7 @@ describe("convertMod", () => {
     ).toBe(true);
   });
 
-  it("uses genital-specific defaults for synthesized SOS CBPC stubs", async () => {
+  it("generates HDT-SMP XML stub for SOS (HDT-SMP-only body) under auto profile", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -3004,7 +3004,7 @@ describe("convertMod", () => {
     const stubEntry = result.convertedFiles.find(
       (f) =>
         f.outputPath.toLowerCase().includes("physicsstub") &&
-        f.outputPath.endsWith(".ini") &&
+        f.outputPath.endsWith(".xml") &&
         f.action === "synthesized",
     );
     expect(stubEntry).toBeDefined();
@@ -3013,9 +3013,9 @@ describe("convertMod", () => {
       join(outputDir, stubEntry?.outputPath ?? ""),
       "utf8",
     );
-    expect(stubContent).toContain("NPC GenitalsBase01=0.350");
-    expect(stubContent).toContain("NPC L GenitalsScrotum01=0.250");
-    expect(stubContent).toContain("NPC R GenitalsScrotum01=0.250");
+    expect(stubContent).toContain("NPC GenitalsBase01");
+    expect(stubContent).toContain("<bone");
+    expect(stubContent).toContain("PerBoneShape");
   });
 
   it("does not synthesize a CBPC stub when the source already has a physics config", async () => {
@@ -3137,27 +3137,51 @@ describe("convertMod", () => {
       );
 
       const targetAlias = result.preferredOutputAlias;
-      const synthStub = result.convertedFiles.find(
-        (file) =>
-          file.outputPath ===
-            `SKSE/Plugins/CBPC/${targetAlias}_PhysicsStub.ini` &&
-          file.action === "synthesized",
-      );
-      expect(
-        synthStub,
-        `expected placeholder-safe stub for ${target}`,
-      ).toBeDefined();
+      const targetInfo = BODY_TYPE_INFO[target];
 
-      const stubContent = await readFile(
-        join(outputDir, synthStub?.outputPath ?? ""),
-        "utf8",
-      );
-      expect(stubContent).toContain(
-        `Auto-generated CBPC physics stub for ${targetAlias}`,
-      );
-      expect(stubContent).toContain(
-        BODY_TYPE_INFO[target].physicsBones[0] ?? "",
-      );
+      if (targetInfo.cbpcCompatible) {
+        // CBPC-compatible bodies get a .ini stub
+        const synthStub = result.convertedFiles.find(
+          (file) =>
+            file.outputPath ===
+              `SKSE/Plugins/CBPC/${targetAlias}_PhysicsStub.ini` &&
+            file.action === "synthesized",
+        );
+        expect(
+          synthStub,
+          `expected CBPC placeholder-safe stub for ${target}`,
+        ).toBeDefined();
+
+        const stubContent = await readFile(
+          join(outputDir, synthStub?.outputPath ?? ""),
+          "utf8",
+        );
+        expect(stubContent).toContain(
+          `Auto-generated CBPC physics stub for ${targetAlias}`,
+        );
+        expect(stubContent).toContain(
+          BODY_TYPE_INFO[target].physicsBones[0] ?? "",
+        );
+      } else if (targetInfo.hdtSmpCompatible) {
+        // HDT-SMP-only bodies (HIMBO, BodyTalk, SOS) get an XML stub
+        const synthStub = result.convertedFiles.find(
+          (file) =>
+            file.outputPath ===
+              `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+            file.action === "synthesized",
+        );
+        expect(
+          synthStub,
+          `expected HDT-SMP XML placeholder-safe stub for ${target}`,
+        ).toBeDefined();
+
+        const stubContent = await readFile(
+          join(outputDir, synthStub?.outputPath ?? ""),
+          "utf8",
+        );
+        expect(stubContent).toContain("PerBoneShape");
+        expect(stubContent).toContain("<bone");
+      }
     }
   });
 
@@ -4117,5 +4141,121 @@ describe("convertMod", () => {
       f.outputPath.endsWith(".nif"),
     );
     expect(nifEntry).toBeDefined();
+  });
+
+  it("synthesizes HDT-SMP XML stub for HIMBO target under auto profile", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "himbo_outfit_0.nif"),
+      "himbo",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "himbo",
+    );
+
+    const targetAlias = result.preferredOutputAlias;
+    const xmlStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+    expect(xmlStub, "expected HDT-SMP XML stub for HIMBO").toBeDefined();
+
+    const content = await readFile(
+      join(outputDir, xmlStub?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(content).toContain("PerBoneShape");
+    expect(content).toContain("NPC L Pectoral");
+    expect(content).toContain("<bone");
+  });
+
+  it("does not synthesize a CBPC stub for HIMBO when physicsProfile is cbpc", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "himbo_outfit_0.nif"),
+      "himbo",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "himbo",
+      { physicsProfile: "cbpc" },
+    );
+
+    const cbpcStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath.toLowerCase().includes("physicsstub") &&
+        f.outputPath.endsWith(".ini") &&
+        f.action === "synthesized",
+    );
+    expect(
+      cbpcStub,
+      "should not synthesize CBPC stub for HIMBO",
+    ).toBeUndefined();
+  });
+
+  it("synthesizes HDT-SMP XML stub for 3BA when physicsProfile is hdt-smp", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+      { physicsProfile: "hdt-smp" },
+    );
+
+    const targetAlias = result.preferredOutputAlias;
+    const xmlStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+    expect(
+      xmlStub,
+      "expected HDT-SMP XML stub for 3BA with hdt-smp profile",
+    ).toBeDefined();
+
+    const content = await readFile(
+      join(outputDir, xmlStub?.outputPath ?? ""),
+      "utf8",
+    );
+    expect(content).toContain("PerBoneShape");
+    expect(content).toContain("<bone");
+    // Warning mentions XML stub generation
+    expect(result.warnings.some((w) => w.includes("HDT-SMP XML stub"))).toBe(
+      true,
+    );
   });
 });

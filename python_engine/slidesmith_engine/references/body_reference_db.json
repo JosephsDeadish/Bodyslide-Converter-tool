@@ -64,7 +64,10 @@
         "zapCleavage": "Zap Cleavage",
         "zapBelly": "Zap Belly",
         "natural": "CBBE Body"
-      }
+      },
+      "physicsUpgradePath": "3ba",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {}
     },
     "3ba": {
       "topology": "cbbe",
@@ -158,6 +161,22 @@
         "physicsLevel": "3bbb",
         "boneNamingConvention": "cbbe-3ba",
         "notes": "Supports CBPC and HDT-SMP. NPC LBreastRoot/NPC RBreastRoot are 3BA-specific root control bones above the standard breast chain \u2014 they must be preserved for CBPC/HDT-SMP to work correctly. NPC BellyRoot extends the belly chain for the softbody belly simulation. 3BA Softbody variant enables per-vertex HDT-SMP deformation via NiSkinData partitions. COCO uses the identical physics bone set as 3BA; COCO \u2194 3BA physics conversion is lossless."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "cbbe",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC LBreastRoot": "NPC Spine2",
+        "NPC RBreastRoot": "NPC Spine2",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly",
+        "NPC BellyRoot": "NPC Belly"
       }
     },
     "coco": {
@@ -252,6 +271,22 @@
         "physicsLevel": "3bbb",
         "boneNamingConvention": "cbbe-3ba",
         "notes": "Uses identical bone naming to 3BA: NPC L/R Breast01-03, NPC LBreastRoot/NPC RBreastRoot, NPC L/R Butt, NPC Belly, NPC BellyRoot. COCO \u2194 3BA conversion is near-lossless for physics configs. Standard CBBE-family CBPC configs with BreastRoot bones are directly compatible. COCOBody HDT-SMP XML (NickNak) required for softbody simulation."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "cbbe",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC LBreastRoot": "NPC Spine2",
+        "NPC RBreastRoot": "NPC Spine2",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly",
+        "NPC BellyRoot": "NPC Belly"
       }
     },
     "himbo": {
@@ -325,6 +360,12 @@
         "physicsLevel": "pectoral",
         "boneNamingConvention": "npc-pectoral",
         "notes": "HIMBO Physics Addon (separate HDT-SMP install) adds optional pectoral motion via NPC L/R Pectoral bones. Base HIMBO has no physics \u2014 the addon is a separate esp/esm. CBPC is not supported for pectoral physics. Use the same NPC L/R Pectoral mapping when converting HIMBO Physics content to BodyTalk Physics and vice versa."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {
+        "NPC L Pectoral": "NPC L Clavicle",
+        "NPC R Pectoral": "NPC R Clavicle"
       }
     },
     "bodytalk": {
@@ -398,6 +439,12 @@
         "physicsLevel": "pectoral",
         "boneNamingConvention": "npc-pectoral",
         "notes": "BodyTalk Physics variant (separate HDT-SMP addon) adds pectoral motion via NPC L/R Pectoral bones \u2014 the identical bone naming used by the HIMBO Physics Addon. HIMBO \u2194 BodyTalk physics conversion is lossless. CBPC not supported for pectoral physics. BT3 Muscle Solution is the most common physics-enabled variant."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {
+        "NPC L Pectoral": "NPC L Clavicle",
+        "NPC R Pectoral": "NPC R Clavicle"
       }
     },
     "tbd": {
@@ -486,6 +533,19 @@
         "physicsLevel": "3bbb",
         "boneNamingConvention": "cbbe-standard",
         "notes": "Uses CBBE-standard NPC L/R Breast01-03, L/R Butt, NPC Belly bone names \u2014 no BreastRoot bones. CBPC configs are interchangeable with standard CBBE-family physics setups. TBD 3BBB adds HDT-SMP softbody support via NiSkinData partitions. When converting from 3BA or COCO, BreastRoot/BellyRoot bone weights must be collapsed to the standard chain."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "cbbe",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
       }
     },
     "sos": {
@@ -575,6 +635,17 @@
         "physicsLevel": "genital",
         "boneNamingConvention": "sos",
         "notes": "SOS Regular uses HDT-SMP for genital physics via NPC GenitalsBase01-05 and NPC L/R GenitalsScrotum01 bones. SOS Light is the static no-physics variant. Always confirm the corresponding SMP XML config is present."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {
+        "NPC GenitalsBase01": "NPC Pelvis",
+        "NPC GenitalsBase02": "NPC Pelvis",
+        "NPC GenitalsBase03": "NPC Pelvis",
+        "NPC GenitalsBase04": "NPC Pelvis",
+        "NPC GenitalsBase05": "NPC Pelvis",
+        "NPC L GenitalsScrotum01": "NPC Pelvis",
+        "NPC R GenitalsScrotum01": "NPC Pelvis"
       }
     },
     "unp": {
@@ -639,7 +710,10 @@
         "zapCleavage": "UNP Zap Cleavage",
         "zapBelly": "UNP Zap Belly",
         "natural": "UNP Body"
-      }
+      },
+      "physicsUpgradePath": "bhunp",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {}
     },
     "bhunp": {
       "topology": "unp",
@@ -727,6 +801,19 @@
         "physicsLevel": "3bbb",
         "boneNamingConvention": "bhunp",
         "notes": "BHUNP uses BHUNP-prefixed breast/butt bone names (BHUNP Breast L/R01-03, BHUNP Butt L/R) which differ from the NPC-prefixed names used by all other female bodies. NPC Belly is shared with CBBE-family. CBPC config must reference BHUNP bone names specifically. BHUNP has no BreastRoot bones (unlike 3BA/COCO). BHUNP Softbody enables per-vertex HDT-SMP deformation."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "unp",
+      "physicsCollapseMap": {
+        "BHUNP Breast L01": "NPC L Breast",
+        "BHUNP Breast R01": "NPC R Breast",
+        "BHUNP Breast L02": "NPC L Breast",
+        "BHUNP Breast R02": "NPC R Breast",
+        "BHUNP Breast L03": "NPC L Breast",
+        "BHUNP Breast R03": "NPC R Breast",
+        "BHUNP Butt L": "NPC Pelvis",
+        "BHUNP Butt R": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
       }
     },
     "uunp": {
@@ -815,6 +902,19 @@
         "physicsLevel": "tbbp",
         "boneNamingConvention": "cbbe-standard",
         "notes": "UUNP Special uses NPC L/R Breast01-03, L/R Butt, NPC Belly (same naming as CBBE-family). UBE (Unified Body Enhancer) is a UUNP alias. UUNP Special Softbody enables per-vertex HDT-SMP deformation using standard NPC bone names."
+      },
+      "physicsUpgradePath": "bhunp",
+      "physicsDowngradePath": "unp",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
       }
     },
     "7base": {
@@ -879,7 +979,10 @@
         "zapCleavage": "7Base Zap Cleavage",
         "zapBelly": "7Base Zap Belly",
         "natural": "7Base Body"
-      }
+      },
+      "physicsUpgradePath": "bhunp",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {}
     },
     "sam": {
       "topology": "male",
@@ -944,7 +1047,10 @@
         "zapCleavage": "SAM Chest Zap",
         "zapBelly": "SAM Belly Zap",
         "natural": "SAM Body"
-      }
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {}
     },
     "ube": {
       "topology": "unp",
@@ -1035,6 +1141,19 @@
         "physicsLevel": "tbbp",
         "boneNamingConvention": "cbbe-standard",
         "notes": "UBE uses the same NPC L/R Breast01-03, L/R Butt, NPC Belly bone names as UUNP Special. UBE physics configs are interchangeable with UUNP Special physics configs. UBE Softbody enables per-vertex HDT-SMP deformation via NiSkinData partitions."
+      },
+      "physicsUpgradePath": null,
+      "physicsDowngradePath": "unp",
+      "physicsCollapseMap": {
+        "NPC L Breast01": "NPC L Breast",
+        "NPC R Breast01": "NPC R Breast",
+        "NPC L Breast02": "NPC L Breast",
+        "NPC R Breast02": "NPC R Breast",
+        "NPC L Breast03": "NPC L Breast",
+        "NPC R Breast03": "NPC R Breast",
+        "NPC L Butt": "NPC Pelvis",
+        "NPC R Butt": "NPC Pelvis",
+        "NPC Belly": "NPC Belly"
       }
     },
     "vanilla": {
@@ -1092,7 +1211,10 @@
         "pregnancy": "Vanilla Belly",
         "zapCleavage": "Vanilla Chest Zap",
         "zapBelly": "Vanilla Belly Zap"
-      }
+      },
+      "physicsUpgradePath": "3ba",
+      "physicsDowngradePath": null,
+      "physicsCollapseMap": {}
     }
   },
   "adapters": [

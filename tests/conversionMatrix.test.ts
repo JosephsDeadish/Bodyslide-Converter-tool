@@ -176,17 +176,34 @@ describe("conversion matrix coverage", () => {
           "CBPC",
           `${targetAlias}_PhysicsStub.ini`,
         );
-        if (BODY_TYPE_INFO[target].physicsSupport) {
-          const synthesizedPhysicsStub = await readFile(
-            synthesizedPhysicsStubPath,
-            "utf8",
-          );
-          expect(synthesizedPhysicsStub).toContain(
-            `Auto-generated CBPC physics stub for ${targetAlias}`,
-          );
-          expect(synthesizedPhysicsStub).toContain(
-            BODY_TYPE_INFO[target].physicsBones[0] ?? "",
-          );
+        const synthesizedHdtStubPath = join(
+          outputDir,
+          "SKSE",
+          "Plugins",
+          "hdtSMP64",
+          `${targetAlias}_PhysicsStub.xml`,
+        );
+        const targetInfo = BODY_TYPE_INFO[target];
+        if (targetInfo.physicsSupport) {
+          if (targetInfo.cbpcCompatible) {
+            const synthesizedPhysicsStub = await readFile(
+              synthesizedPhysicsStubPath,
+              "utf8",
+            );
+            expect(synthesizedPhysicsStub).toContain(
+              `Auto-generated CBPC physics stub for ${targetAlias}`,
+            );
+            expect(synthesizedPhysicsStub).toContain(
+              BODY_TYPE_INFO[target].physicsBones[0] ?? "",
+            );
+          } else if (targetInfo.hdtSmpCompatible) {
+            const synthesizedHdtStub = await readFile(
+              synthesizedHdtStubPath,
+              "utf8",
+            );
+            expect(synthesizedHdtStub).toContain("PerBoneShape");
+            expect(synthesizedHdtStub).toContain("<bone");
+          }
         } else {
           await expect(
             readFile(synthesizedPhysicsStubPath, "utf8"),

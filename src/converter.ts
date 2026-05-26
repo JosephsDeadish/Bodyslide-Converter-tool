@@ -1021,6 +1021,7 @@ type PhysicsBoneGroup =
   | "belly"
   | "genitals"
   | "scrotum"
+  | "pectoral"
   | "other";
 type PhysicsBoneSide = "left" | "right" | null;
 type PhysicsRemapKind = "explicit" | "semantic" | "indexed" | "fallback";
@@ -1109,6 +1110,7 @@ const PHYSICS_BONE_SOURCE_ALIASES: Partial<
     "NPC R Breast03": ["NPC RBreast03"],
     "NPC L Butt": ["NPC LButt", "NPC L Butt01", "NPC LButt01"],
     "NPC R Butt": ["NPC RButt", "NPC R Butt01", "NPC RButt01"],
+    "NPC Belly": ["NPC Belly01", "NPC Belly 01"],
   },
   uunp: {
     "NPC L Breast01": [
@@ -1307,6 +1309,33 @@ const PHYSICS_BONE_SOURCE_ALIASES: Partial<
     "NPC L Pectoral": ["NPC LPectoral", "NPC L Pec", "NPC LPec"],
     "NPC R Pectoral": ["NPC RPectoral", "NPC R Pec", "NPC RPec"],
   },
+  // SOS uses genital/scrotum bone naming for HDT-SMP physics
+  sos: {
+    "NPC GenitalsBase01": [
+      "NPC Genitals Base 01",
+      "NPC GenitalsBase",
+      "NPC Genitals Base",
+      "NPC GenitalsBase 01",
+    ],
+    "NPC GenitalsBase02": ["NPC Genitals Base 02", "NPC GenitalsBase 02"],
+    "NPC GenitalsBase03": ["NPC Genitals Base 03", "NPC GenitalsBase 03"],
+    "NPC GenitalsBase04": ["NPC Genitals Base 04", "NPC GenitalsBase 04"],
+    "NPC GenitalsBase05": ["NPC Genitals Base 05", "NPC GenitalsBase 05"],
+    "NPC L GenitalsScrotum01": [
+      "NPC LGenitalsScrotum01",
+      "NPC L Genitals Scrotum 01",
+      "NPC L GenitalsScrotum",
+      "NPC L Scrotum01",
+      "NPC LScrotum01",
+    ],
+    "NPC R GenitalsScrotum01": [
+      "NPC RGenitalsScrotum01",
+      "NPC R Genitals Scrotum 01",
+      "NPC R GenitalsScrotum",
+      "NPC R Scrotum01",
+      "NPC RScrotum01",
+    ],
+  },
 };
 
 function getSourcePhysicsAliases(
@@ -1321,7 +1350,9 @@ function detectPhysicsBoneSide(lowerBoneName: string): PhysicsBoneSide {
   if (
     /\bleft\b/.test(lowerBoneName) ||
     /\bl\b/.test(lowerBoneName) ||
-    /(^|[^a-z])l(?=breast|butt|genitals|scrotum)/.test(lowerBoneName) ||
+    /(^|[^a-z])l(?=breast|butt|genitals|scrotum|pectoral)/.test(
+      lowerBoneName,
+    ) ||
     /\bbreast[\s_-]*l\b/.test(lowerBoneName) ||
     /\bbutt[\s_-]*l\b/.test(lowerBoneName) ||
     /\bgenitals\w*\s*l/.test(lowerBoneName) ||
@@ -1332,7 +1363,9 @@ function detectPhysicsBoneSide(lowerBoneName: string): PhysicsBoneSide {
   if (
     /\bright\b/.test(lowerBoneName) ||
     /\br\b/.test(lowerBoneName) ||
-    /(^|[^a-z])r(?=breast|butt|genitals|scrotum)/.test(lowerBoneName) ||
+    /(^|[^a-z])r(?=breast|butt|genitals|scrotum|pectoral)/.test(
+      lowerBoneName,
+    ) ||
     /\bbreast[\s_-]*r\b/.test(lowerBoneName) ||
     /\bbutt[\s_-]*r\b/.test(lowerBoneName) ||
     /\bgenitals\w*\s*r/.test(lowerBoneName) ||
@@ -1359,6 +1392,8 @@ function parsePhysicsBoneDescriptor(boneName: string): PhysicsBoneDescriptor {
     group = "breast-root";
   } else if (lower.includes("breast")) {
     group = "breast";
+  } else if (lower.includes("pectoral") || lower.includes("pec")) {
+    group = "pectoral";
   }
 
   const stageMatch = lower.match(/(?:^|[^0-9])0?([1-3])(?![0-9])/);
@@ -1483,6 +1518,31 @@ function findSemanticPhysicsTargetBone(
         pickMatchingBone(
           targetDescriptors,
           (descriptor) => descriptor.group === "genitals",
+        )
+      );
+    case "pectoral":
+      return (
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) =>
+            descriptor.group === "pectoral" && matchesSide(descriptor),
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) => descriptor.group === "pectoral",
+        ) ??
+        // Fall back to breast chain when converting pectoral to female body
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) =>
+            descriptor.group === "breast" &&
+            matchesSide(descriptor) &&
+            descriptor.stage === 1,
+        ) ??
+        pickMatchingBone(
+          targetDescriptors,
+          (descriptor) =>
+            descriptor.group === "breast" && descriptor.stage === 1,
         )
       );
     default:
@@ -2312,6 +2372,7 @@ const CBPC_BELLY_DEFAULT = "0.300";
 const CBPC_BREASTROOT_DEFAULT = "1.000";
 const CBPC_GENITALS_DEFAULT = "0.350";
 const CBPC_SCROTUM_DEFAULT = "0.250";
+const CBPC_PECTORAL_DEFAULT = "0.400";
 const CBPC_ASSIGNMENT_LINE_RE =
   /^\s*([A-Za-z][^\n=:;#]*?)\s*[:=]\s*[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?(?:\s*[;#].*)?$/;
 const CBPC_XML_BONE_WEIGHT_PATTERNS = [
@@ -2327,6 +2388,8 @@ function cbpcDefaultWeight(boneName: string): string {
   if (lower.includes("belly")) return CBPC_BELLY_DEFAULT;
   if (lower.includes("scrotum")) return CBPC_SCROTUM_DEFAULT;
   if (lower.includes("genitals")) return CBPC_GENITALS_DEFAULT;
+  if (lower.includes("pectoral") || lower.includes("pec"))
+    return CBPC_PECTORAL_DEFAULT;
   return CBPC_BREAST_DEFAULT;
 }
 
@@ -2465,11 +2528,156 @@ function ensureTargetPhysicsBonesPresent(
 }
 
 /**
+ * HDT-SMP weight hint defaults by physics group.
+ * These spring stiffness / damping / mass values follow community conventions
+ * for HDT-SMP per-bone config stubs and should be tuned in-game.
+ */
+const HDT_SMP_BONE_DEFAULTS: Record<
+  PhysicsBoneGroup,
+  { stiffness: number; damping: number; mass: number }
+> = {
+  "breast-root": { stiffness: 80.0, damping: 0.95, mass: 0.5 },
+  breast: { stiffness: 60.0, damping: 0.9, mass: 1.0 },
+  pectoral: { stiffness: 55.0, damping: 0.9, mass: 1.0 },
+  butt: { stiffness: 50.0, damping: 0.85, mass: 1.2 },
+  belly: { stiffness: 40.0, damping: 0.8, mass: 0.8 },
+  genitals: { stiffness: 45.0, damping: 0.85, mass: 0.6 },
+  scrotum: { stiffness: 35.0, damping: 0.8, mass: 0.5 },
+  other: { stiffness: 60.0, damping: 0.9, mass: 1.0 },
+};
+
+/**
+ * Generates an HDT-SMP physics XML stub when the conversion targets a body
+ * that uses HDT-SMP exclusively (e.g. HIMBO, BodyTalk, SOS).
+ *
+ * The stub is placed at SKSE/Plugins/hdtSMP64/{alias}_PhysicsStub.xml and
+ * contains a minimal per-bone spring configuration as a starting point.
+ * Users should tune the values or replace this file with a proper config.
+ */
+async function synthesizeMissingHdtSmpXmlStub(
+  outputDir: string,
+  targetBodyType: BodyType,
+  convertedFiles: ConversionResult["convertedFiles"],
+): Promise<void> {
+  const targetInfo = BODY_TYPE_INFO[targetBodyType];
+  if (!targetInfo.physicsSupport || targetInfo.physicsBones.length === 0) {
+    return;
+  }
+
+  // Skip if an HDT-SMP XML stub was already emitted for this target.
+  const stubAlreadyPresent = convertedFiles.some(
+    (f) =>
+      f.action === "synthesized" &&
+      f.outputPath.toLowerCase().includes("physicsstub") &&
+      f.outputPath.toLowerCase().endsWith(".xml"),
+  );
+  if (stubAlreadyPresent) return;
+
+  const targetAlias = BODY_TYPE_OUTPUT_ALIASES[targetBodyType];
+
+  // Group bones for XML output.
+  const physicsGroupLabels: Record<PhysicsBoneGroup, string> = {
+    "breast-root": "Breast root control chain",
+    breast: "Breast chain",
+    pectoral: "Pectoral chain",
+    butt: "Butt chain",
+    belly: "Belly chain",
+    genitals: "Genitals chain",
+    scrotum: "Scrotum chain",
+    other: "Additional physics bones",
+  };
+  const orderedGroups: readonly PhysicsBoneGroup[] = [
+    "breast-root",
+    "breast",
+    "pectoral",
+    "butt",
+    "belly",
+    "genitals",
+    "scrotum",
+    "other",
+  ];
+
+  const grouped = new Map<PhysicsBoneGroup, string[]>();
+  for (const g of orderedGroups) grouped.set(g, []);
+  for (const bone of targetInfo.physicsBones) {
+    const { group } = parsePhysicsBoneDescriptor(bone);
+    grouped.get(group)?.push(bone);
+  }
+
+  const boneLines: string[] = [];
+  for (const group of orderedGroups) {
+    const bones = grouped.get(group) ?? [];
+    if (bones.length === 0) continue;
+    const defaults = HDT_SMP_BONE_DEFAULTS[group];
+    boneLines.push(`    <!-- ${physicsGroupLabels[group]} -->`);
+    for (const bone of bones) {
+      boneLines.push(
+        `    <bone name="${bone}" mass="${defaults.mass.toFixed(1)}" stiffness="${defaults.stiffness.toFixed(1)}" linearDamping="${defaults.damping.toFixed(2)}" angularDamping="${defaults.damping.toFixed(2)}" />`,
+      );
+    }
+  }
+
+  const xmlContent = [
+    `<?xml version="1.0" encoding="utf-8"?>`,
+    `<!--`,
+    `  Auto-generated HDT-SMP physics stub for ${targetAlias}`,
+    `  Created by SlideSmith — ${new Date().toISOString()}`,
+    ``,
+    `  This file registers the standard physics bones for this body with HDT-SMP.`,
+    `  The stiffness, damping, and mass values below are community-convention`,
+    `  starting points. Tune them with SSE NIF Optimizer or your preferred`,
+    `  HDT-SMP config editor, or replace with a body-author config if available.`,
+    ``,
+    `  Target skeleton: ${targetInfo.skeletonProfile}`,
+    `  Required mod:    ${targetInfo.referenceProject}`,
+    `  Required mod:    HDT-SMP (Skinned Mesh Physics) by aers / ousnius`,
+    `                   https://www.nexusmods.com/skyrimspecialedition/mods/57339`,
+    ``,
+    `  NOTE: Physics on NIF meshes requires bone weights for the listed bones.`,
+    `  If the outfit was converted from a non-physics source, those weights may`,
+    `  be missing and runtime physics will remain static until the mesh is`,
+    `  re-weighted to include the target-body physics bone assignments.`,
+    `-->`,
+    `<system xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"`,
+    `        xsi:noNamespaceSchemaLocation="hdt-skyrimse-smp.xsd">`,
+    `  <PerBoneShape name="${targetAlias}_PhysicsStub">`,
+    ...boneLines,
+    `  </PerBoneShape>`,
+    `</system>`,
+    ``,
+  ].join("\n");
+
+  const fileName = `${targetAlias}_PhysicsStub.xml`;
+  const outputRelPath = `SKSE/Plugins/hdtSMP64/${fileName}`;
+  const outputAbsPath = join(
+    outputDir,
+    "SKSE",
+    "Plugins",
+    "hdtSMP64",
+    fileName,
+  );
+
+  await mkdir(dirname(outputAbsPath), { recursive: true });
+  await writeFile(outputAbsPath, xmlContent, "utf8");
+
+  convertedFiles.push({
+    sourcePath: "(native post-process)",
+    outputPath: outputRelPath,
+    kind: "text",
+    action: "synthesized",
+  });
+}
+
+/**
  * Generates a CBPC physics config stub when the conversion targets a physics-
  * capable body but the source mod contained no existing physics config file.
  *
  * The stub is deliberately minimal and commented so the user knows it is a
  * starting point; they can tune weights with CBPC Physics Tuner in-game.
+ *
+ * For bodies that are HDT-SMP-only (cbpcCompatible: false), this delegates to
+ * synthesizeMissingHdtSmpXmlStub when physicsProfile is "auto", and is a no-op
+ * for physicsProfile "cbpc" (since CBPC is not supported on that body).
  */
 async function synthesizeMissingCbpcStub(
   outputDir: string,
@@ -2482,6 +2690,20 @@ async function synthesizeMissingCbpcStub(
   }
   const targetInfo = BODY_TYPE_INFO[targetBodyType];
   if (!targetInfo.physicsSupport || targetInfo.physicsBones.length === 0) {
+    return;
+  }
+
+  // For HDT-SMP-only bodies (e.g. HIMBO, BodyTalk, SOS), CBPC configs are not
+  // applicable.  Under "auto" we delegate to the HDT-SMP XML stub generator;
+  // under explicit "cbpc" we skip silently since CBPC cannot drive these bones.
+  if (!targetInfo.cbpcCompatible) {
+    if (physicsProfile === "auto" && targetInfo.hdtSmpCompatible) {
+      await synthesizeMissingHdtSmpXmlStub(
+        outputDir,
+        targetBodyType,
+        convertedFiles,
+      );
+    }
     return;
   }
 
@@ -2526,11 +2748,13 @@ async function synthesizeMissingCbpcStub(
     belly: "Belly chain",
     genitals: "Genitals chain",
     scrotum: "Scrotum chain",
+    pectoral: "Pectoral chain",
     other: "Additional physics bones",
   };
   const orderedPhysicsGroups: readonly PhysicsBoneGroup[] = [
     "breast-root",
     "breast",
+    "pectoral",
     "butt",
     "belly",
     "genitals",
@@ -3000,7 +3224,9 @@ function createWarnings(
       );
     } else if (physicsProfile === "hdt-smp") {
       warnings.push(
-        "Physics profile was set to 'HDT-SMP'. CBPC-specific INI patching and synthesized CBPC stubs were skipped.",
+        targetInfo.hdtSmpCompatible
+          ? "Physics profile was set to 'HDT-SMP'. CBPC-specific INI patching and synthesized CBPC stubs were skipped; an HDT-SMP XML stub was generated instead."
+          : "Physics profile was set to 'HDT-SMP'. CBPC-specific INI patching and synthesized CBPC stubs were skipped.",
       );
     } else if (physicsProfile === "cbpc") {
       warnings.push(
@@ -3486,12 +3712,24 @@ export async function convertMod(
 
   // Synthesize a CBPC physics config stub when the target body supports
   // physics but the source mod contained no physics config files at all.
+  // For HDT-SMP-only bodies (cbpcCompatible: false) under "auto" profile,
+  // synthesizeMissingCbpcStub internally delegates to the HDT-SMP XML stub.
   await synthesizeMissingCbpcStub(
     outputDir,
     targetBodyType,
     convertedFiles,
     physicsProfile,
   );
+
+  // For explicit "hdt-smp" profile, generate an HDT-SMP XML stub for any
+  // physics-supporting body (including CBPC-compatible ones like 3BA/BHUNP).
+  if (physicsProfile === "hdt-smp") {
+    await synthesizeMissingHdtSmpXmlStub(
+      outputDir,
+      targetBodyType,
+      convertedFiles,
+    );
+  }
 
   const outputFiles = await scanModFiles(outputDir);
   const audit = createConversionAudit(
