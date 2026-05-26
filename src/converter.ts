@@ -3589,6 +3589,60 @@ const NON_BODY_NIF_PATH_FRAGMENTS = [
   "meshes/lod/",
 ];
 
+const BODY_OUTFIT_SUPPORT_PATH_FRAGMENTS = [
+  "/calientetools/bodyslide/",
+  "/bodyslide/",
+  "/meshes/armor/",
+  "/meshes/armors/",
+  "/meshes/clothes/",
+  "/meshes/clothing/",
+  "/meshes/outfit/",
+  "/meshes/outfits/",
+  "/meshes/apparel/",
+  "/textures/armor/",
+  "/textures/clothes/",
+  "/textures/clothing/",
+  "/textures/outfit/",
+  "/textures/outfits/",
+  "/textures/actors/character/",
+  "/actors/character/character assets/",
+  "/actors/character/character assets female/",
+  "/actors/character/character assets male/",
+  "/skse/plugins/cbpc/",
+  "/skse/plugins/hdtsmp64/",
+  "/skse/plugins/hdt-smp/",
+];
+
+const BODY_OUTFIT_KEYWORD_HINTS = [
+  "body",
+  "bodyslide",
+  "cbpc",
+  "hdt",
+  "physics",
+  "outfit",
+  "armor",
+  "armour",
+  "clothing",
+  "clothes",
+  "apparel",
+  "cuirass",
+  "gauntlet",
+  "boot",
+  "helmet",
+  "robe",
+  "corset",
+  "bikini",
+];
+
+const BODY_KNOWLEDGE_HINTS = [
+  ...new Set(
+    (Object.keys(BODY_TYPE_INFO) as BodyType[])
+      .flatMap((bodyType) => getBodyTypeAliases(bodyType))
+      .map((value) => value.toLowerCase())
+      .filter((value) => value.length >= 3),
+  ),
+].sort((left, right) => right.length - left.length);
+
 function isLikelyBodyConvertibleNif(relativePath: string): boolean {
   const lower = relativePath.toLowerCase().replace(/\\/g, "/");
   if (!lower.endsWith(".nif")) return false;
@@ -3604,6 +3658,46 @@ function isLikelyBodyConvertibleNif(relativePath: string): boolean {
   return BODY_CONVERTIBLE_NIF_HINTS.some(
     (hint) => filename.includes(hint) || lower.includes(`/${hint}`),
   );
+}
+
+function isBodyOrOutfitRelatedFile(file: ScannedFile): boolean {
+  const lowerPath = file.relativePath.toLowerCase().replace(/\\/g, "/");
+  if (
+    lowerPath.startsWith(FOMOD_METADATA_PREFIX) ||
+    lowerPath.includes(`/${FOMOD_METADATA_PREFIX}`)
+  ) {
+    return true;
+  }
+
+  if (file.extension === ".nif") {
+    return (
+      isBodyReplacerNif(file.relativePath) ||
+      isArmorOrClothingNif(file.relativePath) ||
+      isLikelyBodyConvertibleNif(file.relativePath)
+    );
+  }
+  if (file.extension === ".tri" || file.extension === ".osd") {
+    return true;
+  }
+
+  if (
+    BODY_OUTFIT_SUPPORT_PATH_FRAGMENTS.some((fragment) =>
+      lowerPath.includes(fragment),
+    )
+  ) {
+    return true;
+  }
+
+  const searchBlob =
+    `${lowerPath}\n${file.basename.toLowerCase()}\n${file.preview}`.toLowerCase();
+  if (BODY_OUTFIT_KEYWORD_HINTS.some((hint) => searchBlob.includes(hint))) {
+    return true;
+  }
+  if (BODY_KNOWLEDGE_HINTS.some((hint) => searchBlob.includes(hint))) {
+    return true;
+  }
+
+  return false;
 }
 
 export async function convertMod(
@@ -3667,19 +3761,31 @@ export async function convertMod(
       file.extension === ".nif" &&
       !isLikelyBodyConvertibleNif(file.relativePath)
     ) {
-      const preservedPath = normalizeToMo2DataPath(
+      const skippedPath = normalizeToMo2DataPath(
         file.relativePath.replace(/\\/g, "/"),
         file.extension,
         file.preview,
       );
-      const preservedAbsPath = join(outputDir, preservedPath);
-      await mkdir(dirname(preservedAbsPath), { recursive: true });
-      await copyFile(file.absolutePath, preservedAbsPath);
       skippedFiles.push({
         sourcePath: file.relativePath,
-        outputPath: preservedPath,
+        outputPath: skippedPath,
         reason:
-          "NIF appears unrelated to body/outfit conversion — preserved without body-type conversion.",
+          "NIF appears unrelated to body/outfit conversion — excluded from output.",
+      });
+      continue;
+    }
+
+    if (!isBodyOrOutfitRelatedFile(file)) {
+      const skippedPath = normalizeToMo2DataPath(
+        file.relativePath.replace(/\\/g, "/"),
+        file.extension,
+        file.preview,
+      );
+      skippedFiles.push({
+        sourcePath: file.relativePath,
+        outputPath: skippedPath,
+        reason:
+          "File appears unrelated to body/outfit conversion scope — excluded from output.",
       });
       continue;
     }

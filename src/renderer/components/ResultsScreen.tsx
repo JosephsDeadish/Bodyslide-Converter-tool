@@ -244,8 +244,8 @@ function PipelineCard({
         <Tooltip text="Files that were actively rewritten (mesh/text data converted). These are the ones that got the full treatment.">
           <span>{conversion.convertedFiles.length} converted</span>
         </Tooltip>
-        <Tooltip text="Files that were copied without modification. They were already perfect, or just needed a ride to the output folder.">
-          <span>{conversion.skippedFiles.length} safe copies</span>
+        <Tooltip text="Files that were preserved, synthesized, or excluded without direct conversion rewrites.">
+          <span>{conversion.skippedFiles.length} non-converted decisions</span>
         </Tooltip>
       </div>
 
@@ -303,8 +303,8 @@ function PipelineCard({
 
       {conversion.skippedFiles.length > 0 && (
         <>
-          <Tooltip text="Files that were copied as-is to the output. They weren't BodySlide assets, so SlideSmith packed them along for the ride.">
-            <div className="result-section-title">Safe copied files</div>
+          <Tooltip text="Files that were preserved, synthesized, or excluded based on conversion scope and post-processing safeguards.">
+            <div className="result-section-title">Non-converted file decisions</div>
           </Tooltip>
           <ul className="op-list">
             {conversion.skippedFiles.map((f) => (

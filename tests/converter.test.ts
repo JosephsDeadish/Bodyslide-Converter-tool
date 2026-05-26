@@ -3656,7 +3656,7 @@ describe("convertMod", () => {
     expect(convertedConfig).toContain("NPC Belly=0.300");
   });
 
-  it("preserves non-armor/non-clothing NIFs without body alias rewriting", async () => {
+  it("excludes non-armor/non-clothing NIFs from conversion output", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -3681,19 +3681,60 @@ describe("convertMod", () => {
       "3ba",
     );
 
-    const preservedWeapon = result.skippedFiles.find((file) =>
+    const excludedWeapon = result.skippedFiles.find((file) =>
       file.reason.includes("NIF appears unrelated to body/outfit conversion"),
     );
-    expect(preservedWeapon).toBeDefined();
-    expect(preservedWeapon?.outputPath.toLowerCase()).toContain(
+    expect(excludedWeapon).toBeDefined();
+    expect(excludedWeapon?.outputPath.toLowerCase()).toContain(
       "meshes/weapons/cbbe_sword.nif",
     );
+    await expect(
+      readFile(join(outputDir, "meshes", "weapons", "cbbe_sword.nif"), "utf8"),
+    ).rejects.toThrow();
 
     expect(
       result.convertedFiles.some((file) =>
         file.outputPath.endsWith("3BA_outfit_0.nif"),
       ),
     ).toBe(true);
+  });
+
+  it("excludes unrelated non-body support files from conversion output", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await mkdir(join(inputDir, "docs"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "caliente cbbe",
+    );
+    await writeFile(
+      join(inputDir, "docs", "installation_notes.txt"),
+      "This file is unrelated to body conversion output.",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.skippedFiles.some(
+        (file) =>
+          file.outputPath === "docs/installation_notes.txt" &&
+          file.reason.includes("excluded from output"),
+      ),
+    ).toBe(true);
+    await expect(
+      readFile(join(outputDir, "docs", "installation_notes.txt"), "utf8"),
+    ).rejects.toThrow();
   });
 
   it("converts clothing meshes with non-weighted filenames when clothing keywords are present", async () => {

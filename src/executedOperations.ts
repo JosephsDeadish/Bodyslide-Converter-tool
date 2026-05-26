@@ -55,7 +55,7 @@ export function buildExecutedOperations({
   operations.push({
     id: "write-converted-assets",
     name: "Write converted assets",
-    description: `Wrote ${conversion.convertedFiles.length} converted file(s) and copied ${conversion.skippedFiles.length} non-converted file(s) to output.`,
+    description: `Wrote ${conversion.convertedFiles.length} converted file(s) and recorded ${conversion.skippedFiles.length} non-converted/auxiliary file decision(s).`,
   });
 
   if (repairArtifactsCount > 0) {

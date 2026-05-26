@@ -76,7 +76,7 @@ program
           `Preferred output alias: ${result.preferredOutputAlias}`,
           `Files analyzed: ${files.length}`,
           `Converted assets: ${result.convertedFiles.length}`,
-          `Copied without body-specific changes: ${result.skippedFiles.length}`,
+          `Non-converted/auxiliary file decisions: ${result.skippedFiles.length}`,
           "",
           "Executed conversion stages:",
           ...plan.operations.map(
