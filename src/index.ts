@@ -5,6 +5,7 @@ import { Command } from "commander";
 import { z } from "zod";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
+import { buildExecutedOperations } from "./executedOperations.js";
 import { createConversionPlan } from "./planner.js";
 import { scanModFiles } from "./scanner.js";
 import { BODY_TYPES } from "./types.js";
@@ -40,6 +41,10 @@ program
         detection,
         targetBodyType,
       );
+      plan.operations = buildExecutedOperations({
+        filesAnalyzed: files.length,
+        conversion: result,
+      });
 
       await mkdir(output, { recursive: true });
 
@@ -73,7 +78,7 @@ program
           `Converted assets: ${result.convertedFiles.length}`,
           `Copied without body-specific changes: ${result.skippedFiles.length}`,
           "",
-          "Generated conversion plan:",
+          "Executed conversion stages:",
           ...plan.operations.map(
             (operation, index) =>
               `${index + 1}. ${operation.name} — ${operation.description}`,

@@ -18,6 +18,7 @@ import { filterFilesForMalePass } from "./conversionScope.js";
 import { convertMod } from "./converter.js";
 import { detectBodyType } from "./detector.js";
 import { runPythonEngine } from "./engine/pythonEngine.js";
+import { buildExecutedOperations } from "./executedOperations.js";
 import { createConversionPlan } from "./planner.js";
 import { generateRepairArtifacts } from "./repairArtifacts.js";
 import { scanModFiles } from "./scanner.js";
@@ -382,6 +383,12 @@ async function executeConversion(
       ]),
     ];
   }
+  plan.operations = buildExecutedOperations({
+    filesAnalyzed: files.length,
+    conversion: result,
+    pythonSummary,
+    repairArtifactsCount: repairArtifacts.length,
+  });
 
   const reportPath = join(reportsDir, "conversion-report.json");
   const summaryPath = join(reportsDir, "conversion-summary.txt");

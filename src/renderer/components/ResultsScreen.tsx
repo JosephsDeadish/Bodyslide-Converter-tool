@@ -59,7 +59,7 @@ export function ResultsScreen({
         </div>
         <div className="card">
           <h3>Conversion Output</h3>
-          <PlanCard conversion={conversion} plan={plan} />
+          <PipelineCard conversion={conversion} plan={plan} />
         </div>
       </div>
 
@@ -212,7 +212,7 @@ function DetectionCard({
   );
 }
 
-function PlanCard({
+function PipelineCard({
   conversion,
   plan,
 }: {
@@ -273,8 +273,8 @@ function PlanCard({
         ))}
       </ul>
 
-      <Tooltip text="Conversion actions SlideSmith executed for this run.">
-        <div className="result-section-title">Executed conversion actions</div>
+      <Tooltip text="Execution stages SlideSmith completed during this run.">
+        <div className="result-section-title">Executed pipeline stages</div>
       </Tooltip>
       <ul className="op-list">
         {plan.operations.map((op) => (
