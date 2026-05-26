@@ -2515,7 +2515,11 @@ function ensureTargetPhysicsBonesPresent(
   target: BodyType,
   physicsProfile: ConversionPhysicsProfile,
 ): string {
-  if (physicsProfile !== "auto" && physicsProfile !== "cbpc") {
+  if (
+    physicsProfile !== "auto" &&
+    physicsProfile !== "dual" &&
+    physicsProfile !== "cbpc"
+  ) {
     return content;
   }
   const targetInfo = BODY_TYPE_INFO[target];
@@ -2707,7 +2711,11 @@ async function synthesizeMissingCbpcStub(
   convertedFiles: ConversionResult["convertedFiles"],
   physicsProfile: ConversionPhysicsProfile,
 ): Promise<void> {
-  if (physicsProfile !== "auto" && physicsProfile !== "cbpc") {
+  if (
+    physicsProfile !== "auto" &&
+    physicsProfile !== "dual" &&
+    physicsProfile !== "cbpc"
+  ) {
     return;
   }
   const targetInfo = BODY_TYPE_INFO[targetBodyType];
@@ -2719,7 +2727,10 @@ async function synthesizeMissingCbpcStub(
   // applicable.  Under "auto" we delegate to the HDT-SMP XML stub generator;
   // under explicit "cbpc" we skip silently since CBPC cannot drive these bones.
   if (!targetInfo.cbpcCompatible) {
-    if (physicsProfile === "auto" && targetInfo.hdtSmpCompatible) {
+    if (
+      (physicsProfile === "auto" || physicsProfile === "dual") &&
+      targetInfo.hdtSmpCompatible
+    ) {
       await synthesizeMissingHdtSmpXmlStub(
         outputDir,
         targetBodyType,
@@ -3227,6 +3238,28 @@ function resolveEffectivePhysicsProfile(
     return { effectiveProfile: "none", note: null };
   }
 
+  if (requestedPhysicsProfile === "dual") {
+    if (targetInfo.cbpcCompatible && targetInfo.hdtSmpCompatible) {
+      return { effectiveProfile: "dual", note: null };
+    }
+    if (targetInfo.hdtSmpCompatible) {
+      return {
+        effectiveProfile: "hdt-smp",
+        note: `Physics profile 'Dual' requires both CBPC and HDT-SMP compatibility. ${targetBodyType.toUpperCase()} supports HDT-SMP only, so SlideSmith is using 'HDT-SMP'.`,
+      };
+    }
+    if (targetInfo.cbpcCompatible) {
+      return {
+        effectiveProfile: "cbpc",
+        note: `Physics profile 'Dual' requires both CBPC and HDT-SMP compatibility. ${targetBodyType.toUpperCase()} supports CBPC only, so SlideSmith is using 'CBPC'.`,
+      };
+    }
+    return {
+      effectiveProfile: "none",
+      note: `Physics profile 'Dual' is unsupported for ${targetBodyType.toUpperCase()}. Falling back to 'No physics'.`,
+    };
+  }
+
   if (requestedPhysicsProfile === "cbpc") {
     if (targetInfo.cbpcCompatible) {
       return { effectiveProfile: "cbpc", note: null };
@@ -3246,6 +3279,22 @@ function resolveEffectivePhysicsProfile(
   if (requestedPhysicsProfile === "hdt-smp") {
     if (targetInfo.hdtSmpCompatible) {
       return { effectiveProfile: "hdt-smp", note: null };
+    }
+
+    if (requestedPhysicsProfile === "softbody") {
+      if (targetInfo.hdtSmpCompatible) {
+        return { effectiveProfile: "softbody", note: null };
+      }
+      if (targetInfo.cbpcCompatible) {
+        return {
+          effectiveProfile: "cbpc",
+          note: `Physics profile 'Softbody' requires HDT-SMP compatibility. ${targetBodyType.toUpperCase()} does not support HDT-SMP, so SlideSmith is using 'CBPC'.`,
+        };
+      }
+      return {
+        effectiveProfile: "none",
+        note: `Physics profile 'Softbody' is unsupported for ${targetBodyType.toUpperCase()}. Falling back to 'No physics'.`,
+      };
     }
     if (targetInfo.cbpcCompatible) {
       return {
@@ -3319,15 +3368,22 @@ function createWarnings(
       warnings.push(
         "Physics profile was set to 'No physics'. CBPC-specific INI patching and synthesized CBPC stubs were skipped for this conversion.",
       );
-    } else if (effectivePhysicsProfile === "hdt-smp") {
+    } else if (
+      effectivePhysicsProfile === "hdt-smp" ||
+      effectivePhysicsProfile === "softbody"
+    ) {
       warnings.push(
         targetInfo.hdtSmpCompatible
-          ? "Physics profile was set to 'HDT-SMP'. CBPC-specific INI patching and synthesized CBPC stubs were skipped; an HDT-SMP XML stub was generated instead."
-          : "Physics profile was set to 'HDT-SMP'. CBPC-specific INI patching and synthesized CBPC stubs were skipped.",
+          ? `Physics profile was set to '${effectivePhysicsProfile === "softbody" ? "Softbody" : "HDT-SMP"}'. CBPC-specific INI patching and synthesized CBPC stubs were skipped; an HDT-SMP XML stub was generated instead.`
+          : `Physics profile was set to '${effectivePhysicsProfile === "softbody" ? "Softbody" : "HDT-SMP"}'. CBPC-specific INI patching and synthesized CBPC stubs were skipped.`,
       );
     } else if (effectivePhysicsProfile === "cbpc") {
       warnings.push(
         "Physics profile was set to 'CBPC'. Conversion prioritizes CBPC INI patching and fallback stub generation when needed.",
+      );
+    } else if (effectivePhysicsProfile === "dual") {
+      warnings.push(
+        "Physics profile was set to 'Dual'. Conversion applies CBPC patching and also ensures an HDT-SMP fallback XML is generated for dual-compatible targets.",
       );
     } else if (
       requestedPhysicsProfile === "auto" &&
@@ -3963,7 +4019,7 @@ export async function convertMod(
   );
 
   if (
-    physicsProfile === "auto" &&
+    (physicsProfile === "auto" || physicsProfile === "dual") &&
     BODY_TYPE_INFO[targetBodyType].hdtSmpCompatible
   ) {
     const targetInfo = BODY_TYPE_INFO[targetBodyType];
@@ -4020,14 +4076,13 @@ export async function convertMod(
 
   // For explicit "hdt-smp" profile, generate an HDT-SMP XML stub for any
   // physics-supporting body (including CBPC-compatible ones like 3BA/BHUNP).
-  if (physicsProfile === "hdt-smp") {
+  if (physicsProfile === "hdt-smp" || physicsProfile === "softbody") {
     await synthesizeMissingHdtSmpXmlStub(
       outputDir,
       targetBodyType,
       convertedFiles,
     );
   }
-
   const outputFiles = await scanModFiles(outputDir);
   const audit = createConversionAudit(
     detection,

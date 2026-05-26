@@ -26,13 +26,21 @@ function normalizePhysicsProfileForTarget(
   if (!bodyTypeInfo) return profile;
   if (!bodyTypeInfo.physicsSupport) return "none";
   if (profile === "none" || profile === "auto") return profile;
+  if (profile === "dual") {
+    if (bodyTypeInfo.cbpcCompatible && bodyTypeInfo.hdtSmpCompatible) {
+      return "dual";
+    }
+    if (bodyTypeInfo.hdtSmpCompatible) return "hdt-smp";
+    if (bodyTypeInfo.cbpcCompatible) return "cbpc";
+    return "none";
+  }
   if (profile === "cbpc") {
     if (bodyTypeInfo.cbpcCompatible) return "cbpc";
     if (bodyTypeInfo.hdtSmpCompatible) return "hdt-smp";
     return "none";
   }
-  if (profile === "hdt-smp") {
-    if (bodyTypeInfo.hdtSmpCompatible) return "hdt-smp";
+  if (profile === "hdt-smp" || profile === "softbody") {
+    if (bodyTypeInfo.hdtSmpCompatible) return profile;
     if (bodyTypeInfo.cbpcCompatible) return "cbpc";
     return "none";
   }

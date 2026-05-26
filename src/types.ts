@@ -152,7 +152,13 @@ export type ConversionResult = {
   pythonEngine?: PythonEngineRunSummary;
 };
 
-export type ConversionPhysicsProfile = "auto" | "cbpc" | "hdt-smp" | "none";
+export type ConversionPhysicsProfile =
+  | "auto"
+  | "dual"
+  | "cbpc"
+  | "hdt-smp"
+  | "softbody"
+  | "none";
 
 export type ConversionRunArgs = {
   input: string;

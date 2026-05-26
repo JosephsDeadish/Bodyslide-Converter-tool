@@ -4282,6 +4282,44 @@ describe("convertMod", () => {
     expect(result.effectivePhysicsProfile).toBe("hdt-smp");
   });
 
+  it("falls back to HDT-SMP for HIMBO when physicsProfile is dual", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "himbo_outfit_0.nif"),
+      "himbo",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "himbo",
+      { physicsProfile: "dual" },
+    );
+
+    const targetAlias = result.preferredOutputAlias;
+    const hdtStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+    expect(hdtStub, "should synthesize HDT-SMP fallback for HIMBO").toBeDefined();
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Dual") && warning.includes("HDT-SMP"),
+      ),
+    ).toBe(true);
+    expect(result.requestedPhysicsProfile).toBe("dual");
+    expect(result.effectivePhysicsProfile).toBe("hdt-smp");
+  });
+
   it("synthesizes HDT-SMP XML stub for 3BA when physicsProfile is hdt-smp", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
@@ -4371,6 +4409,88 @@ describe("convertMod", () => {
     ).toBeDefined();
     expect(result.requestedPhysicsProfile).toBe("auto");
     expect(result.effectivePhysicsProfile).toBe("auto");
+  });
+
+  it("synthesizes both CBPC and HDT-SMP stubs for dual profile on dual-compatible targets", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+      { physicsProfile: "dual" },
+    );
+
+    const targetAlias = result.preferredOutputAlias;
+    const cbpcStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath === `SKSE/Plugins/CBPC/${targetAlias}_PhysicsStub.ini` &&
+        f.action === "synthesized",
+    );
+    const hdtStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+
+    expect(
+      cbpcStub,
+      "expected CBPC stub for dual profile on 3BA",
+    ).toBeDefined();
+    expect(
+      hdtStub,
+      "expected HDT-SMP stub for dual profile on 3BA",
+    ).toBeDefined();
+    expect(result.requestedPhysicsProfile).toBe("dual");
+    expect(result.effectivePhysicsProfile).toBe("dual");
+  });
+
+  it("supports softbody profile and synthesizes HDT-SMP XML stub", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+      { physicsProfile: "softbody" },
+    );
+
+    const targetAlias = result.preferredOutputAlias;
+    const hdtStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+    expect(
+      hdtStub,
+      "expected HDT-SMP XML stub for softbody profile on 3BA",
+    ).toBeDefined();
+    expect(result.requestedPhysicsProfile).toBe("softbody");
+    expect(result.effectivePhysicsProfile).toBe("softbody");
   });
 
   it("still synthesizes missing HDT-SMP stub in auto mode when only CBPC config exists", async () => {

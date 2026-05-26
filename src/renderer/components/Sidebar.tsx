@@ -74,8 +74,10 @@ const PHYSICS_OPTIONS: Array<{
   label: string;
 }> = [
   { value: "auto", label: "Auto (recommended)" },
+  { value: "dual", label: "Dual (CBPC + HDT-SMP)" },
   { value: "cbpc", label: "CBPC (INI physics)" },
   { value: "hdt-smp", label: "HDT-SMP / Softbody (XML physics)" },
+  { value: "softbody", label: "Softbody (HDT-SMP softbody XML)" },
   { value: "none", label: "No physics" },
 ];
 
@@ -86,8 +88,9 @@ function isPhysicsOptionSupported(
   if (!info) return true;
   if (option === "none" || option === "auto") return true;
   if (!info.physicsSupport) return false;
+  if (option === "dual") return info.cbpcCompatible && info.hdtSmpCompatible;
   if (option === "cbpc") return info.cbpcCompatible;
-  if (option === "hdt-smp") return info.hdtSmpCompatible;
+  if (option === "hdt-smp" || option === "softbody") return info.hdtSmpCompatible;
   return true;
 }
 
