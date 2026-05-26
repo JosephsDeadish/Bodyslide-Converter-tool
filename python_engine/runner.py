@@ -10,10 +10,16 @@ import json
 import math
 import os
 import sys
+import time as _time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+# pyffi 2.2.3 uses time.clock() which was removed in Python 3.8.
+# Patch it before pyffi is imported (via optional_import below).
+if not hasattr(_time, "clock"):
+    _time.clock = _time.perf_counter  # type: ignore[attr-defined]
 
 ROOT = Path(__file__).resolve().parent
 DEFAULT_REF_DB_PATH = ROOT / "slidesmith_engine" / "references" / "body_reference_db.json"

@@ -9,25 +9,39 @@ to the new physics bones, and writes the modified NIFs in-place.
 Supported NIF types
 -------------------
 * NiTriShape (Skyrim LE, also carried through by some port workflows): full
-  bone-addition with weight redistribution.
-* BSTriShape (Skyrim SE / Skyrim AE): detection and reporting only; full SE
-  skinning support requires BSSkin::Instance manipulation which is beyond the
-  scope of this release.
+  bone-addition with weight redistribution and per-vertex normalisation.
+* BSTriShape (Skyrim SE / Skyrim AE): detection + bone-recipe JSON output;
+  BSSkin::Instance vertex-level manipulation requires the Outfit Studio
+  workflow described in the generated recipe file.
 
 Safety model
 ------------
 All file writes go to a temporary path first.  Only a clean, round-trip
 readable NIF is swapped over the original.  On any exception the original
 file is left untouched.
+
+pyffi compatibility
+-------------------
+pyffi 2.2.3 uses ``time.clock()`` which was removed in Python 3.8.
+We patch it to ``time.perf_counter`` at module load time so pyffi can be
+imported on Python 3.8–3.16 without modification.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import tempfile
+import time as _time
 from pathlib import Path
 from typing import Any
+
+# ---------------------------------------------------------------------------
+# pyffi compatibility shim — time.clock was removed in Python 3.8
+# ---------------------------------------------------------------------------
+if not hasattr(_time, "clock"):
+    _time.clock = _time.perf_counter  # type: ignore[attr-defined]
 
 
 # ---------------------------------------------------------------------------
@@ -49,9 +63,18 @@ _DONOR_PATTERNS: dict[str, list[str]] = {
     "unknown": ["pelvis", "spine"],
 }
 
-# Fraction of the donor bone's per-vertex weight to transfer to the new
-# physics bone.  The donor's remaining weight is reduced by the same amount so
-# that vertex weights stay normalised after the transfer.
+# Per-region transfer fractions: what fraction of donor bone weight is
+# redistributed to the new physics bone.  Tuned so the resulting physics
+# influence is anatomically plausible without over-softening the mesh.
+_TRANSFER_FRACTION_BY_REGION: dict[str, float] = {
+    "breast": 0.35,   # breast/pectoral bones get 35 % of spine2/chest weight
+    "belly": 0.30,    # belly/abdomen bones get 30 % of spine1/pelvis weight
+    "butt": 0.25,     # butt bones get 25 % of pelvis/thigh weight
+    "genital": 0.20,  # genital bones get 20 % of pelvis weight
+    "unknown": 0.30,  # fallback
+}
+
+# Legacy scalar kept for the formatted message strings below.
 _TRANSFER_FRACTION = 0.35
 
 
@@ -128,6 +151,51 @@ def _find_node_by_name(data: Any, target_lower: str) -> Any | None:
 def _encode_name(name: str) -> bytes:
     """Return a NUL-terminated UTF-8 byte string suitable for pyffi name fields."""
     return name.encode("utf-8")
+
+
+def _renormalize_vert_weights(
+    skin_data: Any, vert_weights: dict[int, dict[int, float]], n_bones: int
+) -> None:
+    """
+    Read all per-vertex weights across every bone in *skin_data* (original +
+    newly added physics bones) and scale them down if any vertex total exceeds
+    1.0 by more than floating-point epsilon.  This guards against rounding
+    drift from multiple sequential transfer passes without inflating weights
+    that are already correct.
+
+    ``n_bones`` is the total bone count including newly added physics bones.
+    ``vert_weights`` is the original-bone tracking dict (not modified here).
+    """
+    # Phase 1 — compute true per-vertex totals over ALL bones (original + new)
+    vert_totals: dict[int, float] = {}
+    for bi in range(n_bones):
+        try:
+            bdata = skin_data.bone_list[bi]
+        except Exception:
+            continue
+        for j in range(int(bdata.num_vertices)):
+            try:
+                vw = bdata.vertex_weights[j]
+                vi = int(vw.index)
+                vert_totals[vi] = vert_totals.get(vi, 0.0) + float(vw.weight)
+            except Exception:
+                continue
+
+    # Phase 2 — scale down only if total > 1.0 + epsilon (no inflation pass)
+    for bi in range(n_bones):
+        try:
+            bdata = skin_data.bone_list[bi]
+        except Exception:
+            continue
+        for j in range(int(bdata.num_vertices)):
+            try:
+                vw = bdata.vertex_weights[j]
+                vi = int(vw.index)
+                total = vert_totals.get(vi, 0.0)
+                if total > 1.001:
+                    vw.weight = float(vw.weight) / total
+            except Exception:
+                continue
 
 
 # ---------------------------------------------------------------------------
@@ -278,13 +346,14 @@ def _process_ni_tri_shape(
                 continue
 
             donor_name = cur_names[donor_idx]
+            frac = _TRANSFER_FRACTION_BY_REGION.get(region, _TRANSFER_FRACTION_BY_REGION["unknown"])
 
             # Compute vertex weights from the donor bone
             new_vw: dict[int, float] = {}
             for vi, bmap in vert_weights.items():
                 donor_w = bmap.get(donor_idx, 0.0)
                 if donor_w > 0.01:
-                    new_vw[vi] = donor_w * _TRANSFER_FRACTION
+                    new_vw[vi] = donor_w * frac
 
             if not new_vw:
                 skipped.append(f"{phys_name}: donor '{donor_name}' has no vertex weights")
@@ -311,15 +380,93 @@ def _process_ni_tri_shape(
                 cur_names.append(phys_low)
                 cur_nodes.append(None)
                 added.append(
-                    f"{phys_name} ← '{donor_name}' ({len(new_vw)} verts, {_TRANSFER_FRACTION:.0%} transfer)"
+                    f"{phys_name} ← '{donor_name}' ({len(new_vw)} verts, {frac:.0%} transfer)"
                 )
             else:
                 errors.append(f"{phys_name}: pyffi array write failed — manual weight painting required")
+
+        # Post-transfer normalisation: ensure each vertex's total influence sums
+        # to ≤1.0.  Floating-point drift from multiple transfers can otherwise
+        # produce minor over-normalisation that causes visible skinning artefacts.
+        _renormalize_vert_weights(skin_data, vert_weights, n_bones + len(added))
 
     except Exception as exc:
         errors.append(f"shape processing error: {exc}")
 
     return added, skipped, errors
+
+
+# ---------------------------------------------------------------------------
+# SE NIF bone-recipe helper (BSTriShape NIFs — pyffi cannot modify them)
+# ---------------------------------------------------------------------------
+
+def _build_se_bone_recipe(
+    nif_path: Path,
+    physics_bone_names: list[str],
+) -> dict[str, Any]:
+    """
+    Build a machine-readable bone-weight recipe for a Skyrim SE NIF that
+    cannot be modified by pyffi.  The recipe is written to a JSON file
+    alongside the NIF and returned as a dict so callers can surface it in
+    the pipeline report.
+
+    The recipe describes:
+    * which physics bones to add
+    * the anatomically-matched donor bone for each
+    * the recommended transfer fraction
+    * Outfit Studio instructions for applying the weights manually
+    """
+    recipe_bones: list[dict[str, Any]] = []
+    for phys_name in physics_bone_names:
+        phys_low = phys_name.lower()
+        region, side = _physics_anatomy(phys_low)
+        donors = _DONOR_PATTERNS.get(region, _DONOR_PATTERNS["unknown"])
+        frac = _TRANSFER_FRACTION_BY_REGION.get(region, _TRANSFER_FRACTION_BY_REGION["unknown"])
+        recipe_bones.append(
+            {
+                "boneName": phys_name,
+                "anatomyRegion": region,
+                "anatomySide": side,
+                "preferredDonorBones": donors,
+                "transferFraction": frac,
+                "outfitStudioStep": (
+                    f"In Outfit Studio: select the shape, open the Bones pane, "
+                    f"add '{phys_name}', then copy weights from '{donors[0]}' "
+                    f"with influence {frac:.0%} and run Normalize Weights."
+                ),
+            }
+        )
+
+    recipe: dict[str, Any] = {
+        "_comment": (
+            "SlideSmith SE bone-weight recipe. "
+            "pyffi does not support BSTriShape (SE/AE) NIFs. "
+            "Apply these weights manually in Outfit Studio or via a "
+            "Blender/pynifly automation script."
+        ),
+        "nifPath": str(nif_path),
+        "nifFormat": "BSTriShape (Skyrim SE / AE)",
+        "physicsBonesRequired": physics_bone_names,
+        "boneRecipe": recipe_bones,
+        "outfitStudioWorkflow": [
+            "1. Open Outfit Studio and load the converted NIF as the outfit.",
+            "2. Load the target reference body (e.g. 3BA body reference).",
+            "3. For each bone in boneRecipe: select the shape, open Bones pane, "
+            "   right-click → 'Copy Bone Weights' from the donor bone listed.",
+            "4. In the Weights pane set the donor blend to the transferFraction value.",
+            "5. Run Edit → Normalize Weights to ensure all vertex influences sum to 1.0.",
+            "6. Export the NIF to overwrite the converted file.",
+        ],
+    }
+
+    recipe_path = nif_path.parent / (nif_path.stem + "_physics_recipe.json")
+    try:
+        recipe_path.write_text(json.dumps(recipe, indent=2, ensure_ascii=False), encoding="utf-8")
+        recipe["recipeWrittenTo"] = str(recipe_path)
+    except OSError as exc:
+        recipe["recipeWriteError"] = str(exc)
+
+    return recipe
 
 
 # ---------------------------------------------------------------------------
@@ -401,12 +548,14 @@ def apply_physics_bone_weights(
     )
 
     if has_bs_tri_shape and not has_ni_tri_shape:
+        recipe = _build_se_bone_recipe(nif_path, physics_bone_names)
         result["status"] = "skip"
         result["message"] = (
-            "Skyrim SE (BSTriShape) NIF detected — automated bone weight transfer "
-            "is not yet supported for SE NIFs. Physics bone weights must be set via "
-            "Outfit Studio for SE-format meshes."
+            "Skyrim SE (BSTriShape) NIF detected — pyffi does not support SE-format "
+            "skinning.  A bone-weight recipe JSON has been written alongside the NIF "
+            "for use with Outfit Studio or an SE NIF scripting tool."
         )
+        result["se_bone_recipe"] = recipe
         return result
 
     if not has_ni_tri_shape:
