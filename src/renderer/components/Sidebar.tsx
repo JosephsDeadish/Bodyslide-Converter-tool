@@ -76,6 +76,18 @@ const PHYSICS_OPTIONS: Array<{
   { value: "none", label: "No physics" },
 ];
 
+function isPhysicsOptionSupported(
+  option: ConversionPhysicsProfile,
+  info: BodyTypeInfo | null,
+): boolean {
+  if (!info) return true;
+  if (option === "none" || option === "auto") return true;
+  if (!info.physicsSupport) return false;
+  if (option === "cbpc") return info.cbpcCompatible;
+  if (option === "hdt-smp") return info.hdtSmpCompatible;
+  return true;
+}
+
 function pathBasename(p: string): string {
   return p.replace(/\\/g, "/").split("/").filter(Boolean).pop() ?? p;
 }
@@ -425,7 +437,7 @@ export function Sidebar({
         <div style={{ marginTop: "1rem" }}>
           <Tooltip
             dir="right"
-            text="Choose the physics setup you intend to use in-game. Auto keeps compatibility behavior, CBPC prioritizes INI generation/completion, HDT-SMP skips CBPC stub generation, and No physics avoids physics-specific patching."
+            text="Choose the physics setup you intend to use in-game. Unsupported options are disabled for the selected target body. Auto keeps compatibility behavior, CBPC prioritizes INI generation/completion, HDT-SMP prioritizes XML behavior, and No physics avoids physics-specific patching."
           >
             <div className="field-label">Physics Profile</div>
           </Tooltip>
@@ -443,7 +455,11 @@ export function Sidebar({
             }
           >
             {PHYSICS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option
+                key={option.value}
+                value={option.value}
+                disabled={!isPhysicsOptionSupported(option.value, bodyTypeInfo)}
+              >
                 {option.label}
               </option>
             ))}

@@ -4181,7 +4181,7 @@ describe("convertMod", () => {
     expect(content).toContain("<bone");
   });
 
-  it("does not synthesize a CBPC stub for HIMBO when physicsProfile is cbpc", async () => {
+  it("falls back to HDT-SMP for HIMBO when physicsProfile is cbpc", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();
 
@@ -4212,6 +4212,20 @@ describe("convertMod", () => {
       cbpcStub,
       "should not synthesize CBPC stub for HIMBO",
     ).toBeUndefined();
+
+    const targetAlias = result.preferredOutputAlias;
+    const hdtStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+    expect(hdtStub, "should synthesize HDT-SMP fallback for HIMBO").toBeDefined();
+    expect(
+      result.warnings.some((warning) =>
+        warning.includes("Falling back to 'HDT-SMP'"),
+      ),
+    ).toBe(true);
   });
 
   it("synthesizes HDT-SMP XML stub for 3BA when physicsProfile is hdt-smp", async () => {
@@ -4257,5 +4271,43 @@ describe("convertMod", () => {
     expect(result.warnings.some((w) => w.includes("HDT-SMP XML stub"))).toBe(
       true,
     );
+  });
+
+  it("synthesizes both CBPC and HDT-SMP stubs for dual-compatible targets in auto mode", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "armor", "cbbe_outfit_0.nif"),
+      "cbbe",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+      { physicsProfile: "auto" },
+    );
+
+    const targetAlias = result.preferredOutputAlias;
+    const cbpcStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath === `SKSE/Plugins/CBPC/${targetAlias}_PhysicsStub.ini` &&
+        f.action === "synthesized",
+    );
+    const hdtStub = result.convertedFiles.find(
+      (f) =>
+        f.outputPath ===
+          `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
+        f.action === "synthesized",
+    );
+
+    expect(cbpcStub, "expected CBPC stub for auto profile on 3BA").toBeDefined();
+    expect(hdtStub, "expected HDT-SMP stub for auto profile on 3BA").toBeDefined();
   });
 });

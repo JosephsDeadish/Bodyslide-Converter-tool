@@ -35,14 +35,22 @@ function hasMissingNifMessage(value: string): boolean {
 function hasIncompleteMetadataMessage(value: string): boolean {
   return (
     /metadata is incomplete/i.test(value) ||
+    /reference metadata/i.test(value) ||
     /canonical vertex map is missing/i.test(value) ||
+    /topologyreference/i.test(value) ||
+    /canonicalvertexmap/i.test(value) ||
+    /body_reference_db/i.test(value) ||
     /populate topology/i.test(value) ||
     /populate overlapping canonical/i.test(value)
   );
 }
 
 function hasAdapterProfileMessage(value: string): boolean {
-  return /adapter profile/i.test(value);
+  return (
+    /adapter profile/i.test(value) ||
+    /adapter entry/i.test(value) ||
+    /missing explicit adapter/i.test(value)
+  );
 }
 
 function hasSmoothingProfileMessage(value: string): boolean {
@@ -57,6 +65,8 @@ function hasMorphMappingMessage(value: string): boolean {
     /morphtransfer prerequisites are incomplete/i.test(
       value.replace(/[\s-]+/g, ""),
     ) ||
+    /morph validity/i.test(value) ||
+    /slider mapping/i.test(value) ||
     /morphequivalents/i.test(value) ||
     /slidermappings/i.test(value)
   );
@@ -65,6 +75,7 @@ function hasMorphMappingMessage(value: string): boolean {
 function hasPhysicsMetadataMessage(value: string): boolean {
   return (
     /physics metadata/i.test(value) ||
+    /physics marker/i.test(value) ||
     /physics config files .* must be regenerated/i.test(value) ||
     /bone naming convention mismatch/i.test(value) ||
     /missing physics entries in target bonemap/i.test(value) ||
@@ -73,84 +84,77 @@ function hasPhysicsMetadataMessage(value: string): boolean {
 }
 
 function collectRepairIssues(summary: PythonEngineRunSummary): RepairIssue[] {
-  const missingNifStages = summary.stages.filter(
-    (stage) =>
-      hasMissingNifMessage(stage.summary) ||
-      stage.details.some((detail) => hasMissingNifMessage(detail)),
-  );
-  const metadataStages = summary.stages.filter(
-    (stage) =>
-      hasIncompleteMetadataMessage(stage.summary) ||
-      stage.details.some((detail) => hasIncompleteMetadataMessage(detail)),
-  );
-  const adapterStages = summary.stages.filter(
-    (stage) =>
-      hasAdapterProfileMessage(stage.summary) ||
-      stage.details.some((detail) => hasAdapterProfileMessage(detail)),
-  );
-  const smoothingStages = summary.stages.filter(
-    (stage) =>
-      hasSmoothingProfileMessage(stage.summary) ||
-      stage.details.some((detail) => hasSmoothingProfileMessage(detail)),
-  );
-  const morphStages = summary.stages.filter(
-    (stage) =>
-      hasMorphMappingMessage(stage.summary) ||
-      stage.details.some((detail) => hasMorphMappingMessage(detail)),
-  );
-  const physicsStages = summary.stages.filter(
-    (stage) =>
-      hasPhysicsMetadataMessage(stage.summary) ||
-      stage.details.some((detail) => hasPhysicsMetadataMessage(detail)),
-  );
+  const signals = [
+    ...summary.stages.flatMap((stage) => [
+      { id: stage.id, value: stage.summary },
+      ...stage.details.map((detail) => ({ id: stage.id, value: detail })),
+    ]),
+    ...summary.qualityGates.map((gate) => ({
+      id: `gate:${gate.id}`,
+      value: gate.summary,
+    })),
+    ...summary.warnings.map((warning, index) => ({
+      id: `warning:${index + 1}`,
+      value: warning,
+    })),
+  ];
+  const idsFor = (predicate: (value: string) => boolean) =>
+    [...new Set(signals.filter((signal) => predicate(signal.value)).map((s) => s.id))];
+
+  const missingNifStageIds = idsFor(hasMissingNifMessage);
+  const metadataStageIds = idsFor(hasIncompleteMetadataMessage);
+  const adapterStageIds = idsFor(hasAdapterProfileMessage);
+  const smoothingStageIds = idsFor(hasSmoothingProfileMessage);
+  const morphStageIds = idsFor(hasMorphMappingMessage);
+  const physicsStageIds = idsFor(hasPhysicsMetadataMessage);
 
   const issues: RepairIssue[] = [];
-  if (missingNifStages.length > 0) {
+  if (missingNifStageIds.length > 0) {
     issues.push({
       id: "missing-nif-mesh",
       summary:
         "No NIF mesh assets were detected for one or more Python core stages.",
-      stageIds: missingNifStages.map((stage) => stage.id),
+      stageIds: missingNifStageIds,
     });
   }
-  if (metadataStages.length > 0) {
+  if (metadataStageIds.length > 0) {
     issues.push({
       id: "incomplete-body-metadata",
       summary:
         "Body-pair reference metadata is incomplete for one or more transfer stages.",
-      stageIds: metadataStages.map((stage) => stage.id),
+      stageIds: metadataStageIds,
     });
   }
-  if (adapterStages.length > 0) {
+  if (adapterStageIds.length > 0) {
     issues.push({
       id: "missing-adapter-profile",
       summary:
         "High-risk body-pair adapter profiles are missing for one or more transfer stages.",
-      stageIds: adapterStages.map((stage) => stage.id),
+      stageIds: adapterStageIds,
     });
   }
-  if (smoothingStages.length > 0) {
+  if (smoothingStageIds.length > 0) {
     issues.push({
       id: "missing-smoothing-profile",
       summary:
         "Corrective smoothing zones are missing, so deformation cleanup cannot run fully.",
-      stageIds: smoothingStages.map((stage) => stage.id),
+      stageIds: smoothingStageIds,
     });
   }
-  if (morphStages.length > 0) {
+  if (morphStageIds.length > 0) {
     issues.push({
       id: "incomplete-morph-mappings",
       summary:
         "Morph/slider mappings are incomplete, so zap and TRI transfer automation is degraded.",
-      stageIds: morphStages.map((stage) => stage.id),
+      stageIds: morphStageIds,
     });
   }
-  if (physicsStages.length > 0) {
+  if (physicsStageIds.length > 0) {
     issues.push({
       id: "incomplete-physics-metadata",
       summary:
         "Physics metadata is incomplete, so reweighting and physics conversion need follow-up.",
-      stageIds: physicsStages.map((stage) => stage.id),
+      stageIds: physicsStageIds,
     });
   }
   return issues;

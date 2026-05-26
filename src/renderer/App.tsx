@@ -19,6 +19,26 @@ const api = window.bodyslideAPI;
 type Screen = "welcome" | "loading" | "results" | "error";
 type Status = "idle" | "scanning" | "success" | "error";
 
+function normalizePhysicsProfileForTarget(
+  profile: ConversionPhysicsProfile,
+  bodyTypeInfo: BodyTypeInfo | null,
+): ConversionPhysicsProfile {
+  if (!bodyTypeInfo) return profile;
+  if (!bodyTypeInfo.physicsSupport) return "none";
+  if (profile === "none" || profile === "auto") return profile;
+  if (profile === "cbpc") {
+    if (bodyTypeInfo.cbpcCompatible) return "cbpc";
+    if (bodyTypeInfo.hdtSmpCompatible) return "hdt-smp";
+    return "none";
+  }
+  if (profile === "hdt-smp") {
+    if (bodyTypeInfo.hdtSmpCompatible) return "hdt-smp";
+    if (bodyTypeInfo.cbpcCompatible) return "cbpc";
+    return "none";
+  }
+  return profile;
+}
+
 export function App() {
   const [inputPath, setInputPath] = useState("");
   const [outputPath, setOutputPath] = useState("");
@@ -79,6 +99,16 @@ export function App() {
       unsubscribe();
     };
   }, [activeJobId]);
+
+  useEffect(() => {
+    const normalized = normalizePhysicsProfileForTarget(
+      physicsProfile,
+      bodyTypeInfo,
+    );
+    if (normalized !== physicsProfile) {
+      setPhysicsProfile(normalized);
+    }
+  }, [bodyTypeInfo, physicsProfile]);
 
   async function handleBrowseInput() {
     const path = await api.openDirectory();

@@ -15,13 +15,14 @@ async function makeTempDir(): Promise<string> {
 
 function makeSummary(
   stages: PythonEngineRunSummary["stages"],
+  options: Partial<Pick<PythonEngineRunSummary, "qualityGates" | "warnings">> = {},
 ): PythonEngineRunSummary {
   return {
     runId: "repair-run",
     backend: "python",
     stages,
-    qualityGates: [],
-    warnings: [],
+    qualityGates: options.qualityGates ?? [],
+    warnings: options.warnings ?? [],
     libraries: {
       pyffi: true,
       numpy: true,
@@ -257,6 +258,55 @@ describe("repair artifact generation", () => {
     );
     expect(physicsTemplate.bodies.cbbe.physicsConfig?.notes).toBe(
       "TODO-physics-notes",
+    );
+  });
+
+  it("detects repair issues from quality gates and warnings when stage summaries are sparse", async () => {
+    const reportsDir = await makeTempDir();
+    const artifacts = await generateRepairArtifacts({
+      reportsDir,
+      sourceBodyType: "cbbe",
+      targetBodyType: "bhunp",
+      pythonSummary: makeSummary(
+        [
+          {
+            id: "reference-body",
+            title: "Reference body mapping",
+            status: "pass",
+            summary: "Reference mapping resolved.",
+            details: [],
+          },
+        ],
+        {
+          qualityGates: [
+            {
+              id: "morph-validity",
+              status: "attention",
+              summary:
+                "Morph validity warning: slider mapping overlap is incomplete.",
+            },
+            {
+              id: "physics-markers",
+              status: "attention",
+              summary:
+                "Physics marker coverage warning: target physics markers are missing.",
+            },
+          ],
+          warnings: [
+            "Reference metadata is incomplete in body_reference_db.json for this conversion pair.",
+            "Missing explicit adapter entry for cbbe -> bhunp.",
+          ],
+        },
+      ),
+    });
+
+    expect(artifacts.map((artifact) => artifact.relativePath)).toEqual(
+      expect.arrayContaining([
+        "_SlideSmith/repairs/body-reference-db.patch.json",
+        "_SlideSmith/repairs/adapter-profile-template.json",
+        "_SlideSmith/repairs/morph-mapping-template.json",
+        "_SlideSmith/repairs/physics-metadata-template.json",
+      ]),
     );
   });
 });
