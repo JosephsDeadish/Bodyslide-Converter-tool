@@ -2601,6 +2601,99 @@ describe("convertMod", () => {
     expect(triOsdFiles).toHaveLength(0);
   });
 
+  it("mirrors vanilla OSD companions into ShapeData even when ShapeData NIFs already exist", async () => {
+    const inputDir = await makeTempDir();
+    const outputDir = await makeTempDir();
+
+    await mkdir(join(inputDir, "meshes", "Armor"), { recursive: true });
+    await writeFile(
+      join(inputDir, "meshes", "Armor", "vanilla_cuirass_0.nif"),
+      "skyrim vanilla default body",
+      "utf8",
+    );
+    await writeFile(
+      join(inputDir, "meshes", "Armor", "vanilla_cuirass_0.osd"),
+      "osd payload",
+      "utf8",
+    );
+
+    await mkdir(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "Armor",
+      ),
+      { recursive: true },
+    );
+    await writeFile(
+      join(
+        inputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "Armor",
+        "vanilla_cuirass_0.nif",
+      ),
+      "skyrim vanilla default body",
+      "utf8",
+    );
+
+    const files = await scanModFiles(inputDir);
+    const detection = detectBodyType(files);
+    expect(detection.bodyType).toBe("vanilla");
+
+    const result = await convertMod(
+      inputDir,
+      outputDir,
+      files,
+      detection,
+      "3ba",
+    );
+
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+          "CalienteTools/BodySlide/ShapeData/Armor/3BA_cuirass_0.osd",
+      ),
+    ).toBe(true);
+    expect(
+      result.convertedFiles.some(
+        (file) =>
+          file.outputPath ===
+            "CalienteTools/BodySlide/ShapeData/Armor/3BA_cuirass_1.osd" &&
+          file.action === "synthesized",
+      ),
+    ).toBe(true);
+
+    const shapeDataOsdZero = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "Armor",
+        "3BA_cuirass_0.osd",
+      ),
+      "utf8",
+    );
+    const shapeDataOsdOne = await readFile(
+      join(
+        outputDir,
+        "CalienteTools",
+        "BodySlide",
+        "ShapeData",
+        "Armor",
+        "3BA_cuirass_1.osd",
+      ),
+      "utf8",
+    );
+    expect(shapeDataOsdZero).toBe("osd payload");
+    expect(shapeDataOsdOne).toBe("osd payload");
+  });
+
   it("avoids malformed TRI/OSD naming for non-weighted outfit meshes", async () => {
     const inputDir = await makeTempDir();
     const outputDir = await makeTempDir();

@@ -261,6 +261,33 @@ function sendJobEvent(
   contents.send("scan:jobEvent", event);
 }
 
+async function validateOptionalReferenceBodyNif(
+  referenceBodyNifPath: string | undefined,
+): Promise<string | undefined> {
+  if (
+    typeof referenceBodyNifPath !== "string" ||
+    referenceBodyNifPath.trim() === ""
+  ) {
+    return undefined;
+  }
+
+  const trimmedReferencePath = referenceBodyNifPath.trim();
+  const candidatePath = resolve(trimmedReferencePath);
+  if (extname(candidatePath).toLowerCase() !== ".nif") {
+    throw new Error(
+      "Reference body must be a .nif mesh file (for example femalebody_0.nif or malebody_0.nif).",
+    );
+  }
+  try {
+    await access(candidatePath, constants.R_OK);
+  } catch {
+    throw new Error(
+      `Reference body NIF is not readable: ${candidatePath}. Pick a valid body mesh file and try again.`,
+    );
+  }
+  return candidatePath;
+}
+
 async function runJob(
   sender: IpcMainInvokeEvent["sender"],
   jobId: string,
@@ -303,6 +330,7 @@ async function executeConversion(
     output,
     sourceOverride,
     referenceBodyNifPath,
+    maleReferenceBodyNifPath,
     maleSource,
     maleTarget,
     malePhysicsProfile,
@@ -315,24 +343,10 @@ async function executeConversion(
     );
   }
 
-  let resolvedReferenceBodyNifPath: string | undefined;
-  if (typeof referenceBodyNifPath === "string" && referenceBodyNifPath.trim()) {
-    const trimmedReferencePath = referenceBodyNifPath.trim();
-    const candidatePath = resolve(trimmedReferencePath);
-    if (extname(candidatePath).toLowerCase() !== ".nif") {
-      throw new Error(
-        "Reference body must be a .nif mesh file (for example femalebody_0.nif or malebody_0.nif).",
-      );
-    }
-    try {
-      await access(candidatePath, constants.R_OK);
-    } catch {
-      throw new Error(
-        `Reference body NIF is not readable: ${candidatePath}. Pick a valid body mesh file and try again.`,
-      );
-    }
-    resolvedReferenceBodyNifPath = candidatePath;
-  }
+  const resolvedReferenceBodyNifPath =
+    await validateOptionalReferenceBodyNif(referenceBodyNifPath);
+  const resolvedMaleReferenceBodyNifPath =
+    await validateOptionalReferenceBodyNif(maleReferenceBodyNifPath);
 
   onStatus?.({
     stage: "scan",
@@ -404,6 +418,11 @@ async function executeConversion(
         ...new Set([
           ...result.warnings,
           ...maleResult.warnings,
+          ...(resolvedMaleReferenceBodyNifPath
+            ? [
+                `Mixed-gender male reference body NIF validated: ${resolvedMaleReferenceBodyNifPath}.`,
+              ]
+            : []),
           `Mixed-gender male pass physics: selected '${maleResult.requestedPhysicsProfile}', effective '${maleResult.effectivePhysicsProfile}' for ${maleTargetType.toUpperCase()}.`,
         ]),
       ];
@@ -434,8 +453,11 @@ async function executeConversion(
       outputPath: output,
       sourceBodyType: pythonSourceType,
       targetBodyType: target,
-      ...(resolvedReferenceBodyNifPath
-        ? { referenceBodyNifPath: resolvedReferenceBodyNifPath }
+      ...((resolvedReferenceBodyNifPath ?? resolvedMaleReferenceBodyNifPath)
+        ? {
+            referenceBodyNifPath:
+              resolvedReferenceBodyNifPath ?? resolvedMaleReferenceBodyNifPath,
+          }
         : {}),
       files: outputFiles,
     },

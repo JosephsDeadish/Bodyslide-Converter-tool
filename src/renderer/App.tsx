@@ -61,6 +61,7 @@ export function App() {
   );
   const [sourceOverride, setSourceOverride] = useState("");
   const [referenceBodyNifPath, setReferenceBodyNifPath] = useState("");
+  const [maleReferenceBodyNifPath, setMaleReferenceBodyNifPath] = useState("");
   const [physicsProfile, setPhysicsProfile] =
     useState<ConversionPhysicsProfile>("auto");
   const [mixedGender, setMixedGender] = useState(false);
@@ -97,6 +98,8 @@ export function App() {
       if (prefs.sourceOverride) setSourceOverride(prefs.sourceOverride);
       if (prefs.referenceBodyNifPath)
         setReferenceBodyNifPath(prefs.referenceBodyNifPath);
+      if (prefs.maleReferenceBodyNifPath)
+        setMaleReferenceBodyNifPath(prefs.maleReferenceBodyNifPath);
       if (prefs.physicsProfile)
         setPhysicsProfile(prefs.physicsProfile as ConversionPhysicsProfile);
       if (typeof prefs.mixedGender === "boolean")
@@ -120,6 +123,7 @@ export function App() {
       targetBodyType,
       sourceOverride,
       referenceBodyNifPath,
+      maleReferenceBodyNifPath,
       physicsProfile,
       mixedGender,
       maleSource,
@@ -133,6 +137,7 @@ export function App() {
     targetBodyType,
     sourceOverride,
     referenceBodyNifPath,
+    maleReferenceBodyNifPath,
     physicsProfile,
     mixedGender,
     maleSource,
@@ -228,8 +233,18 @@ export function App() {
     setReferenceBodyNifPath(path);
   }
 
+  async function handleBrowseMaleReferenceBodyNif() {
+    const path = await api.openNifFile();
+    if (!path) return;
+    setMaleReferenceBodyNifPath(path);
+  }
+
   function handleClearReferenceBodyNif() {
     setReferenceBodyNifPath("");
+  }
+
+  function handleClearMaleReferenceBodyNif() {
+    setMaleReferenceBodyNifPath("");
   }
 
   function handleClearInput() {
@@ -239,6 +254,7 @@ export function App() {
     setMixedGender(false);
     setMaleSource("");
     setMaleTarget("");
+    setMaleReferenceBodyNifPath("");
     setMaleBodyTypeInfo(null);
     setMalePhysicsProfile("auto");
     if (outputPathAuto) {
@@ -292,6 +308,7 @@ export function App() {
           ? {
               maleSource: maleSource as BodyType,
               maleTarget: maleTarget as BodyType,
+              ...(maleReferenceBodyNifPath ? { maleReferenceBodyNifPath } : {}),
               malePhysicsProfile,
             }
           : {}),
@@ -341,6 +358,7 @@ export function App() {
         detectResult={detectResult}
         sourceOverride={sourceOverride}
         referenceBodyNifPath={referenceBodyNifPath}
+        maleReferenceBodyNifPath={maleReferenceBodyNifPath}
         physicsProfile={physicsProfile}
         maleBodyTypeInfo={maleBodyTypeInfo}
         malePhysicsProfile={malePhysicsProfile}
@@ -371,6 +389,10 @@ export function App() {
           void handleBrowseReferenceBodyNif();
         }}
         onClearReferenceBodyNif={handleClearReferenceBodyNif}
+        onBrowseMaleReferenceBodyNif={() => {
+          void handleBrowseMaleReferenceBodyNif();
+        }}
+        onClearMaleReferenceBodyNif={handleClearMaleReferenceBodyNif}
         onMixedGenderChange={setMixedGender}
         onPhysicsProfileChange={setPhysicsProfile}
         onMaleSourceChange={setMaleSource}

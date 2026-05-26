@@ -2321,7 +2321,7 @@ async function synthesizeMissingShapeDataMeshes(
   const meshCandidates = convertedFiles.filter(
     (file) =>
       file.kind === "mesh" &&
-      file.outputPath.toLowerCase().endsWith(".nif") &&
+      /\.(nif|tri|osd)$/i.test(file.outputPath) &&
       isArmorOrClothingNif(file.outputPath),
   );
 
