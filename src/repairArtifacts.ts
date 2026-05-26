@@ -98,8 +98,11 @@ function collectRepairIssues(summary: PythonEngineRunSummary): RepairIssue[] {
       value: warning,
     })),
   ];
-  const idsFor = (predicate: (value: string) => boolean) =>
-    [...new Set(signals.filter((signal) => predicate(signal.value)).map((s) => s.id))];
+  const idsFor = (predicate: (value: string) => boolean) => [
+    ...new Set(
+      signals.filter((signal) => predicate(signal.value)).map((s) => s.id),
+    ),
+  ];
 
   const missingNifStageIds = idsFor(hasMissingNifMessage);
   const metadataStageIds = idsFor(hasIncompleteMetadataMessage);

@@ -15,7 +15,9 @@ async function makeTempDir(): Promise<string> {
 
 function makeSummary(
   stages: PythonEngineRunSummary["stages"],
-  options: Partial<Pick<PythonEngineRunSummary, "qualityGates" | "warnings">> = {},
+  options: Partial<
+    Pick<PythonEngineRunSummary, "qualityGates" | "warnings">
+  > = {},
 ): PythonEngineRunSummary {
   return {
     runId: "repair-run",

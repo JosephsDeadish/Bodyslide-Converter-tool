@@ -4220,7 +4220,10 @@ describe("convertMod", () => {
           `SKSE/Plugins/hdtSMP64/${targetAlias}_PhysicsStub.xml` &&
         f.action === "synthesized",
     );
-    expect(hdtStub, "should synthesize HDT-SMP fallback for HIMBO").toBeDefined();
+    expect(
+      hdtStub,
+      "should synthesize HDT-SMP fallback for HIMBO",
+    ).toBeDefined();
     expect(
       result.warnings.some((warning) =>
         warning.includes("Falling back to 'HDT-SMP'"),
@@ -4307,7 +4310,13 @@ describe("convertMod", () => {
         f.action === "synthesized",
     );
 
-    expect(cbpcStub, "expected CBPC stub for auto profile on 3BA").toBeDefined();
-    expect(hdtStub, "expected HDT-SMP stub for auto profile on 3BA").toBeDefined();
+    expect(
+      cbpcStub,
+      "expected CBPC stub for auto profile on 3BA",
+    ).toBeDefined();
+    expect(
+      hdtStub,
+      "expected HDT-SMP stub for auto profile on 3BA",
+    ).toBeDefined();
   });
 });
